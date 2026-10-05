@@ -40,15 +40,19 @@ export function StoreProvider({
   const loaded = useRef(false);
 
   useEffect(() => {
-    storage.load().then((s) => {
-      setState(s);
-      loaded.current = true;
-      setReady(true);
-    });
+    // Wenn der Speicher nicht lesbar ist, startet die App leer statt hängen zu bleiben.
+    storage
+      .load()
+      .catch(() => emptyState)
+      .then((s) => {
+        setState(s);
+        loaded.current = true;
+        setReady(true);
+      });
   }, [storage]);
 
   useEffect(() => {
-    if (loaded.current) storage.save(state);
+    if (loaded.current) storage.save(state).catch(() => {});
   }, [state, storage]);
 
   const update = useCallback((fn: (s: AppState) => AppState) => setState(fn), []);
