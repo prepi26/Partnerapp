@@ -78,11 +78,14 @@ export default function Home() {
         <Text style={styles.days}>{formatNumber(totalDays)}</Text>
         <Text style={styles.daysLabel}>{totalDays === 1 ? 'Tag' : 'Tagen'}</Text>
 
-        <View style={styles.partsRow}>
-          <Part value={parts.years} label={parts.years === 1 ? 'Jahr' : 'Jahre'} />
-          <Part value={parts.months} label={parts.months === 1 ? 'Monat' : 'Monate'} />
-          <Part value={parts.days} label={parts.days === 1 ? 'Tag' : 'Tage'} />
-        </View>
+        {/* Bei frischen Paaren wäre „0 Jahre · 0 Monate“ nur Rauschen. */}
+        {parts.years > 0 || parts.months > 0 ? (
+          <View style={styles.partsRow}>
+            {parts.years > 0 ? <Part value={parts.years} label={parts.years === 1 ? 'Jahr' : 'Jahre'} /> : null}
+            <Part value={parts.months} label={parts.months === 1 ? 'Monat' : 'Monate'} />
+            <Part value={parts.days} label={parts.days === 1 ? 'Tag' : 'Tage'} />
+          </View>
+        ) : null}
 
         <Text style={styles.clock}>
           {formatNumber(hours)} Stunden · {formatNumber(seconds)} Sekunden
