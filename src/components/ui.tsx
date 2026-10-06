@@ -1,9 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ComponentProps, ReactNode } from 'react';
+import { ComponentProps, ReactNode, useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   Platform,
   Pressable,
   StyleProp,
@@ -24,10 +25,21 @@ export function tap() {
   if (Platform.OS !== 'web') Haptics.selectionAsync();
 }
 
+interface DialogRequest {
+  title: string;
+  message: string;
+  action?: string;
+  onConfirm?: () => void;
+}
+
+// Im Browser (und im Claude-Artefakt, das alert/confirm blockiert) zeigt die App eigene Dialoge.
+let openDialog: ((request: DialogRequest) => void) | null = null;
+
 /** Sicherheitsabfrage vor destruktiven Aktionen – auch im Browser. */
 export function confirmDestructive(title: string, message: string, action: string, onConfirm: () => void) {
   if (Platform.OS === 'web') {
-    if (window.confirm(`${title}\n${message}`)) onConfirm();
+    if (openDialog) openDialog({ title, message, action, onConfirm });
+    else if (window.confirm(`${title}\n${message}`)) onConfirm();
     return;
   }
   Alert.alert(title, message, [
@@ -38,8 +50,55 @@ export function confirmDestructive(title: string, message: string, action: strin
 
 /** Fehler verständlich anzeigen. */
 export function showError(title: string, message: string) {
-  if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
-  else Alert.alert(title, message);
+  if (Platform.OS !== 'web') Alert.alert(title, message);
+  else if (openDialog) openDialog({ title, message });
+  else window.alert(`${title}\n${message}`);
+}
+
+/** Einmal im Root-Layout einbinden; rendert die Web-Dialoge. */
+export function DialogHost() {
+  const [request, setRequest] = useState<DialogRequest | null>(null);
+  useEffect(() => {
+    openDialog = setRequest;
+    return () => {
+      openDialog = null;
+    };
+  }, []);
+  if (!request) return null;
+  const close = () => setRequest(null);
+  return (
+    <Modal transparent visible animationType="fade" onRequestClose={close}>
+      <View style={styles.dialogBackdrop}>
+        <View style={styles.dialog}>
+          <Text style={styles.dialogTitle}>{request.title}</Text>
+          <Text style={styles.dialogText}>{request.message}</Text>
+          <View style={styles.dialogButtons}>
+            {request.onConfirm ? (
+              <>
+                <Pressable accessibilityRole="button" onPress={close} style={styles.dialogButton}>
+                  <Text style={styles.dialogCancel}>Abbrechen</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    close();
+                    request.onConfirm?.();
+                  }}
+                  style={styles.dialogButton}
+                >
+                  <Text style={styles.dialogDanger}>{request.action}</Text>
+                </Pressable>
+              </>
+            ) : (
+              <Pressable accessibilityRole="button" onPress={close} style={styles.dialogButton}>
+                <Text style={styles.dialogOk}>OK</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 }
 
 export function GradientHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
@@ -207,6 +266,28 @@ export function Chip({
 }
 
 const styles = StyleSheet.create({
+  dialogBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(46,31,71,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    gap: 8,
+  },
+  dialogTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  dialogText: { fontSize: 15, color: colors.textMuted, lineHeight: 21 },
+  dialogButtons: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.sm },
+  dialogButton: { paddingHorizontal: spacing.md, paddingVertical: 10, borderRadius: radius.pill },
+  dialogCancel: { fontSize: 16, fontWeight: '600', color: colors.textMuted },
+  dialogDanger: { fontSize: 16, fontWeight: '800', color: colors.danger },
+  dialogOk: { fontSize: 16, fontWeight: '800', color: colors.pink },
   header: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,

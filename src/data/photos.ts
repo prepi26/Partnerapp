@@ -15,8 +15,10 @@ async function readBytes(uri: string): Promise<ArrayBuffer | Uint8Array> {
 export async function uploadPhoto(coupleId: string, uri: string, mimeType = 'image/jpeg'): Promise<string> {
   const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
   const path = `${coupleId}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  must(await supabase.storage.from(BUCKET).upload(path, await readBytes(uri), { contentType: mimeType }));
-  return path;
+  const uploaded = must(
+    await supabase.storage.from(BUCKET).upload(path, await readBytes(uri), { contentType: mimeType }),
+  );
+  return uploaded?.path ?? path;
 }
 
 export async function deletePhoto(path: string | null) {

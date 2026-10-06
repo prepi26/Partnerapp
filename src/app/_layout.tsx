@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '@/components/ui';
+import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { StoreProvider, useStore } from '@/data/store';
@@ -20,6 +20,7 @@ export default function RootLayout() {
       ) : (
         <NotConfigured />
       )}
+      <DialogHost />
     </SafeAreaProvider>
   );
 }

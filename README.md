@@ -43,3 +43,10 @@ Struktur:
 
 Einrichtung siehe [SUPABASE_SETUP.md](SUPABASE_SETUP.md). Datenbank, Zugriffsregeln (Row Level Security), Foto-Speicher und
 Live-Updates stehen komplett in `supabase/schema.sql`. Zugangsdaten kommen in `.env`.
+
+## Als Claude-Artefakt
+
+`artifact/` enthält eine Variante ohne Supabase: `artifact/claudeDbClient.ts` ersetzt beim Build `src/lib/supabase.ts`
+und speichert in der Datenbank des Artefakts. Bauen mit `node artifact/build.mjs wir-zwei.html` und als Artefakt mit den
+Capabilities `db` und `user` veröffentlichen. Das Paar steht im Dokument `couples/main`
+(`name_a`, `name_b`, `start_date`, `owner_role` = Rolle des Artefakt-Eigentümers).
