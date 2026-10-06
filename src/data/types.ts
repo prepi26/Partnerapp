@@ -3,10 +3,16 @@ export type ISODate = string;
 
 export type PartnerKey = 'a' | 'b';
 
+// Die Typen entsprechen 1:1 den Tabellen in supabase/schema.sql.
+
 export interface Couple {
-  partnerA: string;
-  partnerB: string;
-  startDate: ISODate;
+  id: string;
+  partner_a: string;
+  partner_b: string | null;
+  name_a: string;
+  name_b: string;
+  start_date: ISODate;
+  invite_code: string;
 }
 
 export interface Memory {
@@ -14,8 +20,9 @@ export interface Memory {
   title: string;
   date: ISODate;
   text: string;
-  photoUri?: string;
-  createdAt: number;
+  photo_path: string | null;
+  created_by: string;
+  created_at: string;
 }
 
 export type WishCategory = 'reise' | 'erlebnis' | 'geschenk' | 'sonstiges';
@@ -27,8 +34,8 @@ export interface Wish {
   category: WishCategory;
   author: PartnerKey | 'both';
   done: boolean;
-  doneAt?: number;
-  createdAt: number;
+  done_at: string | null;
+  created_at: string;
 }
 
 export interface SpecialDate {
@@ -37,21 +44,33 @@ export interface SpecialDate {
   date: ISODate;
   emoji: string;
   yearly: boolean;
-  createdAt: number;
+  created_at: string;
 }
 
-export interface AppState {
-  version: 1;
-  couple: Couple | null;
-  memories: Memory[];
-  wishes: Wish[];
-  dates: SpecialDate[];
+export interface Note {
+  id: string;
+  author_id: string;
+  text: string;
+  created_at: string;
 }
 
-export const emptyState: AppState = {
-  version: 1,
-  couple: null,
-  memories: [],
-  wishes: [],
-  dates: [],
-};
+export interface Mood {
+  user_id: string;
+  day: ISODate;
+  emoji: string;
+}
+
+export interface Answer {
+  user_id: string;
+  day: ISODate;
+  answer: string;
+  created_at: string;
+}
+
+export interface DateIdea {
+  id: string;
+  title: string;
+  emoji: string;
+  done: boolean;
+  created_at: string;
+}

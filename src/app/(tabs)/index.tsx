@@ -5,8 +5,11 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { InviteCard } from '@/components/InviteCard';
+import { MoodCard } from '@/components/MoodCard';
 import { Card, HeaderIcon } from '@/components/ui';
-import { useStore } from '@/data/store';
+import { questionForDay } from '@/data/questions';
+import { useCouple } from '@/data/store';
 import {
   countdownLabel,
   daysBetween,
@@ -16,6 +19,7 @@ import {
   formatShort,
   nextYearly,
   parseISO,
+  toISO,
   today,
   upcomingMilestones,
 } from '@/lib/dates';
@@ -31,26 +35,29 @@ function useNow() {
 }
 
 export default function Home() {
-  const { state } = useStore();
+  const { couple, special_dates, wishes, memories, notes, answers, userId, partnerName, partnerJoined } = useCouple();
   const insets = useSafeAreaInsets();
   const now = useNow();
-  const couple = state.couple!;
 
-  const start = parseISO(couple.startDate);
+  const start = parseISO(couple.start_date);
   const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const totalDays = Math.max(0, daysBetween(start, todayDate));
   const parts = durationParts(start, todayDate);
   const seconds = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000));
   const hours = Math.floor(seconds / 3600);
 
-  const milestones = upcomingMilestones(couple.startDate, 3, todayDate);
-  const nextDate = state.dates
+  const milestones = upcomingMilestones(couple.start_date, 3, todayDate);
+  const nextDate = special_dates
     .map((d) => ({ d, next: d.yearly ? nextYearly(d.date, today()) : null }))
     .map(({ d, next }) => ({ d, inDays: next ? next.inDays : daysBetween(today(), parseISO(d.date)) }))
     .filter((x) => x.inDays >= 0)
     .sort((a, b) => a.inDays - b.inDays)[0];
-  const openWishes = state.wishes.filter((w) => !w.done).length;
-  const lastMemory = [...state.memories].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const openWishes = wishes.filter((w) => !w.done).length;
+  const lastMemory = [...memories].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const lastNote = notes[notes.length - 1];
+  const day = toISO(todayDate);
+  const answeredToday = answers.some((a) => a.user_id === userId && a.day === day);
+  const partnerAnsweredToday = answers.some((a) => a.user_id !== userId && a.day === day);
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: spacing.xl }}>
@@ -62,7 +69,7 @@ export default function Home() {
       >
         <View style={styles.heroTop}>
           <Text style={styles.names}>
-            {couple.partnerA} <Text style={styles.heart}>♥</Text> {couple.partnerB}
+            {couple.name_a} <Text style={styles.heart}>♥</Text> {couple.name_b}
           </Text>
           <HeaderIcon icon="settings-outline" label="Einstellungen" onPress={() => router.push('/settings')} />
         </View>
@@ -80,10 +87,36 @@ export default function Home() {
         <Text style={styles.clock}>
           {formatNumber(hours)} Stunden · {formatNumber(seconds)} Sekunden
         </Text>
-        <Text style={styles.since}>seit dem {formatDate(couple.startDate)}</Text>
+        <Text style={styles.since}>seit dem {formatDate(couple.start_date)}</Text>
       </LinearGradient>
 
       <View style={styles.body}>
+        {!partnerJoined ? <InviteCard code={couple.invite_code} partnerName={couple.name_b} /> : null}
+
+        <Text style={styles.section}>Heute</Text>
+        <MoodCard />
+        <Pressable accessibilityRole="button" onPress={() => router.push('/question')}>
+          {({ pressed }) => (
+            <LinearGradient
+              colors={gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.questionCard, pressed && { opacity: 0.85 }]}
+            >
+              <Text style={styles.questionKicker}>Frage des Tages</Text>
+              <Text style={styles.questionText}>{questionForDay(day)}</Text>
+              <Text style={styles.questionStatus}>
+                {/* Die Antwort des Partners ist vor der eigenen Antwort serverseitig unsichtbar. */}
+                {!answeredToday
+                  ? 'Jetzt antworten →'
+                  : partnerAnsweredToday
+                    ? 'Ihr habt beide geantwortet – ansehen →'
+                    : `Du hast geantwortet · ${partnerName} noch nicht`}
+              </Text>
+            </LinearGradient>
+          )}
+        </Pressable>
+
         <Text style={styles.section}>Nächste Meilensteine</Text>
         <Card style={{ gap: spacing.md }}>
           {milestones.map((m) => (
@@ -120,13 +153,24 @@ export default function Home() {
           />
         </View>
         <Tile
+          icon="mail"
+          tint="blue"
+          title={lastNote ? lastNote.text : 'Noch keine Liebeszettel'}
+          text={
+            lastNote
+              ? `Letzter Zettel · ${lastNote.author_id === userId ? 'von dir' : `von ${partnerName}`}`
+              : `Schreib ${partnerName} etwas Liebes`
+          }
+          onPress={() => router.push('/notes')}
+        />
+        <Tile
           icon="images"
           tint="pink"
           title={lastMemory ? lastMemory.title : 'Noch keine Erinnerungen'}
           text={
             lastMemory
               ? `Letzte Erinnerung · ${formatShort(lastMemory.date)}`
-              : `${state.memories.length} Erinnerungen gespeichert`
+              : `${memories.length} Erinnerungen gespeichert`
           }
           onPress={() => router.push(lastMemory ? `/memory/${lastMemory.id}` : '/memories')}
         />
@@ -153,7 +197,7 @@ function Tile({
   inRow,
 }: {
   inRow?: boolean;
-  icon: 'calendar' | 'sparkles' | 'images';
+  icon: 'calendar' | 'sparkles' | 'images' | 'mail';
   tint: 'pink' | 'blue';
   title: string;
   text: string;
@@ -168,15 +212,15 @@ function Tile({
       style={({ pressed }) => [inRow && { flex: 1 }, { opacity: pressed ? 0.7 : 1 }]}
     >
       <Card style={styles.tile}>
-      <View style={[styles.tileIcon, { backgroundColor: pale }]}>
-        <Ionicons name={icon} size={20} color={main} />
-      </View>
-      <Text style={styles.tileTitle} numberOfLines={1}>
-        {title}
-      </Text>
-      <Text style={styles.muted} numberOfLines={1}>
-        {text}
-      </Text>
+        <View style={[styles.tileIcon, { backgroundColor: pale }]}>
+          <Ionicons name={icon} size={20} color={main} />
+        </View>
+        <Text style={styles.tileTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.muted} numberOfLines={1}>
+          {text}
+        </Text>
       </Card>
     </Pressable>
   );
@@ -235,5 +279,15 @@ const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', gap: spacing.md },
   tile: { gap: 6 },
   tileIcon: { width: 38, height: 38, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center' },
+  questionCard: { borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm },
+  questionKicker: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+  },
+  questionText: { color: colors.white, fontSize: 20, fontWeight: '800', lineHeight: 26 },
+  questionStatus: { color: colors.white, fontSize: 14, fontWeight: '600', opacity: 0.95 },
   tileTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
 });

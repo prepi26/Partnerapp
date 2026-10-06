@@ -2,12 +2,18 @@
 
 Eine App für Paare im Miami-Look (Flamingo-Pink & Ocean-Blau), gebaut mit Expo (SDK 57) und Expo Router.
 
+Beide Partner nutzen die App auf ihrem eigenen Handy; alle Inhalte werden live über Supabase geteilt.
+
 ## Funktionen
 
-- **Zusammen-Zähler**: Tage, Jahre/Monate/Tage, Live-Sekunden und die nächsten Meilensteine (100 Tage, halbes Jahr, Jahrestage …)
-- **Erinnerungen**: Timeline nach Monaten, mit Foto, Datum und Text
+- **Login per E-Mail-Code** und **Verbinden per Einladungscode** (6 Zeichen)
+- **Zusammen-Zähler**: Tage, Jahre/Monate/Tage, Live-Sekunden und die nächsten Meilensteine
+- **Stimmung**: jeder setzt täglich ein Emoji, der andere sieht es auf dem Startbildschirm
+- **Frage des Tages**: die Antwort des Partners wird erst sichtbar, wenn man selbst geantwortet hat (serverseitig erzwungen)
+- **Liebeszettel**: kleine Nachrichten wie in einem Chat
+- **Momente**: Erinnerungen mit Foto, Datum und Text
 - **Wünsche**: gemeinsame Bucket List mit Kategorien, Abhaken und Fortschrittsbalken
-- **Wichtige Daten**: Geburtstage, Jahrestage & Co. mit Countdown (euer Jahrestag ist automatisch drin)
+- **Daten & Dates**: Termine mit Countdown (Jahrestag automatisch) und Date-Ideen mit Zufallsgenerator
 
 ## Mit Expo Go testen
 
@@ -29,10 +35,11 @@ Struktur:
 
 - `src/app/` – Screens (Expo Router, jede Datei = eine Route)
 - `src/components/` – UI-Bausteine
-- `src/data/` – State, Typen und Speicherung
+- `src/data/` – Login, gemeinsamer State mit Live-Updates, Typen, Fragen & Date-Ideen
 - `src/lib/dates.ts` – Datumslogik
 - `src/theme.ts` – Farben & Abstände
 
-## Daten & Sync
+## Server (Supabase)
 
-Aktuell werden alle Daten **nur lokal** auf dem Gerät gespeichert (AsyncStorage, Fotos im App-Dokumentenordner). Echtes Teilen zwischen zwei Handys braucht ein Backend: dafür wird `StateStorage` in `src/data/storage.ts` durch eine Supabase- oder Firebase-Implementierung ersetzt.
+Einrichtung siehe [SUPABASE_SETUP.md](SUPABASE_SETUP.md). Datenbank, Zugriffsregeln (Row Level Security), Foto-Speicher und
+Live-Updates stehen komplett in `supabase/schema.sql`. Zugangsdaten kommen in `.env`.

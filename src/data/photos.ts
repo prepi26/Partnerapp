@@ -1,29 +1,36 @@
-import { Directory, File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
-/**
- * Kopiert ein Foto aus dem Picker-Cache in den dauerhaften App-Speicher,
- * damit es nicht vom System gelöscht wird.
- */
-export async function persistPhoto(sourceUri: string, id: string): Promise<string> {
-  if (Platform.OS === 'web') return sourceUri;
+import { must, supabase } from '@/lib/supabase';
 
-  const dir = new Directory(Paths.document, 'memories');
-  if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
+const BUCKET = 'photos';
+const URL_LIFETIME_S = 60 * 60 * 24 * 7;
 
-  const ext = sourceUri.split('.').pop()?.split('?')[0] || 'jpg';
-  const target = new File(dir, `${id}.${ext}`);
-  if (target.exists) target.delete();
-  await new File(sourceUri).copy(target);
-  return target.uri;
+async function readBytes(uri: string): Promise<ArrayBuffer | Uint8Array> {
+  if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
+  return new File(uri).bytes();
 }
 
-export function deletePhoto(uri: string | undefined) {
-  if (!uri || Platform.OS === 'web') return;
-  try {
-    const file = new File(uri);
-    if (file.exists) file.delete();
-  } catch {
-    // Foto war bereits weg – nichts zu tun.
+/** Lädt ein Foto in den gemeinsamen Speicher des Paares und liefert den Pfad. */
+export async function uploadPhoto(coupleId: string, uri: string, mimeType = 'image/jpeg'): Promise<string> {
+  const ext = mimeType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+  const path = `${coupleId}/${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  must(await supabase.storage.from(BUCKET).upload(path, await readBytes(uri), { contentType: mimeType }));
+  return path;
+}
+
+export async function deletePhoto(path: string | null) {
+  if (!path) return;
+  await supabase.storage.from(BUCKET).remove([path]);
+}
+
+/** Zeitlich begrenzte Links, weil der Foto-Speicher privat ist. */
+export async function signedPhotoUrls(paths: string[]): Promise<Record<string, string>> {
+  if (paths.length === 0) return {};
+  const { data } = await supabase.storage.from(BUCKET).createSignedUrls(paths, URL_LIFETIME_S);
+  const urls: Record<string, string> = {};
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl) urls[item.path] = item.signedUrl;
   }
+  return urls;
 }

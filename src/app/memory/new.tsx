@@ -2,12 +2,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { DateField } from '@/components/DateField';
 import { Field, PrimaryButton } from '@/components/ui';
-import { persistPhoto } from '@/data/photos';
-import { newId, useStore } from '@/data/store';
+import { attempt, NewPhoto, useStore } from '@/data/store';
 import { toISO, today } from '@/lib/dates';
 import { colors, radius, spacing } from '@/theme';
 
@@ -16,7 +15,7 @@ export default function NewMemory() {
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
   const [date, setDate] = useState(toISO(today()));
-  const [photo, setPhoto] = useState<string>();
+  const [photo, setPhoto] = useState<NewPhoto>();
   const [saving, setSaving] = useState(false);
 
   const pickPhoto = async () => {
@@ -26,20 +25,17 @@ export default function NewMemory() {
       aspect: [4, 3],
       quality: 0.8,
     });
-    if (!result.canceled) setPhoto(result.assets[0].uri);
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      setPhoto({ uri: asset.uri, mimeType: asset.mimeType ?? 'image/jpeg' });
+    }
   };
 
   const save = async () => {
     setSaving(true);
-    try {
-      const id = newId();
-      const photoUri = photo ? await persistPhoto(photo, id) : undefined;
-      addMemory({ id, title: title.trim(), text: text.trim(), date, photoUri });
-      router.back();
-    } catch (e) {
-      Alert.alert('Speichern fehlgeschlagen', String(e));
-      setSaving(false);
-    }
+    const ok = await attempt(() => addMemory({ title: title.trim(), text: text.trim(), date, photo }));
+    if (ok) router.back();
+    else setSaving(false);
   };
 
   return (
@@ -47,7 +43,7 @@ export default function NewMemory() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Pressable accessibilityRole="button" onPress={pickPhoto} style={styles.photoBox}>
           {photo ? (
-            <Image source={{ uri: photo }} style={styles.photo} />
+            <Image source={{ uri: photo.uri }} style={styles.photo} />
           ) : (
             <>
               <Ionicons name="image-outline" size={36} color={colors.pink} />
@@ -64,7 +60,12 @@ export default function NewMemory() {
           placeholder="Erzählt euch die Geschichte…"
           multiline
         />
-        <PrimaryButton title="Speichern" icon="heart" disabled={!title.trim() || saving} onPress={save} />
+        <PrimaryButton
+          title={saving ? (photo ? 'Lade Foto hoch…' : 'Speichere…') : 'Speichern'}
+          icon="heart"
+          disabled={!title.trim() || saving}
+          onPress={save}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );

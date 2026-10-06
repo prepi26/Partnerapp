@@ -24,10 +24,8 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Wir', tabBarIcon: icon('heart-outline', 'heart') }} />
-      <Tabs.Screen
-        name="memories"
-        options={{ title: 'Erinnerungen', tabBarIcon: icon('images-outline', 'images') }}
-      />
+      <Tabs.Screen name="memories" options={{ title: 'Momente', tabBarIcon: icon('images-outline', 'images') }} />
+      <Tabs.Screen name="notes" options={{ title: 'Zettel', tabBarIcon: icon('mail-outline', 'mail') }} />
       <Tabs.Screen name="wishes" options={{ title: 'Wünsche', tabBarIcon: icon('sparkles-outline', 'sparkles') }} />
       <Tabs.Screen name="dates" options={{ title: 'Daten', tabBarIcon: icon('calendar-outline', 'calendar') }} />
     </Tabs>

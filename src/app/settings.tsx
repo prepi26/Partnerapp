@@ -2,56 +2,61 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { InviteCard } from '@/components/InviteCard';
 import { DateField } from '@/components/DateField';
 import { Card, confirmDestructive, Field, PrimaryButton, SecondaryButton } from '@/components/ui';
-import { useStore } from '@/data/store';
+import { attempt, useCouple } from '@/data/store';
 import { today } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
 
 export default function Settings() {
-  const { state, setCouple, resetAll } = useStore();
-  const couple = state.couple!;
-  const [partnerA, setPartnerA] = useState(couple.partnerA);
-  const [partnerB, setPartnerB] = useState(couple.partnerB);
-  const [startDate, setStartDate] = useState(couple.startDate);
+  const { couple, partnerJoined, updateCouple, signOut } = useCouple();
+  const [nameA, setNameA] = useState(couple.name_a);
+  const [nameB, setNameB] = useState(couple.name_b);
+  const [startDate, setStartDate] = useState(couple.start_date);
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
-    setCouple({ partnerA: partnerA.trim(), partnerB: partnerB.trim(), startDate });
-    router.back();
+  const save = async () => {
+    setSaving(true);
+    const ok = await attempt(() => updateCouple({ name_a: nameA.trim(), name_b: nameB.trim(), start_date: startDate }));
+    if (ok) router.back();
+    else setSaving(false);
   };
 
-  const reset = () =>
+  const logout = () =>
     confirmDestructive(
-      'Alles löschen?',
-      'Alle Erinnerungen, Wünsche und Daten werden von diesem Gerät entfernt.',
-      'Alles löschen',
+      'Abmelden?',
+      'Eure Daten bleiben gespeichert. Du kannst dich jederzeit wieder anmelden.',
+      'Abmelden',
       () => {
         router.dismissAll();
-        resetAll();
+        signOut();
       },
     );
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {!partnerJoined ? <InviteCard code={couple.invite_code} partnerName={couple.name_b} /> : null}
         <Card style={styles.card}>
-          <Field label="Name 1" value={partnerA} onChangeText={setPartnerA} />
-          <Field label="Name 2" value={partnerB} onChangeText={setPartnerB} />
+          <Field label="Name 1" value={nameA} onChangeText={setNameA} />
+          <Field label="Name 2" value={nameB} onChangeText={setNameB} />
           <DateField label="Zusammen seit" value={startDate} onChange={setStartDate} maximumDate={today()} />
         </Card>
         <PrimaryButton
-          title="Speichern"
+          title={saving ? 'Speichere…' : 'Speichern'}
           icon="checkmark"
-          disabled={!partnerA.trim() || !partnerB.trim()}
+          disabled={saving || !nameA.trim() || !nameB.trim()}
           onPress={save}
         />
 
-        <View style={styles.danger}>
+        <View style={styles.footer}>
           <Text style={styles.note}>
-            Eure Daten liegen aktuell nur auf diesem Gerät. Synchronisation zwischen zwei Handys kommt in einer
-            späteren Version.
+            {partnerJoined
+              ? 'Ihr seid verbunden – alles, was ihr eintragt, seht ihr beide.'
+              : 'Sobald dein Schatz den Code eingibt, seht ihr beide dieselben Daten.'}
           </Text>
-          <SecondaryButton title="Alle Daten löschen" icon="trash-outline" danger onPress={reset} />
+          <SecondaryButton title="Abmelden" icon="log-out-outline" danger onPress={logout} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -61,6 +66,6 @@ export default function Settings() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: 60 },
   card: { gap: spacing.md },
-  danger: { marginTop: spacing.xl, gap: spacing.md },
+  footer: { marginTop: spacing.xl, gap: spacing.md },
   note: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });

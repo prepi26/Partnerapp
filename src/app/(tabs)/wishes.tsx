@@ -5,34 +5,35 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Chip, confirmDestructive, EmptyState, Fab, GradientHeader, tap } from '@/components/ui';
 import { authorName, categoryEmoji } from '@/data/labels';
-import { useStore } from '@/data/store';
+import { attempt, useCouple } from '@/data/store';
 import { Wish } from '@/data/types';
 import { colors, radius, shadow, spacing } from '@/theme';
 
 export default function Wishes() {
-  const { state, toggleWish, removeWish } = useStore();
+  const { couple, wishes, toggleWish, removeWish } = useCouple();
   const [filter, setFilter] = useState<'open' | 'done'>('open');
-  const couple = state.couple!;
 
-  const doneCount = state.wishes.filter((w) => w.done).length;
-  const visible = state.wishes
+  const doneCount = wishes.filter((w) => w.done).length;
+  const visible = wishes
     .filter((w) => (filter === 'open' ? !w.done : w.done))
-    .sort((a, b) => (filter === 'open' ? b.createdAt - a.createdAt : (b.doneAt ?? 0) - (a.doneAt ?? 0)));
+    .sort((a, b) =>
+      filter === 'open' ? b.created_at.localeCompare(a.created_at) : (b.done_at ?? '').localeCompare(a.done_at ?? ''),
+    );
 
   const remove = (wish: Wish) =>
-    confirmDestructive('Wunsch löschen?', `„${wish.title}“ wird entfernt.`, 'Löschen', () => removeWish(wish.id));
+    confirmDestructive('Wunsch löschen?', `„${wish.title}“ wird entfernt.`, 'Löschen', () =>
+      attempt(() => removeWish(wish.id)),
+    );
 
   return (
     <View style={{ flex: 1 }}>
       <GradientHeader
         title="Wünsche"
-        subtitle={
-          state.wishes.length ? `${doneCount} von ${state.wishes.length} erfüllt` : 'Eure gemeinsame Bucket List'
-        }
+        subtitle={wishes.length ? `${doneCount} von ${wishes.length} erfüllt` : 'Eure gemeinsame Bucket List'}
       />
-      {state.wishes.length > 0 ? (
+      {wishes.length > 0 ? (
         <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: `${(doneCount / state.wishes.length) * 100}%` }]} />
+          <View style={[styles.progressFill, { width: `${(doneCount / wishes.length) * 100}%` }]} />
         </View>
       ) : null}
       <View style={styles.filters}>
@@ -47,7 +48,7 @@ export default function Wishes() {
           <Pressable
             onPress={() => {
               tap();
-              toggleWish(item.id);
+              attempt(() => toggleWish(item));
             }}
             onLongPress={() => remove(item)}
             style={({ pressed }) => [styles.item, pressed && { opacity: 0.8 }]}
@@ -72,7 +73,11 @@ export default function Wishes() {
               text="Was wolltet ihr schon immer mal zusammen machen? Schreibt es auf!"
             />
           ) : (
-            <EmptyState icon="checkmark-done-outline" title="Noch nichts erfüllt" text="Tippt einen Wunsch an, um ihn abzuhaken." />
+            <EmptyState
+              icon="checkmark-done-outline"
+              title="Noch nichts erfüllt"
+              text="Tippt einen Wunsch an, um ihn abzuhaken."
+            />
           )
         }
         ListFooterComponent={

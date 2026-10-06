@@ -4,30 +4,45 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { authorName, wishCategories } from '@/data/labels';
-import { useStore } from '@/data/store';
+import { attempt, useCouple } from '@/data/store';
 import { PartnerKey, WishCategory } from '@/data/types';
 import { spacing } from '@/theme';
 
 const authors: (PartnerKey | 'both')[] = ['both', 'a', 'b'];
 
 export default function NewWish() {
-  const { state, addWish } = useStore();
-  const couple = state.couple!;
+  const { couple, addWish } = useCouple();
   const [title, setTitle] = useState('');
   const [note, setNote] = useState('');
   const [category, setCategory] = useState<WishCategory>('erlebnis');
   const [author, setAuthor] = useState<PartnerKey | 'both'>('both');
 
-  const save = () => {
-    addWish({ title: title.trim(), note: note.trim(), category, author });
-    router.back();
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    setSaving(true);
+    const ok = await attempt(() => addWish({ title: title.trim(), note: note.trim(), category, author }));
+    if (ok) router.back();
+    else setSaving(false);
   };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Field label="Wunsch" value={title} onChangeText={setTitle} placeholder="z. B. Roadtrip durch Florida" autoFocus />
-        <Field label="Notiz (optional)" value={note} onChangeText={setNote} placeholder="Details, Ideen, Links…" multiline />
+        <Field
+          label="Wunsch"
+          value={title}
+          onChangeText={setTitle}
+          placeholder="z. B. Roadtrip durch Florida"
+          autoFocus
+        />
+        <Field
+          label="Notiz (optional)"
+          value={note}
+          onChangeText={setNote}
+          placeholder="Details, Ideen, Links…"
+          multiline
+        />
         <View style={styles.group}>
           <Label>Kategorie</Label>
           <View style={styles.chips}>
@@ -55,7 +70,7 @@ export default function NewWish() {
             ))}
           </View>
         </View>
-        <PrimaryButton title="Wunsch speichern" icon="sparkles" disabled={!title.trim()} onPress={save} />
+        <PrimaryButton title="Wunsch speichern" icon="sparkles" disabled={!title.trim() || saving} onPress={save} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

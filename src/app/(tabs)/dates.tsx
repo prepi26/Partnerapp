@@ -1,8 +1,10 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { confirmDestructive, Fab, GradientHeader } from '@/components/ui';
-import { useStore } from '@/data/store';
+import { DateIdeas } from '@/components/DateIdeas';
+import { Chip, confirmDestructive, Fab, GradientHeader } from '@/components/ui';
+import { attempt, useCouple } from '@/data/store';
 import { countdownLabel, daysBetween, formatDate, nextYearly, parseISO, today } from '@/lib/dates';
 import { colors, radius, shadow, spacing } from '@/theme';
 
@@ -17,11 +19,25 @@ interface Row {
 }
 
 export default function Dates() {
-  const { state, removeDate } = useStore();
-  const couple = state.couple!;
+  const [tab, setTab] = useState<'dates' | 'ideas'>('dates');
+
+  return (
+    <View style={{ flex: 1 }}>
+      <GradientHeader title="Daten & Dates" subtitle="Termine, Jahrestage und Ideen für euch zwei" />
+      <View style={styles.switch}>
+        <Chip label="📅 Termine" selected={tab === 'dates'} onPress={() => setTab('dates')} />
+        <Chip label="💡 Date-Ideen" tint="blue" selected={tab === 'ideas'} onPress={() => setTab('ideas')} />
+      </View>
+      {tab === 'dates' ? <DateList /> : <DateIdeas />}
+    </View>
+  );
+}
+
+function DateList() {
+  const { couple, special_dates, removeDate } = useCouple();
   const now = today();
 
-  const anniversary = nextYearly(couple.startDate, now);
+  const anniversary = nextYearly(couple.start_date, now);
   const rows: Row[] = [
     {
       id: 'anniversary',
@@ -32,7 +48,7 @@ export default function Dates() {
       detail: anniversary.years > 0 ? `${anniversary.years}. Jahrestag` : 'Euer erster Tag',
       removable: false,
     },
-    ...state.dates.map((d): Row => {
+    ...special_dates.map((d): Row => {
       if (d.yearly) {
         const next = nextYearly(d.date, now);
         return {
@@ -63,12 +79,13 @@ export default function Dates() {
 
   const remove = (row: Row) => {
     if (!row.removable) return;
-    confirmDestructive('Datum löschen?', `„${row.title}“ wird entfernt.`, 'Löschen', () => removeDate(row.id));
+    confirmDestructive('Datum löschen?', `„${row.title}“ wird für euch beide entfernt.`, 'Löschen', () =>
+      attempt(() => removeDate(row.id)),
+    );
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <GradientHeader title="Wichtige Daten" subtitle="Nie wieder einen Jahrestag vergessen" />
+    <>
       <FlatList
         data={[...upcoming, ...past]}
         keyExtractor={(r) => r.id}
@@ -105,11 +122,12 @@ export default function Dates() {
         ListFooterComponent={<Text style={styles.hint}>Gedrückt halten zum Löschen</Text>}
       />
       <Fab label="Datum hinzufügen" onPress={() => router.push('/date-new')} />
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
+  switch: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   list: { padding: spacing.lg, paddingBottom: 120, gap: spacing.sm },
   section: {
     fontSize: 14,

@@ -12,9 +12,11 @@ export function categoryEmoji(key: WishCategory) {
 }
 
 export function authorName(couple: Couple, author: PartnerKey | 'both') {
-  if (author === 'a') return couple.partnerA;
-  if (author === 'b') return couple.partnerB;
+  if (author === 'a') return couple.name_a;
+  if (author === 'b') return couple.name_b;
   return 'Gemeinsam';
 }
+
+export const moodEmojis = ['😍', '🥰', '😊', '😌', '🥱', '😔', '😤', '🤒'];
 
 export const dateEmojis = ['💖', '🎂', '💍', '🌹', '🥂', '✈️', '🏡', '🐶', '⭐️', '🎉'];

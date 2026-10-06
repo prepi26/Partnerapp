@@ -36,15 +36,13 @@ export function confirmDestructive(title: string, message: string, action: strin
   ]);
 }
 
-export function GradientHeader({
-  title,
-  subtitle,
-  right,
-}: {
-  title: string;
-  subtitle?: string;
-  right?: ReactNode;
-}) {
+/** Fehler verständlich anzeigen. */
+export function showError(title: string, message: string) {
+  if (Platform.OS === 'web') window.alert(`${title}\n${message}`);
+  else Alert.alert(title, message);
+}
+
+export function GradientHeader({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <LinearGradient

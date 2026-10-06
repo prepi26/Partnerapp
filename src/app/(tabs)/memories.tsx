@@ -8,9 +8,9 @@ import { formatShort, monthYear } from '@/lib/dates';
 import { colors, radius, shadow, spacing } from '@/theme';
 
 export default function Memories() {
-  const { state } = useStore();
+  const { memories, photoUrls } = useStore();
 
-  const sorted = [...state.memories].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+  const sorted = [...memories].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
   const sections: { title: string; data: Memory[] }[] = [];
   for (const m of sorted) {
     const title = monthYear(m.date);
@@ -23,7 +23,7 @@ export default function Memories() {
     <View style={{ flex: 1 }}>
       <GradientHeader
         title="Erinnerungen"
-        subtitle={`${state.memories.length} ${state.memories.length === 1 ? 'Moment' : 'Momente'} für die Ewigkeit`}
+        subtitle={`${memories.length} ${memories.length === 1 ? 'Moment' : 'Momente'} für die Ewigkeit`}
       />
       <SectionList
         sections={sections}
@@ -31,7 +31,9 @@ export default function Memories() {
         contentContainerStyle={styles.list}
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => <Text style={styles.month}>{section.title}</Text>}
-        renderItem={({ item }) => <MemoryCard memory={item} />}
+        renderItem={({ item }) => (
+          <MemoryCard memory={item} photoUrl={item.photo_path ? photoUrls[item.photo_path] : undefined} />
+        )}
         ListEmptyComponent={
           <EmptyState
             icon="camera-outline"
@@ -45,14 +47,14 @@ export default function Memories() {
   );
 }
 
-function MemoryCard({ memory }: { memory: Memory }) {
+function MemoryCard({ memory, photoUrl }: { memory: Memory; photoUrl?: string }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push(`/memory/${memory.id}`)}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.8 }]}
     >
-      {memory.photoUri ? <Image source={{ uri: memory.photoUri }} style={styles.photo} /> : null}
+      {memory.photo_path ? <Image source={photoUrl ? { uri: photoUrl } : undefined} style={styles.photo} /> : null}
       <View style={styles.cardBody}>
         <View style={styles.dot} />
         <View style={{ flex: 1 }}>
