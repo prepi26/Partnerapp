@@ -289,6 +289,17 @@ as $$
   select coalesce((select plus_until > now() from public.couples where id = p_couple), false)
 $$;
 
+-- App-weite Schalter (eine Zeile). Erst auf true setzen, wenn das Abo im Store wirklich kaufbar ist:
+--   update public.app_settings set plus_enabled = true;
+create table if not exists public.app_settings (
+  id boolean primary key default true check (id),
+  plus_enabled boolean not null default false
+);
+insert into public.app_settings (id) values (true) on conflict (id) do nothing;
+alter table public.app_settings enable row level security;
+drop policy if exists app_settings_read on public.app_settings;
+create policy app_settings_read on public.app_settings for select using (true);
+
 -- Ohne Plus: höchstens 10 Momente pro Paar.
 create or replace function public.check_memory_limit()
 returns trigger
@@ -297,7 +308,9 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.couple_has_plus(new.couple_id)
+  -- Das Limit gilt erst, wenn Plus im Store kaufbar ist (app_settings.plus_enabled).
+  if coalesce((select plus_enabled from public.app_settings where id), false)
+     and not public.couple_has_plus(new.couple_id)
      and (select count(*) from public.memories where couple_id = new.couple_id) >= 10 then
     raise exception 'plus_required';
   end if;

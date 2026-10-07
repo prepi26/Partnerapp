@@ -42,6 +42,8 @@ App kauft über RevenueCat → ruft die Edge Function `plus-sync` auf → die pr
 6. **Webhook**: RevenueCat → *Integrations* → *Webhooks* → URL
    `https://<projekt-ref>.supabase.co/functions/v1/revenuecat-webhook`, Authorization-Header
    `Bearer <REVENUECAT_WEBHOOK_SECRET>`.
-7. **Neuer Build nötig**: Käufe brauchen nativen Code, ein `eas update` reicht nicht.
+7. **Limit einschalten**: im SQL Editor `update public.app_settings set plus_enabled = true;` ausführen. Vorher gilt
+   kein 10-Momente-Limit (Version 1 ohne Abo).
+8. **Neuer Build nötig**: Käufe brauchen nativen Code, ein `eas update` reicht nicht.
    `npx eas-cli@latest build --profile production`, danach `eas submit`. In Expo Go läuft RevenueCat nur im
    Vorschaumodus (keine echten Käufe).

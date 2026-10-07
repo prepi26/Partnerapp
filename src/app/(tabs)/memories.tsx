@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Image, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyState, Fab, GradientHeader } from '@/components/ui';
-import { FREE_MEMORY_LIMIT, usePlus } from '@/data/plus';
+import { FREE_MEMORY_LIMIT, purchasesAvailable, usePlus } from '@/data/plus';
 import { useStore } from '@/data/store';
 import { Memory } from '@/data/types';
 import { formatShort, monthYear } from '@/lib/dates';
@@ -11,7 +11,8 @@ import { colors, radius, shadow, spacing } from '@/theme';
 export default function Memories() {
   const { memories, photoUrls } = useStore();
   const { active: plus } = usePlus();
-  const atLimit = !plus && memories.length >= FREE_MEMORY_LIMIT;
+  // Ohne kaufbares Abo (Version 1) gibt es kein Limit – sonst stünde man vor einer Sperre ohne Ausweg.
+  const atLimit = purchasesAvailable && !plus && memories.length >= FREE_MEMORY_LIMIT;
 
   const sorted = [...memories].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
   const sections: { title: string; data: Memory[] }[] = [];

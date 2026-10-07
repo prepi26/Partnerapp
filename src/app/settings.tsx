@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { InviteCard } from '@/components/InviteCard';
 import { DateField } from '@/components/DateField';
 import { Card, confirmDestructive, Field, PrimaryButton, SecondaryButton } from '@/components/ui';
-import { usePlus } from '@/data/plus';
+import { purchasesAvailable, usePlus } from '@/data/plus';
 import { attempt, useCouple } from '@/data/store';
 import { today } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
@@ -49,11 +49,13 @@ export default function Settings() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <SecondaryButton
-          title={plus ? 'Wir zwei Plus ist aktiv 💖' : 'Wir zwei Plus entdecken ✨'}
-          icon="sparkles"
-          onPress={() => router.push('/plus')}
-        />
+        {purchasesAvailable || plus ? (
+          <SecondaryButton
+            title={plus ? 'Wir zwei Plus ist aktiv 💖' : 'Wir zwei Plus entdecken ✨'}
+            icon="sparkles"
+            onPress={() => router.push('/plus')}
+          />
+        ) : null}
         {!partnerJoined ? <InviteCard code={couple.invite_code} partnerName={couple.name_b} /> : null}
         <Card style={styles.card}>
           <Field label="Name 1" value={nameA} onChangeText={setNameA} />

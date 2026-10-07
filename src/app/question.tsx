@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Field, PrimaryButton } from '@/components/ui';
-import { usePlus } from '@/data/plus';
+import { purchasesAvailable, usePlus } from '@/data/plus';
 import { PACKS, questionForDay } from '@/data/questions';
 import { attempt, useCouple } from '@/data/store';
 import { formatDate, toISO, today } from '@/lib/dates';
@@ -86,26 +86,31 @@ export default function Question() {
           </Card>
         )}
 
-        <Text style={styles.section}>{plus ? 'Themen-Fragen' : 'Themen-Fragen · Plus'}</Text>
-        {PACKS.map((p) => {
-          const done = pack_answers.some((a) => a.pack === p.id && a.day === day && a.user_id === userId);
-          return (
-            <Pressable
-              key={p.id}
-              accessibilityRole="button"
-              onPress={() => router.push(plus ? `/pack/${p.id}` : '/plus')}
-              style={({ pressed }) => [styles.pack, pressed && { opacity: 0.7 }]}
-            >
-              <Text style={styles.packEmoji}>{p.emoji}</Text>
-              <Text style={styles.packTitle}>{p.title}</Text>
-              <Ionicons
-                name={!plus ? 'lock-closed' : done ? 'checkmark-circle' : 'chevron-forward'}
-                size={20}
-                color={done ? colors.pink : colors.textMuted}
-              />
-            </Pressable>
-          );
-        })}
+        {/* Themen-Fragen nur zeigen, wenn Plus gekauft werden kann oder schon aktiv ist. */}
+        {purchasesAvailable || plus ? (
+          <>
+            <Text style={styles.section}>{plus ? 'Themen-Fragen' : 'Themen-Fragen · Plus'}</Text>
+            {PACKS.map((p) => {
+              const done = pack_answers.some((a) => a.pack === p.id && a.day === day && a.user_id === userId);
+              return (
+                <Pressable
+                  key={p.id}
+                  accessibilityRole="button"
+                  onPress={() => router.push(plus ? `/pack/${p.id}` : '/plus')}
+                  style={({ pressed }) => [styles.pack, pressed && { opacity: 0.7 }]}
+                >
+                  <Text style={styles.packEmoji}>{p.emoji}</Text>
+                  <Text style={styles.packTitle}>{p.title}</Text>
+                  <Ionicons
+                    name={!plus ? 'lock-closed' : done ? 'checkmark-circle' : 'chevron-forward'}
+                    size={20}
+                    color={done ? colors.pink : colors.textMuted}
+                  />
+                </Pressable>
+              );
+            })}
+          </>
+        ) : null}
 
         {history.length ? <Text style={styles.section}>Eure bisherigen Antworten</Text> : null}
         {history.map((h) => (
