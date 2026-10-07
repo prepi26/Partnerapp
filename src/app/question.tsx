@@ -6,6 +6,7 @@ import { Card, Field, PrimaryButton } from '@/components/ui';
 import { questionForDay } from '@/data/questions';
 import { attempt, useCouple } from '@/data/store';
 import { formatDate, toISO, today } from '@/lib/dates';
+import { answerStreak } from '@/lib/streak';
 import { colors, gradient, radius, spacing } from '@/theme';
 
 export default function Question() {
@@ -16,6 +17,7 @@ export default function Question() {
   const day = toISO(today());
   const mine = answers.find((a) => a.user_id === userId && a.day === day);
   const theirs = answers.find((a) => a.user_id !== userId && a.day === day);
+  const streak = answerStreak(answers, userId, day);
 
   // Frühere Tage, an denen beide geantwortet haben.
   const history = [...new Set(answers.map((a) => a.day))]
@@ -38,7 +40,10 @@ export default function Question() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.questionBox}>
-          <Text style={styles.kicker}>Heute · {formatDate(day)}</Text>
+          <Text style={styles.kicker}>
+            Heute · {formatDate(day)}
+            {streak >= 2 ? `  ·  🔥 ${streak} Tage in Folge` : ''}
+          </Text>
           <Text style={styles.question}>{questionForDay(day)}</Text>
         </LinearGradient>
 

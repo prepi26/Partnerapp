@@ -10,7 +10,7 @@ import { today } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
 
 export default function Settings() {
-  const { couple, partnerJoined, updateCouple, signOut } = useCouple();
+  const { couple, partnerJoined, partnerName, updateCouple, signOut, deleteAccount } = useCouple();
   const [nameA, setNameA] = useState(couple.name_a);
   const [nameB, setNameB] = useState(couple.name_b);
   const [startDate, setStartDate] = useState(couple.start_date);
@@ -31,6 +31,16 @@ export default function Settings() {
       () => {
         router.dismissAll();
         signOut();
+      },
+    );
+
+  const removeAccount = () =>
+    confirmDestructive(
+      'Konto endgültig löschen?',
+      `Dein Konto und alle gemeinsamen Daten – Erinnerungen, Fotos, Zettel, Wünsche – werden gelöscht, auch für ${partnerName}. Das kann nicht rückgängig gemacht werden.`,
+      'Endgültig löschen',
+      () => {
+        attempt(deleteAccount).then((ok) => ok && router.dismissAll());
       },
     );
 
@@ -56,7 +66,8 @@ export default function Settings() {
               ? 'Ihr seid verbunden – alles, was ihr eintragt, seht ihr beide.'
               : 'Sobald dein Schatz den Code eingibt, seht ihr beide dieselben Daten.'}
           </Text>
-          <SecondaryButton title="Abmelden" icon="log-out-outline" danger onPress={logout} />
+          <SecondaryButton title="Abmelden" icon="log-out-outline" onPress={logout} />
+          <SecondaryButton title="Konto löschen" icon="trash-outline" danger onPress={removeAccount} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

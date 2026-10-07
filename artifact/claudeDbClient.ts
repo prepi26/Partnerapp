@@ -99,6 +99,7 @@ const DEFAULTS: Record<string, (me: string) => Row> = {
   moods: (me) => ({ user_id: me }),
   answers: (me) => ({ user_id: me }),
   date_ideas: () => ({ emoji: '💡', done: false }),
+  thoughts: (me) => ({ from_id: me }),
 };
 
 const docId = (table: string, row: Row) =>
@@ -271,6 +272,7 @@ async function compressToDataUrl(bytes: ArrayBuffer | Uint8Array, type: string):
 }
 
 const storageBucket = {
+  list: async () => ok([]),
   upload: async (_path: string, bytes: ArrayBuffer | Uint8Array, opts?: { contentType?: string }): Promise<Result> => {
     try {
       const { backend } = await ready;
@@ -307,6 +309,9 @@ export const supabase: any = {
         partner_b: null,
       });
       return ok('');
+    }
+    if (name === 'delete_my_account') {
+      return fail('Im Artefakt gibt es kein eigenes Konto – das Artefakt löscht der Eigentümer in Claude.');
     }
     return fail('Im Artefakt verbindet ihr euch über das Teilen-Menü, nicht per Code.');
   },

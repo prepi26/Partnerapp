@@ -74,3 +74,9 @@ export interface DateIdea {
   done: boolean;
   created_at: string;
 }
+
+export interface Thought {
+  id: string;
+  from_id: string;
+  created_at: string;
+}

@@ -231,6 +231,48 @@ drop policy if exists answers_insert on public.answers;
 create policy answers_insert on public.answers for insert
   with check (couple_id = public.my_couple_id() and user_id = auth.uid());
 
+-- „Ich denk an dich“: ein Tipp erzeugt eine Zeile, der Partner sieht sie live.
+create table if not exists public.thoughts (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null default public.my_couple_id() references public.couples (id) on delete cascade,
+  from_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+create index if not exists thoughts_couple_created on public.thoughts (couple_id, created_at desc);
+
+alter table public.thoughts enable row level security;
+drop policy if exists thoughts_select on public.thoughts;
+create policy thoughts_select on public.thoughts for select using (couple_id = public.my_couple_id());
+drop policy if exists thoughts_insert on public.thoughts;
+create policy thoughts_insert on public.thoughts for insert
+  with check (couple_id = public.my_couple_id() and from_id = auth.uid());
+
+-- ───────────── Konto löschen (Pflicht für den App Store) ─────────────
+
+-- Löscht das eigene Konto und alle gemeinsamen Daten des Paares (auch für den Partner).
+-- Fotos löscht die App vorher über die Storage-API, weil Supabase direkte Löschungen dort sperrt.
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_couple uuid := public.my_couple_id();
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  if v_couple is not null then
+    delete from public.couples where id = v_couple;
+  end if;
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke execute on function public.delete_my_account() from public, anon;
+grant execute on function public.delete_my_account() to authenticated;
+
 -- ───────────── Fotos ─────────────
 
 insert into storage.buckets (id, name, public)
@@ -248,7 +290,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'date_ideas'] loop
+  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'date_ideas', 'thoughts'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

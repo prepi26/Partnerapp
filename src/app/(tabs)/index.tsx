@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InviteCard } from '@/components/InviteCard';
 import { MoodCard } from '@/components/MoodCard';
+import { ThinkingCard } from '@/components/Thoughts';
 import { Card, HeaderIcon } from '@/components/ui';
 import { questionForDay } from '@/data/questions';
 import { useCouple } from '@/data/store';
@@ -23,6 +24,7 @@ import {
   today,
   upcomingMilestones,
 } from '@/lib/dates';
+import { answerStreak } from '@/lib/streak';
 import { colors, gradient, radius, spacing } from '@/theme';
 
 function useNow() {
@@ -57,6 +59,7 @@ export default function Home() {
   const lastNote = notes[notes.length - 1];
   const day = toISO(todayDate);
   const answeredToday = answers.some((a) => a.user_id === userId && a.day === day);
+  const streak = answerStreak(answers, userId, day);
   const partnerAnsweredToday = answers.some((a) => a.user_id !== userId && a.day === day);
 
   return (
@@ -98,6 +101,7 @@ export default function Home() {
 
         <Text style={styles.section}>Heute</Text>
         <MoodCard />
+        <ThinkingCard />
         <Pressable accessibilityRole="button" onPress={() => router.push('/question')}>
           {({ pressed }) => (
             <LinearGradient
@@ -106,7 +110,9 @@ export default function Home() {
               end={{ x: 1, y: 1 }}
               style={[styles.questionCard, pressed && { opacity: 0.85 }]}
             >
-              <Text style={styles.questionKicker}>Frage des Tages</Text>
+              <Text style={styles.questionKicker}>
+                Frage des Tages{streak >= 2 ? `  ·  🔥 ${streak} Tage in Folge` : ''}
+              </Text>
               <Text style={styles.questionText}>{questionForDay(day)}</Text>
               <Text style={styles.questionStatus}>
                 {/* Die Antwort des Partners ist vor der eigenen Antwort serverseitig unsichtbar. */}

@@ -17,7 +17,8 @@ for (const entry of fs.readdirSync(root)) {
 fs.symlinkSync(path.join(root, 'node_modules'), path.join(work, 'node_modules'));
 fs.copyFileSync(path.join(root, 'artifact/claudeDbClient.ts'), path.join(work, 'src/lib/supabase.ts'));
 
-execSync('npx expo export --platform web --output-dir dist', {
+// --clear: Metro cacht die Routenliste pfadabhängig; ohne frischen Cache fehlen sonst die Screens.
+execSync('npx expo export --platform web --output-dir dist --clear', {
   cwd: work,
   stdio: 'inherit',
   // Platzhalter: im Artefakt wird kein Supabase-Server benutzt.

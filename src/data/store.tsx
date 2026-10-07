@@ -16,6 +16,7 @@ import {
   Note,
   PartnerKey,
   SpecialDate,
+  Thought,
   Wish,
   WishCategory,
 } from './types';
@@ -28,10 +29,11 @@ interface Data {
   moods: Mood[];
   answers: Answer[];
   date_ideas: DateIdea[];
+  thoughts: Thought[];
 }
 
 type Table = keyof Data;
-const TABLES: Table[] = ['memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'date_ideas'];
+const TABLES: Table[] = ['memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'date_ideas', 'thoughts'];
 
 const emptyData: Data = {
   memories: [],
@@ -41,11 +43,17 @@ const emptyData: Data = {
   moods: [],
   answers: [],
   date_ideas: [],
+  thoughts: [],
 };
 
 async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   let query = supabase.from(table).select('*');
   if (table === 'notes') query = query.order('created_at', { ascending: true }).limit(500);
+  if (table === 'thoughts') {
+    const since = new Date();
+    since.setDate(since.getDate() - 2);
+    query = query.gte('created_at', since.toISOString()).order('created_at', { ascending: true });
+  }
   if (table === 'moods') {
     const since = new Date();
     since.setDate(since.getDate() - 30);
@@ -120,7 +128,9 @@ interface Store extends Data {
   addIdea(idea: { title: string; emoji: string }): Promise<void>;
   toggleIdea(idea: DateIdea): Promise<void>;
   removeIdea(id: string): Promise<void>;
+  sendThought(): Promise<void>;
   signOut(): Promise<void>;
+  deleteAccount(): Promise<void>;
 }
 
 const StoreContext = createContext<Store | null>(null);
@@ -281,6 +291,17 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       toggleIdea: async (idea) =>
         after('date_ideas', await supabase.from('date_ideas').update({ done: !idea.done }).eq('id', idea.id)),
       removeIdea: async (id) => after('date_ideas', await supabase.from('date_ideas').delete().eq('id', id)),
+      sendThought: async () => after('thoughts', await supabase.from('thoughts').insert({})),
+      deleteAccount: async () => {
+        if (couple) {
+          // Fotos zuerst über die Storage-API, danach Konto und gemeinsame Daten per Datenbank-Funktion.
+          const files = must(await supabase.storage.from('photos').list(couple.id, { limit: 1000 })) ?? [];
+          const paths = files.map((f: { name: string }) => `${couple.id}/${f.name}`);
+          if (paths.length) must(await supabase.storage.from('photos').remove(paths));
+        }
+        must(await supabase.rpc('delete_my_account'));
+        await supabase.auth.signOut();
+      },
       signOut: async () => {
         await supabase.auth.signOut();
       },
