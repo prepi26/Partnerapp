@@ -17,9 +17,9 @@
 3. `npx eas-cli@latest submit --platform ios` / `--platform android` – lädt sie zu App Store Connect / Play Console hoch.
 4. In App Store Connect und Play Console: Beschreibung, Screenshots, Datenschutz-URL, Altersfreigabe, Fragebogen
    „App-Datenschutz“ bzw. „Datensicherheit“ ausfüllen (Daten: E-Mail, Fotos, Nutzerinhalte; kein Tracking).
-5. **Test-Login für die Prüfer:** Apple und Google müssen die App ausprobieren können. Weil der Login per E-Mail-Code
-   läuft, braucht es ein Prüf-Konto, z. B. ein in Supabase angelegter Test-Nutzer mit festem Code (Authentication →
-   Users), und dessen Zugangsdaten in den Prüf-Notizen.
+5. **Test-Login für die Prüfer:** In Supabase unter *Authentication → Users → Add user* ein Prüf-Konto mit E-Mail und
+   Passwort anlegen (*Auto Confirm User* an) und die Zugangsdaten in App Store Connect unter *App Review Information*
+   eintragen. Am besten vorher mit diesem Konto ein Paar anlegen, damit die Prüfer gleich Inhalte sehen.
 6. Zur Prüfung einreichen. Apple braucht meist 1–3 Tage, Google einige Stunden bis Tage.
 
 ## Zum Testen vorher

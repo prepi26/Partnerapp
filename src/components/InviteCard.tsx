@@ -8,15 +8,15 @@ import { Card, PrimaryButton } from './ui';
 export function InviteCard({ code, partnerName }: { code: string; partnerName: string }) {
   const share = () =>
     Share.share({
-      message: `Lade dir „Wir zwei“ in Expo Go, melde dich an, wähle „Ich habe einen Code“ und gib ein: ${code} 💖`,
+      message: `Lass uns „Wir zwei“ zusammen nutzen 💖 Lade dir die App, erstelle ein Konto, tippe auf „Ich habe einen Code“ und gib ein: ${code}`,
     }).catch(() => {});
 
   return (
     <Card style={styles.card}>
       <Text style={styles.title}>Lade {partnerName || 'deinen Schatz'} ein</Text>
       <Text style={styles.text}>
-        {partnerName || 'Dein Schatz'} meldet sich in der App mit der eigenen E-Mail an, tippt auf „Ich habe einen Code“
-        und gibt diesen Code ein:
+        {partnerName || 'Dein Schatz'} erstellt in der App ein eigenes Konto, tippt auf „Ich habe einen Code“ und gibt
+        diesen Code ein:
       </Text>
       <Text selectable style={styles.code}>
         {code}
