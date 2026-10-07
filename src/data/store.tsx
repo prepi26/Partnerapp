@@ -14,7 +14,9 @@ import {
   Memory,
   Mood,
   Note,
+  PackAnswer,
   PartnerKey,
+  QuestionPack,
   SpecialDate,
   Thought,
   Wish,
@@ -28,12 +30,23 @@ interface Data {
   notes: Note[];
   moods: Mood[];
   answers: Answer[];
+  pack_answers: PackAnswer[];
   date_ideas: DateIdea[];
   thoughts: Thought[];
 }
 
 type Table = keyof Data;
-const TABLES: Table[] = ['memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'date_ideas', 'thoughts'];
+const TABLES: Table[] = [
+  'memories',
+  'wishes',
+  'special_dates',
+  'notes',
+  'moods',
+  'answers',
+  'pack_answers',
+  'date_ideas',
+  'thoughts',
+];
 
 const emptyData: Data = {
   memories: [],
@@ -42,6 +55,7 @@ const emptyData: Data = {
   notes: [],
   moods: [],
   answers: [],
+  pack_answers: [],
   date_ideas: [],
   thoughts: [],
 };
@@ -59,7 +73,10 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
     since.setDate(since.getDate() - 30);
     query = query.gte('day', toISO(since));
   }
-  return must(await query) as Data[T];
+  const result = await query;
+  // Ältere Datenbanken ohne Plus-Tabelle: Themen-Fragen fehlen nur, statt dass die ganze App nicht lädt.
+  if (table === 'pack_answers' && result.error) return [] as Data[T];
+  return must(result) as Data[T];
 }
 
 async function fetchCouple(): Promise<Couple | null> {
@@ -71,6 +88,7 @@ const ERRORS: Record<string, string> = {
   invalid_code: 'Dieser Code passt nicht oder wurde schon benutzt.',
   already_in_couple: 'Du bist schon mit jemandem verbunden.',
   not_authenticated: 'Bitte melde dich erneut an.',
+  plus_required: 'Dafür braucht ihr Wir zwei Plus.',
 };
 
 /** Übersetzt Server-Fehler in verständliche Sätze. */
@@ -125,6 +143,7 @@ interface Store extends Data {
   removeNote(id: string): Promise<void>;
   setMood(emoji: string): Promise<void>;
   answer(day: ISODate, text: string): Promise<void>;
+  answerPack(pack: QuestionPack, day: ISODate, text: string): Promise<void>;
   addIdea(idea: { title: string; emoji: string }): Promise<void>;
   toggleIdea(idea: DateIdea): Promise<void>;
   removeIdea(id: string): Promise<void>;
@@ -287,6 +306,8 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
             .upsert({ day: toISO(today()), emoji, user_id: userId }, { onConflict: 'user_id,day' }),
         ),
       answer: async (day, text) => after('answers', await supabase.from('answers').insert({ day, answer: text })),
+      answerPack: async (pack, day, text) =>
+        after('pack_answers', await supabase.from('pack_answers').insert({ pack, day, answer: text })),
       addIdea: async (idea) => after('date_ideas', await supabase.from('date_ideas').insert(idea)),
       toggleIdea: async (idea) =>
         after('date_ideas', await supabase.from('date_ideas').update({ done: !idea.done }).eq('id', idea.id)),

@@ -14,6 +14,7 @@ Beide Partner nutzen die App auf ihrem eigenen Handy; alle Inhalte werden live �
 - **Momente**: Erinnerungen mit Foto, Datum und Text
 - **Wünsche**: gemeinsame Bucket List mit Kategorien, Abhaken und Fortschrittsbalken
 - **Daten & Dates**: Termine mit Countdown (Jahrestag automatisch) und Date-Ideen mit Zufallsgenerator
+- **Wir zwei Plus** (Abo für beide): unbegrenzte Momente und tägliche Themen-Fragen – Einrichtung siehe [PLUS_SETUP.md](PLUS_SETUP.md)
 
 ## Mit Expo Go testen
 

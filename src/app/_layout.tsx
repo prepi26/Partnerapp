@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
+import { PlusProvider } from '@/data/plus';
 import { StoreProvider, useStore } from '@/data/store';
 import { colors, spacing } from '@/theme';
 
@@ -49,7 +50,11 @@ function SignedIn() {
       </View>
     );
   }
-  return <RootStack signedIn hasCouple={couple !== null} />;
+  return (
+    <PlusProvider>
+      <RootStack signedIn hasCouple={couple !== null} />
+    </PlusProvider>
+  );
 }
 
 function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: boolean }) {
@@ -78,6 +83,8 @@ function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: bool
         <Stack.Screen name="date-new" options={modal('Neues Datum')} />
         <Stack.Screen name="question" options={{ headerShown: true, title: 'Frage des Tages' }} />
         <Stack.Screen name="settings" options={modal('Einstellungen')} />
+        <Stack.Screen name="plus" options={modal('Wir zwei Plus')} />
+        <Stack.Screen name="pack/[id]" options={{ headerShown: true, title: '' }} />
       </Stack.Protected>
     </Stack>
   );

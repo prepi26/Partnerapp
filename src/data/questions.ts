@@ -1,4 +1,4 @@
-import { ISODate } from './types';
+import { ISODate, QuestionPack } from './types';
 
 import { daysBetween, parseISO } from '@/lib/dates';
 
@@ -59,4 +59,87 @@ export const QUESTIONS = [
 export function questionForDay(day: ISODate): string {
   const n = daysBetween(parseISO('2024-01-01'), parseISO(day));
   return QUESTIONS[((n % QUESTIONS.length) + QUESTIONS.length) % QUESTIONS.length];
+}
+
+export interface Pack {
+  id: QuestionPack;
+  title: string;
+  emoji: string;
+  questions: readonly string[];
+}
+
+/** Themen-Pakete für „Wir zwei Plus“: jeden Tag eine neue Frage pro Paket. */
+export const PACKS: Pack[] = [
+  {
+    id: 'tiefgang',
+    title: 'Tiefgang',
+    emoji: '🌊',
+    questions: [
+      'Wann hast du dich in unserer Beziehung zuletzt unsicher gefühlt?',
+      'Was brauchst du von mir, wenn es dir schlecht geht?',
+      'Welche Angst hast du, über die wir nie sprechen?',
+      'Was hast du durch mich über dich selbst gelernt?',
+      'Wofür möchtest du dich bei mir noch entschuldigen?',
+      'Was bedeutet Vertrauen für dich ganz konkret?',
+      'Welche Verletzung aus deiner Vergangenheit prägt dich bis heute?',
+      'Wann fühlst du dich von mir nicht gesehen?',
+      'Was würdest du an unserer Streitkultur ändern?',
+      'Welcher Moment hat unsere Beziehung am meisten verändert?',
+      'Was macht dich stolz auf uns?',
+      'Wobei fällt es dir schwer, mich um Hilfe zu bitten?',
+      'Welches Versprechen möchtest du mir geben?',
+      'Was soll ich nie vergessen, wenn wir streiten?',
+      'Wie hat sich deine Liebe zu mir mit der Zeit verändert?',
+    ],
+  },
+  {
+    id: 'zukunft',
+    title: 'Zukunft',
+    emoji: '🏡',
+    questions: [
+      'Wo möchtest du in zehn Jahren wohnen?',
+      'Wie stellst du dir unseren Alltag als Rentner vor?',
+      'Wie wichtig ist dir Heiraten – und wie sähe deine Traumhochzeit aus?',
+      'Wie stehst du zu Kindern oder Haustieren in unserer Zukunft?',
+      'Welches große Ziel sollen wir in den nächsten drei Jahren erreichen?',
+      'Wie wollen wir mit Geld umgehen – getrennt, gemeinsam oder gemischt?',
+      'Welche Reise müssen wir unbedingt machen, bevor wir 50 sind?',
+      'Wie würdest du gern wohnen: Stadt, Land oder am Meer?',
+      'Welche Tradition sollen unsere Feiertage haben?',
+      'Was möchtest du beruflich noch erreichen, und wie kann ich helfen?',
+      'Wie viel Zeit brauchst du für dich allein, auch in Zukunft?',
+      'Welches Abenteuer sollen wir uns für nächstes Jahr vornehmen?',
+      'Wie sieht ein perfekter Jahrestag in fünf Jahren aus?',
+      'Was soll in unserem Zuhause auf keinen Fall fehlen?',
+      'Worauf freust du dich mit mir am meisten?',
+    ],
+  },
+  {
+    id: 'prickelnd',
+    title: 'Prickelnd',
+    emoji: '🌶️',
+    questions: [
+      'Was war der Moment, in dem du mich am attraktivsten fandest?',
+      'Welches Outfit von mir gefällt dir am besten?',
+      'Wo würdest du mich gern mal spontan küssen?',
+      'Was ist deine liebste Art, berührt zu werden?',
+      'Welches romantische Date würdest du dir heimlich wünschen?',
+      'Was an mir macht dich sofort schwach?',
+      'Welche Fantasie hast du mir noch nie erzählt?',
+      'Wann hast du zuletzt an mich gedacht und musstest grinsen?',
+      'Welcher Duft erinnert dich an mich?',
+      'Was würdest du gern öfter von mir hören?',
+      'Wie sieht ein perfekter Abend zu zweit ohne Handy aus?',
+      'Was war unser leidenschaftlichster Moment?',
+      'Welches Kompliment über meinen Körper willst du mir mal machen?',
+      'Was möchtest du mit mir einmal ausprobieren?',
+      'Wie flirte ich am besten mit dir?',
+    ],
+  },
+];
+
+export function packQuestionForDay(pack: Pack, day: ISODate): string {
+  const n = daysBetween(parseISO('2024-01-01'), parseISO(day));
+  const len = pack.questions.length;
+  return pack.questions[((n % len) + len) % len];
 }

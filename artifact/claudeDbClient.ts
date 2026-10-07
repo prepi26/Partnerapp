@@ -98,12 +98,15 @@ const DEFAULTS: Record<string, (me: string) => Row> = {
   notes: (me) => ({ author_id: me }),
   moods: (me) => ({ user_id: me }),
   answers: (me) => ({ user_id: me }),
+  pack_answers: (me) => ({ user_id: me }),
   date_ideas: () => ({ emoji: '💡', done: false }),
   thoughts: (me) => ({ from_id: me }),
 };
 
-const docId = (table: string, row: Row) =>
-  table === 'moods' || table === 'answers' ? `${row.user_id}_${row.day}` : String(row.id);
+const docId = (table: string, row: Row) => {
+  if (table === 'pack_answers') return `${row.user_id}_${row.pack}_${row.day}`;
+  return table === 'moods' || table === 'answers' ? `${row.user_id}_${row.day}` : String(row.id);
+};
 
 /** Wer welche Rolle hat, steht in couples/main; beim ersten Besuch trägt sich jeder selbst ein. */
 async function loadCouple(env: Env): Promise<Row | null> {
@@ -158,10 +161,11 @@ function from(table: string) {
       if (op === 'select') {
         let rows = (await backend.list(table)).filter(matches);
         rows = rows.filter((r) => gtes.every(([k, v]) => String(r[k]) >= v));
-        if (table === 'answers') {
+        if (table === 'answers' || table === 'pack_answers') {
           // Die Antwort des Partners erst zeigen, wenn man selbst geantwortet hat.
-          const answeredDays = new Set(rows.filter((r) => r.user_id === me).map((r) => r.day));
-          rows = rows.filter((r) => r.user_id === me || answeredDays.has(r.day));
+          const key = (r: Row) => (table === 'pack_answers' ? `${r.pack}_${r.day}` : String(r.day));
+          const answered = new Set(rows.filter((r) => r.user_id === me).map(key));
+          rows = rows.filter((r) => r.user_id === me || answered.has(key(r)));
         }
         if (sort) {
           const { col, asc } = sort;
@@ -179,7 +183,9 @@ function from(table: string) {
           ...payload,
         };
         const id = docId(table, row);
-        if (table === 'answers' && (await backend.get(table, id))) return fail('Du hast heute schon geantwortet.');
+        if ((table === 'answers' || table === 'pack_answers') && (await backend.get(table, id))) {
+          return fail('Du hast heute schon geantwortet.');
+        }
         await backend.put(table, id, row);
         return ok(null);
       }

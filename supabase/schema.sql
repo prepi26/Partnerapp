@@ -273,6 +273,73 @@ $$;
 revoke execute on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
 
+-- ───────────── Wir zwei Plus (Abo) ─────────────
+-- Ein Abo gilt für beide Partner. plus_until setzen nur die Edge Functions (service_role),
+-- nachdem sie den Kauf bei RevenueCat geprüft haben – Nutzer können die Spalte nicht ändern.
+
+alter table public.couples add column if not exists plus_until timestamptz;
+
+create or replace function public.couple_has_plus(p_couple uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce((select plus_until > now() from public.couples where id = p_couple), false)
+$$;
+
+-- Ohne Plus: höchstens 10 Momente pro Paar.
+create or replace function public.check_memory_limit()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.couple_has_plus(new.couple_id)
+     and (select count(*) from public.memories where couple_id = new.couple_id) >= 10 then
+    raise exception 'plus_required';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists memories_limit on public.memories;
+create trigger memories_limit before insert on public.memories
+  for each row execute function public.check_memory_limit();
+
+-- Themen-Fragen (nur Plus): eine Frage pro Paket und Tag, gleiche Regel wie bei der Frage des Tages.
+create table if not exists public.pack_answers (
+  couple_id uuid not null default public.my_couple_id() references public.couples (id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  pack text not null check (pack in ('tiefgang', 'zukunft', 'prickelnd')),
+  day date not null,
+  answer text not null check (length(answer) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  primary key (user_id, pack, day)
+);
+
+create or replace function public.has_answered_pack(p_pack text, p_day date)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.pack_answers where user_id = auth.uid() and pack = p_pack and day = p_day)
+$$;
+
+alter table public.pack_answers enable row level security;
+drop policy if exists pack_answers_select on public.pack_answers;
+create policy pack_answers_select on public.pack_answers for select using (
+  user_id = auth.uid() or (couple_id = public.my_couple_id() and public.has_answered_pack(pack, day))
+);
+drop policy if exists pack_answers_insert on public.pack_answers;
+create policy pack_answers_insert on public.pack_answers for insert with check (
+  couple_id = public.my_couple_id() and user_id = auth.uid() and public.couple_has_plus(couple_id)
+);
+
 -- ───────────── Fotos ─────────────
 
 insert into storage.buckets (id, name, public)
@@ -290,7 +357,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'date_ideas', 'thoughts'] loop
+  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'pack_answers', 'date_ideas', 'thoughts'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Image, Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 
 import { EmptyState, Fab, GradientHeader } from '@/components/ui';
+import { FREE_MEMORY_LIMIT, usePlus } from '@/data/plus';
 import { useStore } from '@/data/store';
 import { Memory } from '@/data/types';
 import { formatShort, monthYear } from '@/lib/dates';
@@ -9,6 +10,8 @@ import { colors, radius, shadow, spacing } from '@/theme';
 
 export default function Memories() {
   const { memories, photoUrls } = useStore();
+  const { active: plus } = usePlus();
+  const atLimit = !plus && memories.length >= FREE_MEMORY_LIMIT;
 
   const sorted = [...memories].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
   const sections: { title: string; data: Memory[] }[] = [];
@@ -23,7 +26,11 @@ export default function Memories() {
     <View style={{ flex: 1 }}>
       <GradientHeader
         title="Erinnerungen"
-        subtitle={`${memories.length} ${memories.length === 1 ? 'Moment' : 'Momente'} für die Ewigkeit`}
+        subtitle={
+          plus
+            ? `${memories.length} ${memories.length === 1 ? 'Moment' : 'Momente'} für die Ewigkeit`
+            : `${memories.length} von ${FREE_MEMORY_LIMIT} Momenten · unbegrenzt mit Plus`
+        }
       />
       <SectionList
         sections={sections}
@@ -42,7 +49,7 @@ export default function Memories() {
           />
         }
       />
-      <Fab label="Erinnerung hinzufügen" onPress={() => router.push('/memory/new')} />
+      <Fab label="Erinnerung hinzufügen" onPress={() => router.push(atLimit ? '/plus' : '/memory/new')} />
     </View>
   );
 }
