@@ -13,6 +13,8 @@ export interface Couple {
   name_b: string;
   start_date: ISODate;
   invite_code: string;
+  /** Bis wann „Wir zwei Plus“ für beide gilt (setzt nur der Server). */
+  plus_until?: string | null;
 }
 
 export interface Memory {
@@ -72,5 +74,15 @@ export interface DateIdea {
   title: string;
   emoji: string;
   done: boolean;
+  created_at: string;
+}
+
+export type QuestionPack = 'tiefgang' | 'zukunft' | 'prickelnd';
+
+export interface PackAnswer {
+  user_id: string;
+  pack: QuestionPack;
+  day: ISODate;
+  answer: string;
   created_at: string;
 }
