@@ -40,6 +40,12 @@
           "photosPermission": "Damit ihr Fotos zu euren Erinnerungen hinzufügen könnt."
         }
       ]
-    ]
+    ],
+    "owner": "prepi26",
+    "extra": {
+      "eas": {
+        "projectId": "2c081f73-77d1-421a-aaba-93ad1a6ffc0e"
+      }
+    }
   }
 }
