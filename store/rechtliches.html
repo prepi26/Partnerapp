@@ -1,0 +1,87 @@
+<title>Wir zwei – Hilfe &amp; Datenschutz</title>
+<style>
+/* Layout: eine ruhige Textspalte; oben drei Sprungmarken (Hilfe, Datenschutz, Impressum) */
+:root {
+  --bg: #FFF5FA; --card: #FFFFFF; --fg: #2E1F47; --muted: #6E5E85; --line: #F1D8E6;
+  --pink: #D63384; --blue: #1A8DB8;
+  --body: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1A1224; --card: #241A31; --fg: #F5ECF8; --muted: #B9A9CC; --line: #3A2A4C; --pink: #FF7BB5; --blue: #5FD0F5; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #1A1224; --card: #241A31; --fg: #F5ECF8; --muted: #B9A9CC; --line: #3A2A4C; --pink: #FF7BB5; --blue: #5FD0F5; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); padding: 0 16px; }
+main { max-width: 680px; margin: 0 auto; padding-block: 32px 64px; display: grid; gap: 20px; }
+header { display: grid; gap: 4px; }
+h1 { margin: 0; font-size: 32px; line-height: 1.15; letter-spacing: -0.5px; text-wrap: balance; }
+h1 span { color: var(--pink); }
+.lede { margin: 0; color: var(--muted); }
+nav { display: flex; flex-wrap: wrap; gap: 8px; }
+nav a { color: var(--blue); text-decoration: none; font-weight: 700; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
+nav a:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; min-width: 0; }
+h2 { margin: 0 0 8px; font-size: 22px; }
+h3 { margin: 18px 0 4px; font-size: 17px; }
+p, ul { margin: 0 0 10px; }
+ul { padding-left: 20px; }
+.muted { color: var(--muted); font-size: 14px; }
+address { font-style: normal; }
+</style>
+<main>
+  <header>
+    <h1>Wir zwei <span>♥</span></h1>
+    <p class="lede">Die App für Paare: Zusammen-Zähler, Erinnerungen, Liebeszettel, Wünsche und die Frage des Tages.</p>
+  </header>
+
+  <nav aria-label="Inhalt">
+    <a href="#hilfe">Hilfe</a>
+    <a href="#datenschutz">Datenschutz</a>
+    <a href="#impressum">Impressum</a>
+  </nav>
+
+  <section id="hilfe">
+    <h2>Hilfe &amp; Kontakt</h2>
+    <h3>Wie verbinden wir uns als Paar?</h3>
+    <p>Jeder erstellt in der App ein eigenes Konto. Einer legt das Paar an und bekommt einen 6-stelligen Code. Der andere tippt auf „Ich habe einen Code“ und gibt ihn ein.</p>
+    <h3>Ich habe mein Passwort vergessen</h3>
+    <p>Schreib uns von der E-Mail-Adresse deines Kontos, wir helfen dir weiter.</p>
+    <h3>Wie lösche ich mein Konto?</h3>
+    <p>In der App unter <b>Einstellungen → Konto löschen</b>. Dein Konto und alle gemeinsamen Daten werden sofort gelöscht.</p>
+    <h3>Kontakt</h3>
+    <p>E-Mail: <b>prepitoys@gmail.com</b></p>
+  </section>
+
+  <section id="datenschutz">
+    <h2>Datenschutzerklärung</h2>
+    <p><b>Verantwortlich:</b> Philipp Prepols, Röchlingstr. 4a, 52531 Übach-Palenberg, prepitoys@gmail.com</p>
+
+    <h3>Welche Daten wir verarbeiten</h3>
+    <ul>
+      <li><b>E-Mail-Adresse und Passwort</b> für die Anmeldung. Das Passwort wird nur verschlüsselt (gehasht) gespeichert.</li>
+      <li><b>Inhalte, die ihr eintragt:</b> Namen, Startdatum, Erinnerungen samt Fotos, Liebeszettel, Wünsche, Termine, Date-Ideen, Stimmungen, Antworten auf die Frage des Tages und „Ich denk an dich“-Herzen.</li>
+    </ul>
+    <p>Diese Inhalte sind nur für die beiden Personen eines Paares sichtbar. Es gibt keine Werbung, kein Tracking und keine Weitergabe an Dritte zu Werbe- oder Analysezwecken.</p>
+
+    <h3>Wo die Daten liegen</h3>
+    <p>Die Daten werden bei Supabase (Supabase Inc.) in einem Rechenzentrum in Frankfurt am Main (EU) gespeichert. Supabase verarbeitet sie als Auftragsverarbeiter. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Bereitstellung der App, die ihr nutzen möchtet).</p>
+
+    <h3>Speicherdauer und Löschung</h3>
+    <p>Die Daten bleiben gespeichert, bis ihr sie löscht. Über <b>Einstellungen → Konto löschen</b> werden dein Konto und alle gemeinsamen Daten des Paares sofort und endgültig gelöscht.</p>
+
+    <h3>Eure Rechte</h3>
+    <p>Ihr habt das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde. Schreibt dazu an prepitoys@gmail.com.</p>
+    <p class="muted">Stand: 7. Oktober 2026</p>
+  </section>
+
+  <section id="impressum">
+    <h2>Impressum</h2>
+    <p class="muted">Angaben gemäß § 5 DDG</p>
+    <address>
+      Philipp Prepols<br>
+      Röchlingstr. 4a<br>
+      52531 Übach-Palenberg<br>
+      Deutschland<br>
+      E-Mail: prepitoys@gmail.com
+    </address>
+  </section>
+</main>

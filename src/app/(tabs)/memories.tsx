@@ -28,7 +28,7 @@ export default function Memories() {
       <GradientHeader
         title="Erinnerungen"
         subtitle={
-          plus
+          plus || !purchasesAvailable
             ? `${memories.length} ${memories.length === 1 ? 'Moment' : 'Momente'} für die Ewigkeit`
             : `${memories.length} von ${FREE_MEMORY_LIMIT} Momenten · unbegrenzt mit Plus`
         }
