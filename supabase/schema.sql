@@ -380,3 +380,16 @@ begin
   end loop;
 end;
 $$;
+
+-- Alte Einladungscodes mit Ziffern durch reine Buchstaben-Codes ersetzen (nur noch nicht verbundene Paare).
+update public.couples c
+   set invite_code = (
+     select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ', (floor(random() * 24) + 1)::int, 1), '')
+     from generate_series(1, 6)
+     where c.id is not null
+   )
+ where partner_b is null
+   and invite_code ~ '[0-9]';
+
+-- Zur Kontrolle: Einladungscodes der Paare, die noch auf den Partner warten.
+select name_a, name_b, invite_code from public.couples where partner_b is null;
