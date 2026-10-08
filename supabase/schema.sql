@@ -47,9 +47,9 @@ begin
     raise exception 'already_in_couple';
   end if;
   loop
-    -- 6 Zeichen ohne verwechselbare Zeichen (0/O, 1/I).
+    -- 6 Großbuchstaben ohne verwechselbare (I, O). Keine Ziffern: dann reicht die Buchstaben-Tastatur.
     v_code := (
-      select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', (floor(random() * 32) + 1)::int, 1), '')
+      select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ', (floor(random() * 24) + 1)::int, 1), '')
       from generate_series(1, 6)
     );
     exit when not exists (select 1 from public.couples where invite_code = v_code);

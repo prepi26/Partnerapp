@@ -71,11 +71,12 @@ export default function Onboarding() {
                 <Field
                   label="Code von deinem Schatz"
                   value={code}
-                  onChangeText={(t) => setCode(t.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                  placeholder="z. B. K7P2QX"
+                  onChangeText={(t) => setCode(normalizeCode(t))}
+                  placeholder="z. B. KMPQXT"
                   autoCapitalize="characters"
                   autoCorrect={false}
-                  maxLength={6}
+                  autoComplete="off"
+                  keyboardType={Platform.OS === 'ios' ? 'ascii-capable' : 'visible-password'}
                   style={styles.code}
                 />
                 <PrimaryButton
@@ -104,3 +105,16 @@ const styles = StyleSheet.create({
   card: { gap: spacing.md, padding: spacing.lg },
   code: { fontSize: 24, letterSpacing: 6, textAlign: 'center', fontWeight: '800' },
 });
+
+/**
+ * Bereinigt die Eingabe. Wird die ganze geteilte Nachricht eingefügt, nehmen wir das letzte
+ * 6-stellige Wort daraus – das ist der Code. Kein maxLength am Feld, sonst kappt iOS das Einfügen.
+ */
+function normalizeCode(text: string) {
+  const upper = text.toUpperCase();
+  if (/\s/.test(upper.trim())) {
+    const words = upper.match(/\b[A-Z0-9]{6}\b/g);
+    if (words) return words[words.length - 1];
+  }
+  return upper.replace(/[^A-Z0-9]/g, '').slice(0, 6);
+}
