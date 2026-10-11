@@ -1,9 +1,11 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ComponentProps, ReactNode, useEffect, useState } from 'react';
+import { ComponentProps, ReactNode, useEffect, useId, useState } from 'react';
 import {
   Alert,
+  InputAccessoryView,
+  Keyboard,
   Modal,
   Platform,
   Pressable,
@@ -221,15 +223,42 @@ export function EmptyState({ icon, title, text }: { icon: IconName; title: strin
 }
 
 export function Field({ label, style, ...props }: TextInputProps & { label: string }) {
+  const doneBarId = useDoneBarId();
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
         placeholderTextColor={colors.textMuted}
         style={[styles.input, props.multiline && styles.inputMultiline, style]}
+        // Einzeilige Felder schließen die Tastatur mit der Eingabetaste.
+        returnKeyType={props.multiline ? undefined : 'done'}
+        inputAccessoryViewID={props.multiline ? doneBarId : undefined}
         {...props}
       />
+      {props.multiline ? <KeyboardDoneBar id={doneBarId} /> : null}
     </View>
+  );
+}
+
+/** Eindeutige ID, um ein mehrzeiliges Feld mit seiner „Fertig“-Leiste zu verbinden. */
+export function useDoneBarId() {
+  return `done-${useId()}`;
+}
+
+/**
+ * Leiste mit „Fertig“ über der iOS-Tastatur. Bei mehrzeiligen Feldern macht die Eingabetaste
+ * eine neue Zeile – ohne diese Leiste ginge die Tastatur nicht mehr zu.
+ */
+export function KeyboardDoneBar({ id }: { id: string }) {
+  if (Platform.OS !== 'ios') return null;
+  return (
+    <InputAccessoryView nativeID={id}>
+      <View style={styles.doneBar}>
+        <Pressable accessibilityRole="button" onPress={Keyboard.dismiss} hitSlop={12}>
+          <Text style={styles.doneText}>Fertig</Text>
+        </Pressable>
+      </View>
+    </InputAccessoryView>
   );
 }
 
@@ -360,6 +389,16 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   inputMultiline: { minHeight: 110, textAlignVertical: 'top' },
+  doneBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    backgroundColor: colors.card,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  doneText: { fontSize: 17, fontWeight: '700', color: colors.pink },
   chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill },
   chipText: { fontSize: 14, fontWeight: '600' },
 });

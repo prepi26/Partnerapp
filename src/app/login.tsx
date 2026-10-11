@@ -55,6 +55,7 @@ export default function Login() {
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <View style={styles.hero}>
             <Text style={styles.emoji}>🌴💖🌊</Text>

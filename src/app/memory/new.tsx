@@ -40,7 +40,11 @@ export default function NewMemory() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <Pressable accessibilityRole="button" onPress={pickPhoto} style={styles.photoBox}>
           {photo ? (
             <Image source={{ uri: photo.uri }} style={styles.photo} />

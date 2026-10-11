@@ -35,6 +35,7 @@ export default function Onboarding() {
         <ScrollView
           contentContainerStyle={[styles.content, { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         >
           <View style={styles.hero}>
             <Text style={styles.title}>Verbindet euch</Text>

@@ -1,8 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
-import { confirmDestructive, EmptyState, GradientHeader, tap } from '@/components/ui';
+import { confirmDestructive, EmptyState, GradientHeader, KeyboardDoneBar, tap, useDoneBarId } from '@/components/ui';
 import { attempt, useCouple } from '@/data/store';
 import { formatShort } from '@/lib/dates';
 import { colors, radius, spacing } from '@/theme';
@@ -16,11 +26,13 @@ export default function Notes() {
   const { notes, userId, partnerName, addNote, removeNote } = useCouple();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
+  const doneBarId = useDoneBarId();
 
   const send = async () => {
     const text = draft.trim();
     if (!text || sending) return;
     tap();
+    Keyboard.dismiss();
     setSending(true);
     if (await attempt(() => addNote(text))) setDraft('');
     setSending(false);
@@ -37,6 +49,8 @@ export default function Notes() {
         inverted={items.length > 0}
         keyExtractor={(n) => n.id}
         contentContainerStyle={styles.list}
+        keyboardDismissMode="interactive"
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => {
           const mine = item.author_id === userId;
           return (
@@ -71,7 +85,9 @@ export default function Notes() {
           style={styles.input}
           multiline
           maxLength={2000}
+          inputAccessoryViewID={doneBarId}
         />
+        <KeyboardDoneBar id={doneBarId} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Senden"

@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Field, PrimaryButton } from '@/components/ui';
 import { usePlus } from '@/data/plus';
@@ -36,6 +36,7 @@ export default function PackQuestion() {
     .filter((h) => h.mine && h.theirs);
 
   const submit = async () => {
+    Keyboard.dismiss();
     setSaving(true);
     if (await attempt(() => answerPack(pack.id, day, draft.trim()))) setDraft('');
     setSaving(false);
@@ -44,7 +45,11 @@ export default function PackQuestion() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{ title: `${pack.emoji} ${pack.title}` }} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.questionBox}>
           <Text style={styles.kicker}>
             {pack.title} · {formatDate(day)}

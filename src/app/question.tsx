@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Field, PrimaryButton } from '@/components/ui';
 import { purchasesAvailable, usePlus } from '@/data/plus';
@@ -35,6 +35,7 @@ export default function Question() {
     .filter((h) => h.mine && h.theirs);
 
   const submit = async () => {
+    Keyboard.dismiss();
     setSaving(true);
     if (await attempt(() => answer(day, draft.trim()))) setDraft('');
     setSaving(false);
@@ -42,7 +43,11 @@ export default function Question() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.questionBox}>
           <Text style={styles.kicker}>
             Heute · {formatDate(day)}

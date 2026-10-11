@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { InviteCard } from '@/components/InviteCard';
 import { DateField } from '@/components/DateField';
@@ -19,6 +19,7 @@ export default function Settings() {
   const { active: plus } = usePlus();
 
   const save = async () => {
+    Keyboard.dismiss();
     setSaving(true);
     const ok = await attempt(() => updateCouple({ name_a: nameA.trim(), name_b: nameB.trim(), start_date: startDate }));
     if (ok) router.back();
@@ -48,7 +49,11 @@ export default function Settings() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
         {purchasesAvailable || plus ? (
           <SecondaryButton
             title={plus ? 'Wir zwei Plus ist aktiv 💖' : 'Wir zwei Plus entdecken ✨'}
