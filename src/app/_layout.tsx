@@ -1,12 +1,15 @@
-import { Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
+import { registerForPush, urlFromResponse } from '@/lib/push';
 import { StoreProvider, useStore } from '@/data/store';
 import { colors, spacing } from '@/theme';
 
@@ -53,8 +56,30 @@ function SignedIn() {
   return (
     <PlusProvider>
       <RootStack signedIn hasCouple={couple !== null} />
+      {couple && Platform.OS !== 'web' ? <PushSetup /> : null}
     </PlusProvider>
   );
+}
+
+/** Meldet das Handy für Mitteilungen an und öffnet beim Antippen einer Mitteilung den passenden Bildschirm. */
+function PushSetup() {
+  const response = Notifications.useLastNotificationResponse();
+
+  useEffect(() => {
+    registerForPush();
+  }, []);
+
+  useEffect(() => {
+    const url = urlFromResponse(response);
+    if (!url) return;
+    try {
+      router.navigate(url as Parameters<typeof router.navigate>[0]);
+    } catch {
+      // Navigation noch nicht bereit – dann bleibt die Startseite offen.
+    }
+  }, [response]);
+
+  return null;
 }
 
 function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: boolean }) {

@@ -364,6 +364,177 @@ create policy photos_couple on storage.objects for all
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = public.my_couple_id()::text)
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = public.my_couple_id()::text);
 
+-- ───────────── Push-Benachrichtigungen ─────────────
+-- Jedes Handy meldet sein Expo-Push-Token. Neue Herzen, Zettel, Antworten und Erinnerungen schicken
+-- über pg_net eine Mitteilung an das Handy des Partners (Expo Push Service, exp.host).
+
+create extension if not exists pg_net with schema extensions;
+
+create table if not exists public.push_tokens (
+  token text primary key,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  updated_at timestamptz not null default now()
+);
+create index if not exists push_tokens_user on public.push_tokens (user_id);
+-- Kein direkter Zugriff: nur über die beiden Funktionen unten.
+alter table public.push_tokens enable row level security;
+
+-- Token dem angemeldeten Nutzer zuordnen. Ein Handy gehört immer nur zu einem Konto.
+create or replace function public.register_push_token(p_token text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+  if p_token !~ '^Expo(nent)?PushToken\[.+\]$' then
+    raise exception 'invalid_token';
+  end if;
+  insert into public.push_tokens (token, user_id, updated_at)
+  values (p_token, auth.uid(), now())
+  on conflict (token) do update set user_id = excluded.user_id, updated_at = now();
+end;
+$$;
+
+create or replace function public.unregister_push_token(p_token text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.push_tokens where token = p_token and user_id = auth.uid();
+$$;
+
+revoke execute on function public.register_push_token(text) from public, anon;
+revoke execute on function public.unregister_push_token(text) from public, anon;
+grant execute on function public.register_push_token(text) to authenticated;
+grant execute on function public.unregister_push_token(text) to authenticated;
+
+-- Schickt eine Mitteilung an alle Handys des Partners von p_sender.
+create or replace function public.notify_partner(p_couple uuid, p_sender uuid, p_title text, p_body text, p_url text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_partner uuid;
+  v_messages jsonb;
+begin
+  select case when partner_a = p_sender then partner_b else partner_a end
+    into v_partner
+    from public.couples
+   where id = p_couple;
+  if v_partner is null then
+    return;
+  end if;
+  select jsonb_agg(jsonb_build_object(
+           'to', token,
+           'title', p_title,
+           'body', p_body,
+           'sound', 'default',
+           'data', jsonb_build_object('url', p_url)))
+    into v_messages
+    from public.push_tokens
+   where user_id = v_partner;
+  if v_messages is null then
+    return;
+  end if;
+  perform net.http_post(
+    url := 'https://exp.host/--/api/v2/push/send',
+    body := v_messages,
+    headers := '{"Content-Type": "application/json", "Accept": "application/json"}'::jsonb
+  );
+exception when others then
+  -- Eine fehlgeschlagene Mitteilung darf nie das Speichern verhindern.
+  raise warning 'push failed: %', sqlerrm;
+end;
+$$;
+
+revoke execute on function public.notify_partner(uuid, uuid, text, text, text) from public, anon, authenticated;
+
+create or replace function public.push_on_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_sender uuid;
+  v_name text;
+  v_title text;
+  v_body text;
+  v_url text;
+begin
+  -- IF statt CASE: jede Tabelle hat andere Spalten.
+  if tg_table_name = 'thoughts' then
+    v_sender := new.from_id;
+    -- Wer zehnmal hintereinander tippt, löst nur eine Mitteilung aus.
+    if exists (
+      select 1 from public.thoughts
+       where from_id = new.from_id and id <> new.id and created_at > now() - interval '30 seconds'
+    ) then
+      return null;
+    end if;
+  elsif tg_table_name = 'notes' then
+    v_sender := new.author_id;
+  elsif tg_table_name = 'answers' then
+    v_sender := new.user_id;
+  elsif tg_table_name = 'memories' then
+    v_sender := new.created_by;
+  else
+    return null;
+  end if;
+
+  select case when partner_a = v_sender then name_a else name_b end
+    into v_name
+    from public.couples
+   where id = new.couple_id;
+  v_name := coalesce(nullif(trim(v_name), ''), 'Dein Schatz');
+
+  if tg_table_name = 'thoughts' then
+    v_title := '💗 ' || v_name || ' denkt an dich';
+    v_body := 'Tipp hier, um zurückzudenken.';
+    v_url := '/';
+  elsif tg_table_name = 'notes' then
+    -- Bewusst ohne Inhalt: Mitteilungen stehen auf dem Sperrbildschirm und laufen über Expo und Apple.
+    v_title := '✉️ Neuer Zettel von ' || v_name;
+    v_body := 'Tipp hier, um ihn zu lesen.';
+    v_url := '/notes';
+  elsif tg_table_name = 'answers' then
+    v_title := '❓ ' || v_name || ' hat die Frage des Tages beantwortet';
+    if exists (select 1 from public.answers where couple_id = new.couple_id and day = new.day and user_id <> v_sender) then
+      v_body := 'Jetzt könnt ihr beide Antworten sehen.';
+    else
+      v_body := 'Antworte auch, dann siehst du die Antwort.';
+    end if;
+    v_url := '/question';
+  else
+    v_title := '📸 Neue Erinnerung';
+    v_body := v_name || ' hat einen gemeinsamen Moment festgehalten.';
+    v_url := '/memories';
+  end if;
+
+  perform public.notify_partner(new.couple_id, v_sender, v_title, v_body, v_url);
+  return null;
+end;
+$$;
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['thoughts', 'notes', 'answers', 'memories'] loop
+    execute format('drop trigger if exists push_on_insert on public.%I', t);
+    execute format(
+      'create trigger push_on_insert after insert on public.%I for each row execute function public.push_on_insert()', t);
+  end loop;
+end;
+$$;
+
 -- ───────────── Live-Aktualisierung ─────────────
 
 do $$

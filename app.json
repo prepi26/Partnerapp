@@ -3,7 +3,7 @@
     "name": "Wir zwei",
     "slug": "wir-zwei",
     "scheme": "wirzwei",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -38,6 +38,12 @@
         "expo-image-picker",
         {
           "photosPermission": "Damit ihr Fotos zu euren Erinnerungen hinzufügen könnt."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FF5FA2"
         }
       ]
     ],
