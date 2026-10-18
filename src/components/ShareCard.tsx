@@ -1,7 +1,8 @@
+import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import { useRef, useState } from 'react';
-import { Modal, Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { colors, gradient, radius, spacing } from '@/theme';
@@ -23,6 +24,8 @@ interface ShareCardProps {
 export function ShareCardButton(props: ShareCardProps) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Eigenes Paarfoto als Hintergrund – bleibt nur auf dem Handy, wird nirgends hochgeladen.
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const cardRef = useRef<View>(null);
 
   if (Platform.OS === 'web') return null;
@@ -41,13 +44,23 @@ export function ShareCardButton(props: ShareCardProps) {
     setBusy(false);
   };
 
+  const pickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [9, 16],
+      quality: 0.9,
+    });
+    if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+  };
+
   return (
     <>
       <HeaderIcon icon="share-outline" label="Als Bild teilen" onPress={() => setOpen(true)} />
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View ref={cardRef} collapsable={false} style={styles.cardFrame}>
-            <ShareCard {...props} />
+            <ShareCard {...props} photoUri={photoUri} />
           </View>
           <View style={styles.actions}>
             <PrimaryButton
@@ -56,6 +69,20 @@ export function ShareCardButton(props: ShareCardProps) {
               disabled={busy}
               onPress={share}
             />
+            <View style={styles.row}>
+              <View style={{ flex: 1 }}>
+                <SecondaryButton
+                  title={photoUri ? 'Ändern' : 'Euer Foto als Hintergrund'}
+                  icon="image-outline"
+                  onPress={pickPhoto}
+                />
+              </View>
+              {photoUri ? (
+                <View style={{ flex: 1 }}>
+                  <SecondaryButton title="Entfernen" icon="close-circle-outline" onPress={() => setPhotoUri(null)} />
+                </View>
+              ) : null}
+            </View>
             <SecondaryButton title="Schließen" onPress={() => setOpen(false)} />
           </View>
         </View>
@@ -64,24 +91,51 @@ export function ShareCardButton(props: ShareCardProps) {
   );
 }
 
-function ShareCard({ names, days, daysLabel, since, extra }: ShareCardProps) {
+function ShareCard({ names, days, daysLabel, since, extra, photoUri }: ShareCardProps & { photoUri?: string | null }) {
+  const counter = (
+    <View style={styles.center}>
+      <Text style={styles.names}>{names}</Text>
+      <Text style={styles.kicker}>zusammen seit</Text>
+      <Text style={styles.days} adjustsFontSizeToFit numberOfLines={1}>
+        {days}
+      </Text>
+      <Text style={styles.daysLabel}>{daysLabel}</Text>
+      <Text style={styles.since}>{since}</Text>
+      {extra ? <Text style={styles.extra}>{extra}</Text> : null}
+    </View>
+  );
+  const footer = (
+    <View style={styles.footer}>
+      <Text style={styles.brand}>Wir zwei</Text>
+      <Text style={styles.brandSub}>Die App für Paare · im App Store</Text>
+    </View>
+  );
+
+  if (photoUri) {
+    return (
+      <View style={styles.photoCard}>
+        <Image source={{ uri: photoUri }} style={styles.fill} resizeMode="cover" />
+        {/* Abdunkeln oben und unten, damit die weiße Schrift auf jedem Foto lesbar bleibt. */}
+        <LinearGradient
+          colors={['rgba(30,18,44,0.45)', 'rgba(30,18,44,0)', 'rgba(30,18,44,0.75)']}
+          locations={[0, 0.35, 1]}
+          style={styles.fill}
+        />
+        <View style={styles.photoContent}>
+          <Text style={styles.emoji}>🌴💖🌊</Text>
+          <View style={{ flex: 1 }} />
+          {counter}
+          {footer}
+        </View>
+      </View>
+    );
+  }
+
   return (
     <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
       <Text style={styles.emoji}>🌴💖🌊</Text>
-      <View style={styles.center}>
-        <Text style={styles.names}>{names}</Text>
-        <Text style={styles.kicker}>zusammen seit</Text>
-        <Text style={styles.days} adjustsFontSizeToFit numberOfLines={1}>
-          {days}
-        </Text>
-        <Text style={styles.daysLabel}>{daysLabel}</Text>
-        <Text style={styles.since}>{since}</Text>
-        {extra ? <Text style={styles.extra}>{extra}</Text> : null}
-      </View>
-      <View style={styles.footer}>
-        <Text style={styles.brand}>Wir zwei</Text>
-        <Text style={styles.brandSub}>Die App für Paare · im App Store</Text>
-      </View>
+      {counter}
+      {footer}
     </LinearGradient>
   );
 }
@@ -100,6 +154,10 @@ const styles = StyleSheet.create({
   cardFrame: { width: CARD_WIDTH, aspectRatio: 9 / 16, borderRadius: radius.lg, overflow: 'hidden' },
   card: { flex: 1, padding: spacing.lg, alignItems: 'center', justifyContent: 'space-between' },
   emoji: { fontSize: 30, marginTop: spacing.md },
+  photoCard: { flex: 1, backgroundColor: colors.text },
+  fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  photoContent: { flex: 1, padding: spacing.lg, alignItems: 'center', gap: spacing.md },
+  row: { flexDirection: 'row', gap: spacing.sm },
   center: { alignItems: 'center', alignSelf: 'stretch' },
   names: { color: colors.white, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: spacing.md },
   kicker: { color: colors.white, opacity: 0.9, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' },
