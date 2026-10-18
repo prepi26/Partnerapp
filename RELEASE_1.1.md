@@ -7,6 +7,10 @@ Neu in der App:
 - **Passwort vergessen** im Login: Code per E-Mail, dann neues Passwort.
 - Tastatur schließt sich mit der Eingabetaste (bei Zetteln: Senden), Einladungscode lässt sich aus einer Nachricht einfügen.
 - **Beziehungsstatus** in den Einstellungen: zusammen, verlobt (Countdown zur Hochzeit) oder verheiratet (verheiratet seit …).
+- **Tägliche Erinnerungen** (lokal geplant, abschaltbar unter Einstellungen → Erinnerungen): 19 Uhr Frage des Tages,
+  21 Uhr Serien-Warnung, mittags Liebes-Impulse („Wann hast du … zuletzt umarmt?“).
+- **Bewertungs-Abfrage** nach einem schönen Moment (beide haben geantwortet, Serie ab 3 Tagen), höchstens alle 120 Tage.
+- **Als Bild teilen**: Knopf oben auf der Startseite erzeugt eine Story-Karte („977 Tage zusammen“) für Instagram & Co.
 - **Einladungslink** statt Code: https://prepi26.github.io/j/?c=CODE öffnet die App mit eingetragenem Code;
   ohne App eine Seite mit App-Store-Knopf. Webseite liegt im Repository `prepi26/prepi26.github.io`.
 
@@ -87,6 +91,6 @@ npx eas-cli@latest submit --platform ios --latest
 
 Neue Version **1.1.0** anlegen, Build wählen, „Neuerungen in dieser Version“:
 ```
-Neu: Mitteilungen, wenn dein Schatz an dich denkt, dir einen Zettel schreibt oder die Frage des Tages beantwortet. Verlobt oder verheiratet? Stellt es ein und seht den Countdown zur Hochzeit oder wie lange ihr schon verheiratet seid. Einladen geht jetzt per Link, das Passwort lässt sich selbst zurücksetzen, und die Tastatur schließt sich mit der Eingabetaste.
+Neu: Mitteilungen, wenn dein Schatz an dich denkt, dir einen Zettel schreibt oder die Frage des Tages beantwortet. Verlobt oder verheiratet? Stellt es ein und seht den Countdown zur Hochzeit oder wie lange ihr schon verheiratet seid. Teilt eure gemeinsamen Tage als Bild in eurer Story, lasst euch täglich an die Frage des Tages erinnern, und einladen geht jetzt per Link. Das Passwort lässt sich selbst zurücksetzen, und die Tastatur schließt sich mit der Eingabetaste.
 ```
 Zur Prüfung hinzufügen.

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Field, PrimaryButton } from '@/components/ui';
@@ -9,6 +9,7 @@ import { purchasesAvailable, usePlus } from '@/data/plus';
 import { PACKS, questionForDay } from '@/data/questions';
 import { attempt, useCouple } from '@/data/store';
 import { formatDate, toISO, today } from '@/lib/dates';
+import { maybeAskForReview } from '@/lib/review';
 import { answerStreak } from '@/lib/streak';
 import { colors, gradient, radius, spacing } from '@/theme';
 
@@ -22,6 +23,12 @@ export default function Question() {
   const mine = answers.find((a) => a.user_id === userId && a.day === day);
   const theirs = answers.find((a) => a.user_id !== userId && a.day === day);
   const streak = answerStreak(answers, userId, day);
+  const bothAnswered = !!mine && !!theirs;
+
+  // Schöner Moment: beide haben geantwortet und die Serie läuft – dann um eine Bewertung bitten.
+  useEffect(() => {
+    if (bothAnswered) maybeAskForReview(streak);
+  }, [bothAnswered, streak]);
 
   // Frühere Tage, an denen beide geantwortet haben.
   const history = [...new Set(answers.map((a) => a.day))]

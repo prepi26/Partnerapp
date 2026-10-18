@@ -9,7 +9,9 @@ import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
+import { Reminders } from '@/components/Reminders';
 import { registerForPush, urlFromResponse } from '@/lib/push';
+import { refreshReminders } from '@/lib/reminders';
 import { StoreProvider, useStore } from '@/data/store';
 import { colors, spacing } from '@/theme';
 
@@ -57,6 +59,7 @@ function SignedIn() {
     <PlusProvider>
       <RootStack signedIn hasCouple={couple !== null} />
       {couple && Platform.OS !== 'web' ? <PushSetup /> : null}
+      {couple && Platform.OS !== 'web' ? <Reminders /> : null}
     </PlusProvider>
   );
 }
@@ -66,7 +69,8 @@ function PushSetup() {
   const response = Notifications.useLastNotificationResponse();
 
   useEffect(() => {
-    registerForPush();
+    // Erst nach erteilter Erlaubnis lassen sich die Erinnerungen planen.
+    registerForPush().then(refreshReminders);
   }, []);
 
   useEffect(() => {

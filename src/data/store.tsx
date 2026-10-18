@@ -4,6 +4,7 @@ import { AppState } from 'react-native';
 import { showError } from '@/components/ui';
 import { toISO, today } from '@/lib/dates';
 import { unregisterForPush } from '@/lib/push';
+import { cancelReminders } from '@/lib/reminders';
 import { must, supabase } from '@/lib/supabase';
 
 import { deletePhoto, signedPhotoUrls, uploadPhoto } from './photos';
@@ -324,11 +325,13 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
           if (paths.length) must(await supabase.storage.from('photos').remove(paths));
         }
         await unregisterForPush();
+        await cancelReminders();
         must(await supabase.rpc('delete_my_account'));
         await supabase.auth.signOut();
       },
       signOut: async () => {
         await unregisterForPush();
+        await cancelReminders();
         await supabase.auth.signOut();
       },
     };

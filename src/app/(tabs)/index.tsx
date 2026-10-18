@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InviteCard } from '@/components/InviteCard';
 import { MoodCard } from '@/components/MoodCard';
+import { ShareCardButton } from '@/components/ShareCard';
 import { ThinkingCard } from '@/components/Thoughts';
 import { Card, HeaderIcon } from '@/components/ui';
 import { questionForDay } from '@/data/questions';
@@ -81,6 +82,13 @@ export default function Home() {
           <Text style={styles.names}>
             {couple.name_a} <Text style={styles.heart}>♥</Text> {couple.name_b}
           </Text>
+          <ShareCardButton
+            names={`${couple.name_a} ♥ ${couple.name_b}`}
+            days={formatNumber(totalDays)}
+            daysLabel={totalDays === 1 ? 'Tag' : 'Tagen'}
+            since={`seit dem ${formatDate(couple.start_date)}`}
+            extra={wedding?.title}
+          />
           <HeaderIcon icon="settings-outline" label="Einstellungen" onPress={() => router.push('/settings')} />
         </View>
 
@@ -274,7 +282,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 36,
     alignItems: 'center',
   },
-  heroTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', marginBottom: spacing.lg },
+  heroTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: spacing.sm, marginBottom: spacing.lg },
   names: { flex: 1, color: colors.white, fontSize: 22, fontWeight: '800' },
   heart: { color: colors.white },
   together: { color: colors.white, opacity: 0.9, fontSize: 15, textTransform: 'uppercase', letterSpacing: 2 },
