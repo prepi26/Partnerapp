@@ -5,6 +5,8 @@ export type PartnerKey = 'a' | 'b';
 
 // Die Typen entsprechen 1:1 den Tabellen in supabase/schema.sql.
 
+export type RelationshipStatus = 'together' | 'engaged' | 'married';
+
 export interface Couple {
   id: string;
   partner_a: string;
@@ -13,6 +15,10 @@ export interface Couple {
   name_b: string;
   start_date: ISODate;
   invite_code: string;
+  /** Fehlt bei Datenbanken vor Version 1.1 – dann gilt 'together'. */
+  status?: RelationshipStatus;
+  /** Verlobt: geplante Hochzeit. Verheiratet: Hochzeitstag. */
+  wedding_date?: ISODate | null;
   /** Bis wann „Wir zwei Plus“ für beide gilt (setzt nur der Server). */
   plus_until?: string | null;
 }

@@ -136,3 +136,20 @@ export function countdownLabel(inDays: number): string {
   if (inDays === 1) return 'Morgen';
   return `in ${inDays} Tagen`;
 }
+
+/** Hochzeit bzw. Hochzeitstage als Meilensteine (für verlobte und verheiratete Paare). */
+export function weddingMilestones(
+  status: string | undefined,
+  weddingIso: ISODate | null | undefined,
+  from: Date = today(),
+) {
+  if (!weddingIso || (status !== 'engaged' && status !== 'married')) return [];
+  const wedding = parseISO(weddingIso);
+  if (status === 'engaged') {
+    const inDays = daysBetween(from, wedding);
+    return inDays >= 0 ? [{ label: 'Eure Hochzeit 💍', date: wedding, inDays }] : [];
+  }
+  const next = nextYearly(weddingIso, from);
+  if (next.years === 0) return [];
+  return [{ label: `${next.years}. Hochzeitstag 💍`, date: next.date, inDays: next.inDays }];
+}

@@ -132,7 +132,9 @@ interface Store extends Data {
   refresh(): Promise<void>;
   createCouple(nameA: string, nameB: string, startDate: ISODate): Promise<void>;
   joinCouple(code: string): Promise<void>;
-  updateCouple(patch: Partial<Pick<Couple, 'name_a' | 'name_b' | 'start_date'>>): Promise<void>;
+  updateCouple(
+    patch: Partial<Pick<Couple, 'name_a' | 'name_b' | 'start_date' | 'status' | 'wedding_date'>>,
+  ): Promise<void>;
   addMemory(memory: { title: string; date: ISODate; text: string; photo?: NewPhoto }): Promise<void>;
   removeMemory(memory: Memory): Promise<void>;
   addWish(wish: { title: string; note: string; category: WishCategory; author: PartnerKey | 'both' }): Promise<void>;

@@ -104,6 +104,13 @@ create policy couples_update on public.couples
 revoke update on public.couples from authenticated;
 grant update (name_a, name_b, start_date) on public.couples to authenticated;
 
+-- Beziehungsstatus: zusammen, verlobt (wedding_date = geplante Hochzeit) oder verheiratet (wedding_date = Hochzeitstag).
+alter table public.couples add column if not exists status text not null default 'together';
+alter table public.couples add column if not exists wedding_date date;
+alter table public.couples drop constraint if exists couples_status_check;
+alter table public.couples add constraint couples_status_check check (status in ('together', 'engaged', 'married'));
+grant update (status, wedding_date) on public.couples to authenticated;
+
 -- ───────────── Inhalte eines Paares ─────────────
 
 create table if not exists public.memories (

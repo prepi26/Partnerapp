@@ -23,6 +23,7 @@ import {
   toISO,
   today,
   upcomingMilestones,
+  weddingMilestones,
 } from '@/lib/dates';
 import { answerStreak } from '@/lib/streak';
 import { colors, gradient, radius, spacing } from '@/theme';
@@ -48,7 +49,13 @@ export default function Home() {
   const seconds = Math.max(0, Math.floor((now.getTime() - start.getTime()) / 1000));
   const hours = Math.floor(seconds / 3600);
 
-  const milestones = upcomingMilestones(couple.start_date, 3, todayDate);
+  const milestones = [
+    ...weddingMilestones(couple.status, couple.wedding_date, todayDate),
+    ...upcomingMilestones(couple.start_date, 3, todayDate),
+  ]
+    .sort((a, b) => a.inDays - b.inDays)
+    .slice(0, 3);
+  const wedding = weddingLine(couple.status, couple.wedding_date, todayDate);
   const nextDate = special_dates
     .map((d) => ({ d, next: d.yearly ? nextYearly(d.date, today()) : null }))
     .map(({ d, next }) => ({ d, inDays: next ? next.inDays : daysBetween(today(), parseISO(d.date)) }))
@@ -94,6 +101,12 @@ export default function Home() {
           {formatNumber(hours)} Stunden · {formatNumber(seconds)} Sekunden
         </Text>
         <Text style={styles.since}>seit dem {formatDate(couple.start_date)}</Text>
+        {wedding ? (
+          <View style={styles.weddingPill}>
+            <Text style={styles.weddingTitle}>{wedding.title}</Text>
+            <Text style={styles.weddingDate}>{wedding.date}</Text>
+          </View>
+        ) : null}
       </LinearGradient>
 
       <View style={styles.body}>
@@ -188,6 +201,24 @@ export default function Home() {
   );
 }
 
+/** Zeile unter dem Zähler: Countdown zur Hochzeit oder Dauer der Ehe. */
+function weddingLine(status: string | undefined, weddingIso: string | null | undefined, todayDate: Date) {
+  if (!weddingIso || (status !== 'engaged' && status !== 'married')) return null;
+  const inDays = daysBetween(todayDate, parseISO(weddingIso));
+  if (status === 'engaged') {
+    if (inDays > 1) return { title: `💍 Hochzeit in ${formatNumber(inDays)} Tagen`, date: formatDate(weddingIso) };
+    if (inDays === 1) return { title: '💍 Morgen ist eure Hochzeit!', date: formatDate(weddingIso) };
+    if (inDays === 0) return { title: '💍 Heute ist eure Hochzeit!', date: formatDate(weddingIso) };
+    return { title: '💍 Verlobt', date: `Hochzeit war am ${formatDate(weddingIso)}` };
+  }
+  if (inDays > 0) return { title: `💍 Hochzeit in ${formatNumber(inDays)} Tagen`, date: formatDate(weddingIso) };
+  const married = -inDays;
+  return {
+    title: `💍 Verheiratet seit ${formatNumber(married)} ${married === 1 ? 'Tag' : 'Tagen'}`,
+    date: `seit dem ${formatDate(weddingIso)}`,
+  };
+}
+
 function Part({ value, label }: { value: number; label: string }) {
   return (
     <View style={styles.part}>
@@ -261,6 +292,16 @@ const styles = StyleSheet.create({
   partLabel: { color: colors.white, fontSize: 13, opacity: 0.9 },
   clock: { color: colors.white, marginTop: spacing.md, fontSize: 14, fontVariant: ['tabular-nums'], opacity: 0.95 },
   since: { color: colors.white, opacity: 0.85, fontSize: 13, marginTop: 2 },
+  weddingPill: {
+    marginTop: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+  },
+  weddingTitle: { color: colors.white, fontSize: 18, fontWeight: '800' },
+  weddingDate: { color: colors.white, fontSize: 13, opacity: 0.9, marginTop: 2 },
   body: { padding: spacing.lg, gap: spacing.md },
   section: { fontSize: 18, fontWeight: '800', color: colors.text, marginTop: spacing.sm },
   milestone: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

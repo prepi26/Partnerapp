@@ -16,11 +16,13 @@ export function DateField({
   value,
   onChange,
   maximumDate,
+  minimumDate,
 }: {
   label: string;
   value: ISODate;
   onChange: (value: ISODate) => void;
   maximumDate?: Date;
+  minimumDate?: Date;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -35,6 +37,7 @@ export function DateField({
         value: parseISO(value),
         mode: 'date',
         maximumDate,
+        minimumDate,
         onChange: (event, date) => {
           if (event.type === 'set' && date) onChange(toISO(date));
         },
@@ -62,6 +65,7 @@ export function DateField({
           locale="de-DE"
           accentColor={colors.pink}
           maximumDate={maximumDate}
+          minimumDate={minimumDate}
           onChange={(_, date) => date && onChange(toISO(date))}
         />
       ) : null}

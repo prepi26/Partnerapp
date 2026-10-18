@@ -230,8 +230,9 @@ export function Field({ label, style, ...props }: TextInputProps & { label: stri
       <TextInput
         placeholderTextColor={colors.textMuted}
         style={[styles.input, props.multiline && styles.inputMultiline, style]}
-        // Einzeilige Felder schließen die Tastatur mit der Eingabetaste.
-        returnKeyType={props.multiline ? undefined : 'done'}
+        // Die Eingabetaste schließt die Tastatur – auch bei mehrzeiligen Feldern (keine Zeilenumbrüche).
+        returnKeyType="done"
+        submitBehavior="blurAndSubmit"
         inputAccessoryViewID={props.multiline ? doneBarId : undefined}
         {...props}
       />

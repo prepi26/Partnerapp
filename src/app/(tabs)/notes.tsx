@@ -86,6 +86,10 @@ export default function Notes() {
           multiline
           maxLength={2000}
           inputAccessoryViewID={doneBarId}
+          // Eingabetaste = Senden, danach geht die Tastatur zu.
+          returnKeyType="send"
+          submitBehavior="blurAndSubmit"
+          onSubmitEditing={send}
         />
         <KeyboardDoneBar id={doneBarId} />
         <Pressable

@@ -4,10 +4,11 @@ import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text,
 
 import { InviteCard } from '@/components/InviteCard';
 import { DateField } from '@/components/DateField';
-import { Card, confirmDestructive, Field, PrimaryButton, SecondaryButton } from '@/components/ui';
+import { Card, Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { attempt, useCouple } from '@/data/store';
-import { today } from '@/lib/dates';
+import { RelationshipStatus } from '@/data/types';
+import { toISO, today } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
 
 export default function Settings() {
@@ -15,13 +16,23 @@ export default function Settings() {
   const [nameA, setNameA] = useState(couple.name_a);
   const [nameB, setNameB] = useState(couple.name_b);
   const [startDate, setStartDate] = useState(couple.start_date);
+  const [status, setStatus] = useState<RelationshipStatus>(couple.status ?? 'together');
+  const [weddingDate, setWeddingDate] = useState(couple.wedding_date ?? toISO(today()));
   const [saving, setSaving] = useState(false);
   const { active: plus } = usePlus();
 
   const save = async () => {
     Keyboard.dismiss();
     setSaving(true);
-    const ok = await attempt(() => updateCouple({ name_a: nameA.trim(), name_b: nameB.trim(), start_date: startDate }));
+    const ok = await attempt(() =>
+      updateCouple({
+        name_a: nameA.trim(),
+        name_b: nameB.trim(),
+        start_date: startDate,
+        status,
+        wedding_date: status === 'together' ? null : weddingDate,
+      }),
+    );
     if (ok) router.back();
     else setSaving(false);
   };
@@ -66,6 +77,18 @@ export default function Settings() {
           <Field label="Name 1" value={nameA} onChangeText={setNameA} />
           <Field label="Name 2" value={nameB} onChangeText={setNameB} />
           <DateField label="Zusammen seit" value={startDate} onChange={setStartDate} maximumDate={today()} />
+          <Label>Ihr seid</Label>
+          <View style={styles.chips}>
+            <Chip label="Zusammen" selected={status === 'together'} onPress={() => setStatus('together')} />
+            <Chip label="Verlobt 💍" selected={status === 'engaged'} onPress={() => setStatus('engaged')} />
+            <Chip label="Verheiratet 💒" selected={status === 'married'} onPress={() => setStatus('married')} />
+          </View>
+          {status === 'engaged' ? (
+            <DateField label="Geplante Hochzeit" value={weddingDate} onChange={setWeddingDate} minimumDate={today()} />
+          ) : null}
+          {status === 'married' ? (
+            <DateField label="Hochzeitstag" value={weddingDate} onChange={setWeddingDate} maximumDate={today()} />
+          ) : null}
         </Card>
         <PrimaryButton
           title={saving ? 'Speichere…' : 'Speichern'}
@@ -91,6 +114,7 @@ export default function Settings() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: 60 },
   card: { gap: spacing.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   footer: { marginTop: spacing.xl, gap: spacing.md },
   note: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });
