@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -7,6 +7,7 @@ import { DateField } from '@/components/DateField';
 import { Card, Chip, Field, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
 import { errorMessage, useStore } from '@/data/store';
 import { toISO, today } from '@/lib/dates';
+import { clearPendingInvite, loadPendingInvite } from '@/lib/invite';
 import { colors, gradient, spacing } from '@/theme';
 
 export default function Onboarding() {
@@ -18,11 +19,23 @@ export default function Onboarding() {
   const [startDate, setStartDate] = useState(toISO(today()));
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fromLink, setFromLink] = useState(false);
+
+  // Über einen Einladungslink gekommen? Dann ist der Code schon eingetragen.
+  useEffect(() => {
+    loadPendingInvite().then((pending) => {
+      if (!pending) return;
+      setMode('join');
+      setCode(pending);
+      setFromLink(true);
+    });
+  }, []);
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
       await action();
+      await clearPendingInvite();
     } catch (e) {
       showError('Das hat nicht geklappt', errorMessage(e));
       setBusy(false);
@@ -69,6 +82,11 @@ export default function Onboarding() {
               </>
             ) : (
               <>
+                {fromLink ? (
+                  <Text style={styles.linkHint}>
+                    💌 Der Code aus deinem Link ist schon eingetragen – tipp auf „Verbinden“.
+                  </Text>
+                ) : null}
                 <Field
                   label="Code von deinem Schatz"
                   value={code}
@@ -104,6 +122,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, color: colors.white, textAlign: 'center', opacity: 0.95, lineHeight: 22 },
   switch: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', flexWrap: 'wrap' },
   card: { gap: spacing.md, padding: spacing.lg },
+  linkHint: { fontSize: 15, color: colors.text, textAlign: 'center', lineHeight: 21, fontWeight: '600' },
   code: { fontSize: 24, letterSpacing: 6, textAlign: 'center', fontWeight: '800' },
 });
 

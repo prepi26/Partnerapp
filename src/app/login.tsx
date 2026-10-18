@@ -1,9 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Chip, Field, PrimaryButton, showError } from '@/components/ui';
+import { loadPendingInvite } from '@/lib/invite';
 import { supabase } from '@/lib/supabase';
 import { colors, gradient, spacing } from '@/theme';
 
@@ -35,6 +36,12 @@ export default function Login() {
   // Passwort vergessen: erst Code per E-Mail anfordern, dann Code und neues Passwort eingeben.
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState('');
+  const [invited, setInvited] = useState(false);
+
+  // Über einen Einladungslink gekommen: kurz erklären, dass danach automatisch verbunden wird.
+  useEffect(() => {
+    loadPendingInvite().then((pending) => setInvited(!!pending));
+  }, []);
 
   const cleanEmail = email.trim().toLowerCase();
   const emailValid = /^\S+@\S+\.\S+$/.test(cleanEmail);
@@ -100,7 +107,11 @@ export default function Login() {
           <View style={styles.hero}>
             <Text style={styles.emoji}>🌴💖🌊</Text>
             <Text style={styles.title}>Wir zwei</Text>
-            <Text style={styles.subtitle}>Eure gemeinsame App – auf beiden Handys immer gleich.</Text>
+            <Text style={styles.subtitle}>
+              {invited
+                ? '💌 Dein Schatz hat dich eingeladen! Erstelle ein Konto – den Code tragen wir danach für dich ein.'
+                : 'Eure gemeinsame App – auf beiden Handys immer gleich.'}
+            </Text>
           </View>
 
           <View style={styles.switch}>

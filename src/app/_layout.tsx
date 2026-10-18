@@ -94,6 +94,8 @@ function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: bool
         headerShadowVisible: false,
       }}
     >
+      {/* Einladungslink – in jedem Zustand erreichbar, leitet selbst weiter. */}
+      <Stack.Screen name="j" />
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />
       </Stack.Protected>

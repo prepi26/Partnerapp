@@ -5,7 +5,17 @@ Neu in der App:
   neue Erinnerung. Die Mitteilungen enthalten nie den Inhalt (nur Vorname und einen festen Hinweis).
   Antippen öffnet den passenden Bildschirm.
 - **Passwort vergessen** im Login: Code per E-Mail, dann neues Passwort.
-- Tastatur schließt sich nach dem Schreiben, Einladungscode lässt sich aus einer Nachricht einfügen (aus 1.0.1).
+- Tastatur schließt sich mit der Eingabetaste (bei Zetteln: Senden), Einladungscode lässt sich aus einer Nachricht einfügen.
+- **Beziehungsstatus** in den Einstellungen: zusammen, verlobt (Countdown zur Hochzeit) oder verheiratet (verheiratet seit …).
+- **Einladungslink** statt Code: https://prepi26.github.io/j/?c=CODE öffnet die App mit eingetragenem Code;
+  ohne App eine Seite mit App-Store-Knopf. Webseite liegt im Repository `prepi26/prepi26.github.io`.
+
+## 0. Webseite prüfen
+
+- https://prepi26.github.io muss die „Wir zwei“-Seite zeigen (GitHub → Repository prepi26.github.io → Settings → Pages:
+  Branch `main`). Erste Veröffentlichung kann ein paar Minuten dauern.
+- Öffentliche Rechtsseite: https://prepi26.github.io/rechtliches/ – in App Store Connect als Datenschutz-URL
+  (`…/rechtliches/#datenschutz`) und Support-URL (`…/rechtliches/#hilfe`) eintragen.
 
 ## 1. Supabase: Datenbank aktualisieren
 
@@ -77,6 +87,6 @@ npx eas-cli@latest submit --platform ios --latest
 
 Neue Version **1.1.0** anlegen, Build wählen, „Neuerungen in dieser Version“:
 ```
-Neu: Mitteilungen, wenn dein Schatz an dich denkt, dir einen Zettel schreibt oder die Frage des Tages beantwortet. Außerdem kannst du dein Passwort jetzt selbst zurücksetzen, und die Tastatur schließt sich nach dem Schreiben automatisch.
+Neu: Mitteilungen, wenn dein Schatz an dich denkt, dir einen Zettel schreibt oder die Frage des Tages beantwortet. Verlobt oder verheiratet? Stellt es ein und seht den Countdown zur Hochzeit oder wie lange ihr schon verheiratet seid. Einladen geht jetzt per Link, das Passwort lässt sich selbst zurücksetzen, und die Tastatur schließt sich mit der Eingabetaste.
 ```
 Zur Prüfung hinzufügen.

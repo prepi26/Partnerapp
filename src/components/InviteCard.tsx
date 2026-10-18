@@ -1,5 +1,6 @@
 import { Share, StyleSheet, Text } from 'react-native';
 
+import { inviteLink } from '@/lib/invite';
 import { colors, radius, spacing } from '@/theme';
 
 import { Card, PrimaryButton } from './ui';
@@ -8,7 +9,8 @@ import { Card, PrimaryButton } from './ui';
 export function InviteCard({ code, partnerName }: { code: string; partnerName: string }) {
   const share = () =>
     Share.share({
-      message: `Lass uns „Wir zwei“ zusammen nutzen 💖 Lade dir die App, erstelle ein Konto, tippe auf „Ich habe einen Code“ und gib ein: ${code}`,
+      // Der Code steht am Ende noch einmal einzeln – so lässt er sich auch ohne Link einfügen.
+      message: `Lass uns „Wir zwei“ zusammen nutzen 💖 Tipp auf den Link, um dich mit mir zu verbinden: ${inviteLink(code)}\n\nUnser Code: ${code}`,
     }).catch(() => {});
 
   return (

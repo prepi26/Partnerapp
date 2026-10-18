@@ -343,6 +343,11 @@ export function useStore() {
   return store;
 }
 
+/** Für Screens, die auch ohne Anmeldung erreichbar sind (z. B. Einladungslinks). */
+export function useOptionalStore() {
+  return useContext(StoreContext);
+}
+
 /** Wie useStore, aber für Screens hinter dem Onboarding: das Paar existiert garantiert. */
 export function useCouple() {
   const store = useStore();
