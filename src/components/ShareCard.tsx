@@ -13,8 +13,7 @@ const APP_LINK = 'https://apps.apple.com/app/id6820457302';
 const SHARE_TEXT = `Unser Zusammen-Zähler aus „Wir zwei“ 💖 Die App für Paare: ${APP_LINK}`;
 
 /** Deko oben auf der Karte – „Ohne“ für Fotos, auf denen Emojis stören würden. */
-const DEFAULT_DECORATION = '🌴💖🌊';
-const DECORATIONS = ['', DEFAULT_DECORATION, '💖', '💍', '💑', '🥂', '🌹', '✨'];
+const DECORATIONS = ['', '💖', '🌴💖🌊', '💍', '💑', '🥂', '🌹', '✨'];
 
 interface ShareCardProps {
   names: string;
@@ -33,9 +32,9 @@ export function ShareCardButton(props: ShareCardProps) {
   const [busy, setBusy] = useState(false);
   // Eigenes Paarfoto als Hintergrund – bleibt nur auf dem Handy, wird nirgends hochgeladen.
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  // null = automatisch: mit Foto keine Deko, ohne Foto Palme/Herz/Welle.
+  // Standard: keine Emojis – nur wer mag, wählt eins aus.
   const [decoration, setDecoration] = useState<string | null>(null);
-  const shownDecoration = decoration ?? (photoUri ? '' : DEFAULT_DECORATION);
+  const shownDecoration = decoration ?? '';
   const cardRef = useRef<View>(null);
 
   if (Platform.OS === 'web') return null;
@@ -141,10 +140,17 @@ function ShareCard({
   photoUri,
   decoration,
 }: ShareCardProps & { photoUri?: string | null; decoration: string }) {
-  const deco = decoration ? <Text style={styles.emoji}>{decoration}</Text> : <View style={styles.emojiSpace} />;
+  // Namen groß oben in der Mitte, Emojis nur, wenn jemand welche ausgewählt hat.
+  const header = (
+    <View style={styles.header}>
+      {decoration ? <Text style={styles.emoji}>{decoration}</Text> : null}
+      <Text style={styles.names} adjustsFontSizeToFit numberOfLines={2}>
+        {names}
+      </Text>
+    </View>
+  );
   const counter = (
     <View style={styles.center}>
-      <Text style={styles.names}>{names}</Text>
       <Text style={styles.kicker}>zusammen seit</Text>
       <Text style={styles.days} adjustsFontSizeToFit numberOfLines={1}>
         {days}
@@ -172,7 +178,7 @@ function ShareCard({
           style={styles.fill}
         />
         <View style={styles.photoContent}>
-          {deco}
+          {header}
           <View style={{ flex: 1 }} />
           {counter}
           {footer}
@@ -183,7 +189,7 @@ function ShareCard({
 
   return (
     <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
-      {deco}
+      {header}
       {counter}
       {footer}
     </LinearGradient>
@@ -203,8 +209,8 @@ const styles = StyleSheet.create({
   },
   cardFrame: { width: CARD_WIDTH, aspectRatio: 9 / 16, borderRadius: radius.lg, overflow: 'hidden' },
   card: { flex: 1, padding: spacing.lg, alignItems: 'center', justifyContent: 'space-between' },
-  emoji: { fontSize: 30, marginTop: spacing.md },
-  emojiSpace: { height: 30 + spacing.md },
+  header: { alignItems: 'center', alignSelf: 'stretch', marginTop: spacing.md, gap: 4 },
+  emoji: { fontSize: 26 },
   decoScroll: { flexGrow: 0, alignSelf: 'stretch', maxWidth: 420 },
   decoRow: { gap: spacing.sm, paddingHorizontal: spacing.xs, alignItems: 'center' },
   decoChip: {
@@ -226,7 +232,16 @@ const styles = StyleSheet.create({
   photoContent: { flex: 1, padding: spacing.lg, alignItems: 'center', gap: spacing.md },
   row: { flexDirection: 'row', gap: spacing.sm },
   center: { alignItems: 'center', alignSelf: 'stretch' },
-  names: { color: colors.white, fontSize: 22, fontWeight: '800', textAlign: 'center', marginBottom: spacing.md },
+  names: {
+    color: colors.white,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -0.5,
+    textAlign: 'center',
+    textShadowColor: 'rgba(30,18,44,0.35)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
   kicker: { color: colors.white, opacity: 0.9, fontSize: 12, letterSpacing: 2, textTransform: 'uppercase' },
   days: {
     color: colors.white,
