@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InviteCard } from '@/components/InviteCard';
 import { MoodCard } from '@/components/MoodCard';
 import { ShareCardButton } from '@/components/ShareCard';
+import { AchievementsTile, ThoughtLeaderboard } from '@/components/ThoughtLeaderboard';
 import { ThinkingCard } from '@/components/Thoughts';
 import { Card, HeaderIcon } from '@/components/ui';
 import { questionForDay } from '@/data/questions';
@@ -123,6 +124,7 @@ export default function Home() {
         <Text style={styles.section}>Heute</Text>
         <MoodCard />
         <ThinkingCard />
+        <ThoughtLeaderboard />
         <Pressable accessibilityRole="button" onPress={() => router.push('/question')}>
           {({ pressed }) => (
             <LinearGradient
@@ -162,6 +164,8 @@ export default function Home() {
             </View>
           ))}
         </Card>
+
+        <AchievementsTile />
 
         <Text style={styles.section}>Auf einen Blick</Text>
         <View style={styles.tiles}>
@@ -282,7 +286,13 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 36,
     alignItems: 'center',
   },
-  heroTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: spacing.sm, marginBottom: spacing.lg },
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'stretch',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
   names: { flex: 1, color: colors.white, fontSize: 22, fontWeight: '800' },
   heart: { color: colors.white },
   together: { color: colors.white, opacity: 0.9, fontSize: 15, textTransform: 'uppercase', letterSpacing: 2 },

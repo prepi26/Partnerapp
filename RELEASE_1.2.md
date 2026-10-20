@@ -5,8 +5,19 @@ Neu:
   Zählt um Mitternacht selbst weiter, auch wenn die App geschlossen bleibt.
 - **Sperrbildschirm-Widgets**: rund (♥ + Tage), rechteckig („♥ 977 Tage – mit Max“) und über der Uhr.
 
+- **Herz-Rangliste** auf der Startseite: wer wie oft an wen gedacht hat – heute, Woche, Monat, Jahr (👑 für den Vorne).
+- **Paar-Erfolge** (19 Stück, z. B. 3/7/30/100 Tage Serie, 100 Herzen an einem Tag, erster Zettel, 1.000 Tage):
+  Kachel auf der Startseite → Bildschirm „Eure Erfolge“ mit Fortschritt.
+- Behoben: Zurück-Knopf zeigt nicht mehr „(tabs)“; Wünsche werden nur noch über den Kreis abgehakt.
+
 Technik: `targets/widget/` (SwiftUI, Plugin `@bacons/apple-targets`), App Group `group.de.wirzwei.app`.
 Die App schreibt Namen/Datum/Status über `src/lib/widget.ts` in die App Group.
+
+## 0. Supabase: Datenbank aktualisieren (Pflicht!)
+
+`supabase/schema.sql` wie gewohnt kopieren (GitHub → „Copy raw file“) und im SQL Editor mit **Run** ausführen.
+Ohne diesen Schritt: Fehler „Could not find the 'status' column“ beim Speichern von Verlobt/Verheiratet,
+und Rangliste/Erfolge bleiben leer. Die Datei lädt am Ende den Schema-Cache neu.
 
 ## 1. Bauen (PowerShell)
 
@@ -40,6 +51,6 @@ npx eas-cli@latest submit --platform ios --latest
 
 Version **1.2.0** anlegen, Build wählen, „Neuerungen in dieser Version“:
 ```
-Neu: Euer Zusammen-Zähler als Widget! Legt ihn auf den Home-Bildschirm oder den Sperrbildschirm und seht jederzeit, wie viele Tage ihr schon zusammen seid – mit Countdown zur Hochzeit für Verlobte.
+Neu: Euer Zusammen-Zähler als Widget für Home- und Sperrbildschirm! Dazu die Herz-Rangliste – wer denkt öfter an wen? – und 19 Paar-Erfolge zum Freischalten. Außerdem: Wünsche hakt ihr jetzt gezielt über den Kreis ab.
 ```
 Optional: einen Screenshot mit Widget in die Screenshots aufnehmen.

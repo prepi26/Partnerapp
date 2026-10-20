@@ -542,6 +542,39 @@ begin
 end;
 $$;
 
+-- ───────────── „Ich denk an dich“-Rangliste ─────────────
+-- Wie oft jeder an den anderen gedacht hat: heute, diese Woche, diesen Monat, dieses Jahr (deutsche Zeit).
+-- Rückgabetyp kann sich ändern – dann muss die alte Funktion erst weg.
+drop function if exists public.thought_stats();
+create function public.thought_stats()
+returns table (from_id uuid, today bigint, week bigint, month bigint, year bigint, total bigint, best_day bigint)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with local as (
+    select t.from_id, (t.created_at at time zone 'Europe/Berlin') as at, (now() at time zone 'Europe/Berlin') as now
+      from public.thoughts t
+     where t.couple_id = public.my_couple_id()
+  ),
+  per_day as (
+    select l.from_id, count(*) as c from local l group by l.from_id, date_trunc('day', l.at)
+  )
+  select l.from_id,
+         count(*) filter (where l.at >= date_trunc('day', l.now)),
+         count(*) filter (where l.at >= date_trunc('week', l.now)),
+         count(*) filter (where l.at >= date_trunc('month', l.now)),
+         count(*) filter (where l.at >= date_trunc('year', l.now)),
+         count(*),
+         (select max(p.c) from per_day p where p.from_id = l.from_id)
+    from local l
+   group by l.from_id
+$$;
+
+revoke execute on function public.thought_stats() from public, anon;
+grant execute on function public.thought_stats() to authenticated;
+
 -- ───────────── Live-Aktualisierung ─────────────
 
 do $$
@@ -571,3 +604,6 @@ update public.couples c
 
 -- Zur Kontrolle: Einladungscodes der Paare, die noch auf den Partner warten.
 select name_a, name_b, invite_code from public.couples where partner_b is null;
+
+-- Supabase (PostgREST) soll neue Spalten und Funktionen sofort kennen, nicht erst nach ein paar Minuten.
+notify pgrst, 'reload schema';

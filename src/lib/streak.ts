@@ -25,3 +25,18 @@ export function answerStreak(answers: Pick<Answer, 'user_id' | 'day'>[], me: str
   }
   return streak;
 }
+
+/** Längste Serie aufeinanderfolgender Tage, an denen beide geantwortet haben (für die Erfolge). */
+export function longestStreak(answers: Pick<Answer, 'user_id' | 'day'>[], me: string): number {
+  const mine = new Set(answers.filter((a) => a.user_id === me).map((a) => a.day));
+  const both = [...new Set(answers.filter((a) => a.user_id !== me && mine.has(a.day)).map((a) => a.day))].sort();
+  let best = 0;
+  let run = 0;
+  let previous: ISODate | null = null;
+  for (const day of both) {
+    run = previous && previousDay(day) === previous ? run + 1 : 1;
+    best = Math.max(best, run);
+    previous = day;
+  }
+  return best;
+}

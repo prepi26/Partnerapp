@@ -98,6 +98,8 @@ function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: bool
         headerTitleStyle: { color: colors.text, fontWeight: '700' },
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
+        // Nur der Pfeil – sonst steht dort der Name des vorigen Bildschirms, z. B. „(tabs)“.
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       {/* Einladungslink – in jedem Zustand erreichbar, leitet selbst weiter. */}
@@ -115,6 +117,7 @@ function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: bool
         <Stack.Screen name="wish-new" options={modal('Neuer Wunsch')} />
         <Stack.Screen name="date-new" options={modal('Neues Datum')} />
         <Stack.Screen name="question" options={{ headerShown: true, title: 'Frage des Tages' }} />
+        <Stack.Screen name="achievements" options={{ headerShown: true, title: 'Eure Erfolge' }} />
         <Stack.Screen name="settings" options={modal('Einstellungen')} />
         <Stack.Screen name="plus" options={modal('Wir zwei Plus')} />
         <Stack.Screen name="pack/[id]" options={{ headerShown: true, title: '' }} />

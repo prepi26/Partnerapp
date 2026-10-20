@@ -45,17 +45,21 @@ export default function Wishes() {
         keyExtractor={(w) => w.id}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
-          <Pressable
-            onPress={() => {
-              tap();
-              attempt(() => toggleWish(item));
-            }}
-            onLongPress={() => remove(item)}
-            style={({ pressed }) => [styles.item, pressed && { opacity: 0.8 }]}
-          >
-            <View style={[styles.check, item.done && styles.checkDone]}>
+          // Nur der Kreis hakt ab – sonst passiert es beim Scrollen aus Versehen. Lange drücken löscht.
+          <Pressable onLongPress={() => remove(item)} style={styles.item}>
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: item.done }}
+              accessibilityLabel={item.done ? 'Als offen markieren' : 'Als erfüllt markieren'}
+              hitSlop={12}
+              onPress={() => {
+                tap();
+                attempt(() => toggleWish(item));
+              }}
+              style={({ pressed }) => [styles.check, item.done && styles.checkDone, pressed && { opacity: 0.6 }]}
+            >
               {item.done ? <Ionicons name="checkmark" size={18} color={colors.white} /> : null}
-            </View>
+            </Pressable>
             <View style={{ flex: 1 }}>
               <Text style={[styles.title, item.done && styles.titleDone]}>
                 {categoryEmoji(item.category)} {item.title}
@@ -76,7 +80,7 @@ export default function Wishes() {
             <EmptyState
               icon="checkmark-done-outline"
               title="Noch nichts erfüllt"
-              text="Tippt einen Wunsch an, um ihn abzuhaken."
+              text="Tippt auf den Kreis neben einem Wunsch, um ihn abzuhaken."
             />
           )
         }
