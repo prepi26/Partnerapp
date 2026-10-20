@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ExpenseStatus } from '@/components/ExpenseStatus';
@@ -6,6 +6,7 @@ import { Card, confirmDestructive, EmptyState, SecondaryButton } from '@/compone
 import { attempt, useFamily } from '@/data/store';
 import { formatDate, formatTimestamp } from '@/lib/dates';
 import { categoryOf, formatMoney, needOf, shareOf } from '@/lib/money';
+import { close } from '@/lib/nav';
 import { colors, radius, spacing } from '@/theme';
 
 export default function ExpenseDetail() {
@@ -20,7 +21,7 @@ export default function ExpenseDetail() {
 
   const remove = () =>
     confirmDestructive('Eintrag löschen?', 'Der Eintrag und sein Beleg werden gelöscht.', 'Löschen', () => {
-      attempt(() => removeExpense(e)).then((ok) => ok && router.back());
+      attempt(() => removeExpense(e)).then((ok) => ok && close());
     });
 
   return (

@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -8,6 +7,7 @@ import { attempt, useFamily } from '@/data/store';
 import { HandoverStatus } from '@/data/types';
 import { toISO, today } from '@/lib/dates';
 import { HANDOVER_STATUS } from '@/lib/handovers';
+import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 const LATE = [10, 15, 30, 45, 60, 90];
@@ -25,7 +25,7 @@ export default function HandoverNew() {
     const ok = await attempt(() =>
       addHandover({ day, status, minutes_late: status === 'late' ? minutes : 0, note: note.trim() }),
     );
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 

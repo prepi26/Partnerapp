@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 
@@ -6,6 +5,7 @@ import { DateField } from '@/components/DateField';
 import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { toISO, today } from '@/lib/dates';
+import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 export default function JournalNew() {
@@ -17,7 +17,7 @@ export default function JournalNew() {
   const save = async () => {
     setBusy(true);
     const ok = await attempt(() => addJournal({ day, text: text.trim() }));
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 

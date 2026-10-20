@@ -1,10 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { INFO_CATEGORIES, infoCategory } from '@/lib/childInfo';
+import { close } from '@/lib/nav';
 import { spacing } from '@/theme';
 
 export default function ChildInfoEdit() {
@@ -24,14 +25,14 @@ export default function ChildInfoEdit() {
     const ok = await attempt(() =>
       saveChildInfo({ id: existing?.id, category, label: label.trim(), value: value.trim() }),
     );
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 
   const remove = () =>
     existing &&
     confirmDestructive('Eintrag löschen?', `„${existing.label}“ wird für euch beide gelöscht.`, 'Löschen', () => {
-      attempt(() => removeChildInfo(existing.id)).then((ok) => ok && router.back());
+      attempt(() => removeChildInfo(existing.id)).then((ok) => ok && close());
     });
 
   return (

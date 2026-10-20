@@ -1,6 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
@@ -9,6 +8,7 @@ import { IconName, PrimaryButton, showError } from '@/components/ui';
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { errorMessage } from '@/data/store';
+import { close } from '@/lib/nav';
 import { colors, gradient, radius, shadow, spacing } from '@/theme';
 
 const BENEFITS: { icon: IconName; title: string; text: string }[] = [
@@ -47,7 +47,7 @@ export default function PlusScreen() {
   const run = async (action: () => Promise<boolean>, failText: string) => {
     setBusy(true);
     try {
-      if (await action()) router.back();
+      if (await action()) close();
       else if (failText) showError('Nichts gefunden', failText);
     } catch (e) {
       showError('Das hat nicht geklappt', errorMessage(e));

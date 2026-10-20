@@ -86,8 +86,11 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   return must(await query) as Data[T];
 }
 
-async function fetchFamily(): Promise<Family | null> {
-  const rows = must(await supabase.from('families').select('*').limit(1)) as Family[];
+/** Die Familie, in der der Nutzer Elternteil ist – nicht die, die er als Fachkraft lesen darf. */
+async function fetchFamily(userId: string): Promise<Family | null> {
+  const rows = must(
+    await supabase.from('families').select('*').or(`parent_a.eq.${userId},parent_b.eq.${userId}`).limit(1),
+  ) as Family[];
   return rows[0] ?? null;
 }
 
@@ -212,7 +215,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
   }, []);
 
   const refresh = useCallback(async () => {
-    const f = await fetchFamily();
+    const f = await fetchFamily(userId);
     setFamily(f);
     // Ohne Familie: nur das eigene Tagebuch und ggf. Fachkraft-Zugänge.
     if (f) await Promise.all(TABLES.map(reload));
@@ -223,7 +226,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       ]);
       setData({ ...emptyData, journal, professional_access });
     }
-  }, [reload]);
+  }, [reload, userId]);
 
   useEffect(() => {
     const initialLoad = async () => {
@@ -265,7 +268,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       'postgres_changes',
       { event: '*', schema: 'public', table: 'families', filter: `id=eq.${familyId}` },
       () => {
-        fetchFamily()
+        fetchFamily(userId)
           .then(setFamily)
           .catch(() => {});
       },
@@ -274,7 +277,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [familyId, reload]);
+  }, [familyId, reload, userId]);
 
   const store = useMemo<Store>(() => {
     const me: ParentKey = family?.parent_b === userId ? 'b' : 'a';
@@ -327,7 +330,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       updateFamily: async (patch) => {
         if (!family) return;
         must(await supabase.from('families').update(patch).eq('id', family.id));
-        setFamily(await fetchFamily());
+        setFamily(await fetchFamily(userId));
       },
       proposeChanges: async ({ days, parent, note }) =>
         after(

@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -10,6 +9,7 @@ import { attempt, useFamily } from '@/data/store';
 import { ParentKey, ScheduleModel } from '@/data/types';
 import { addDays, parseISO, WEEKDAYS_SHORT } from '@/lib/dates';
 import { MODELS, plannedParent } from '@/lib/schedule';
+import { close } from '@/lib/nav';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Schedule() {
@@ -30,7 +30,7 @@ export default function Schedule() {
     const ok = await attempt(() =>
       updateFamily({ schedule_model: model, schedule_start: start, schedule_first: first }),
     );
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 
@@ -87,7 +87,7 @@ export default function Schedule() {
             {preview.map((week, i) => (
               <View key={i} style={styles.week}>
                 {week.map((day, j) => {
-                  const p = day < startDate ? null : plannedParent(draft, day);
+                  const p = plannedParent(draft, day);
                   const c = parentColor(p);
                   return (
                     <View key={j} style={[styles.cell, { backgroundColor: c.pale }]}>

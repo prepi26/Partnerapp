@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -9,6 +9,7 @@ import { attempt, useFamily } from '@/data/store';
 import { ParentKey } from '@/data/types';
 import { addDays, parseISO, toISO, today } from '@/lib/dates';
 import { acceptedChanges, dayInfo, other } from '@/lib/schedule';
+import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 const MAX_DAYS = 42;
@@ -35,7 +36,7 @@ export default function ChangeNew() {
   const save = async () => {
     setBusy(true);
     const ok = await attempt(() => proposeChanges({ days, parent, note: note.trim() }));
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 

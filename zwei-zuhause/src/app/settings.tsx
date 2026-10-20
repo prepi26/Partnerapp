@@ -7,6 +7,7 @@ import { Card, Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryB
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { attempt, useFamily } from '@/data/store';
+import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 const SHARES = [50, 60, 70, 80, 100, 40, 30, 20, 0];
@@ -32,7 +33,7 @@ export default function Settings() {
         default_share_a: me === 'a' ? myShare : 100 - myShare,
       }),
     );
-    if (ok) router.back();
+    if (ok) close();
     else setSaving(false);
   };
 

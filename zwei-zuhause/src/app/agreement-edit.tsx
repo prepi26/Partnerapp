@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 
@@ -7,6 +6,7 @@ import { attempt, useFamily } from '@/data/store';
 import { AgreementContent } from '@/data/types';
 import { AGREEMENT_SECTIONS } from '@/lib/agreement';
 import { MODELS } from '@/lib/schedule';
+import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 export default function AgreementEdit() {
@@ -28,7 +28,7 @@ export default function AgreementEdit() {
     const clean: AgreementContent = {};
     for (const s of AGREEMENT_SECTIONS) if (content[s.key]?.trim()) clean[s.key] = content[s.key].trim();
     const ok = await attempt(() => saveAgreement(clean));
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 

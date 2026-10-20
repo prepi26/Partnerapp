@@ -12,6 +12,7 @@ import { ExpenseKind, NeedType, ParentKey } from '@/data/types';
 import { toISO, today } from '@/lib/dates';
 import { CATEGORIES, formatMoney, NEEDS, parseMoney } from '@/lib/money';
 import { other } from '@/lib/schedule';
+import { close } from '@/lib/nav';
 import { colors, radius, spacing } from '@/theme';
 
 export default function ExpenseNew() {
@@ -68,7 +69,7 @@ export default function ExpenseNew() {
         receipt: receipt ?? undefined,
       }),
     );
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 

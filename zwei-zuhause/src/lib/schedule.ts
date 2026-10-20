@@ -30,13 +30,14 @@ export function other(key: ParentKey): ParentKey {
   return key === 'a' ? 'b' : 'a';
 }
 
-/** Bei wem ist das Kind laut Plan? null = kein Plan. */
+/** Bei wem ist das Kind laut Plan? null = kein Plan (oder vor dessen Beginn). */
 export function plannedParent(family: Family, day: ISODate | Date): ParentKey | null {
   if (family.schedule_model === 'none') return null;
   const date = typeof day === 'string' ? parseISO(day) : day;
   const offset = daysBetween(parseISO(family.schedule_start), date);
+  if (offset < 0) return null;
   const pattern = PATTERNS[family.schedule_model];
-  const index = ((offset % pattern.length) + pattern.length) % pattern.length;
+  const index = offset % pattern.length;
   return pattern[index] === 'F' ? family.schedule_first : other(family.schedule_first);
 }
 

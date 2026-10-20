@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -7,6 +6,7 @@ import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { addDays, toISO, today } from '@/lib/dates';
 import { DECISION_CATEGORIES, decisionCategory } from '@/lib/decisions';
+import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 export default function DecisionNew() {
@@ -23,7 +23,7 @@ export default function DecisionNew() {
     const ok = await attempt(() =>
       addDecision({ category, title: title.trim(), details: details.trim(), due_date: withDue ? due : null }),
     );
-    if (ok) router.back();
+    if (ok) close();
     else setBusy(false);
   };
 
