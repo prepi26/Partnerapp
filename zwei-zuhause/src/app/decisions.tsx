@@ -63,7 +63,7 @@ export default function Decisions() {
               {d.status === 'proposed' && !mine ? (
                 <AnswerBox
                   yes="Zustimmen"
-                  no="Nicht zustimmen"
+                  no="Ablehnen"
                   placeholder="z. B. Einverstanden, wenn …"
                   onAnswer={(agree, note) => answerDecision(d.id, agree, note)}
                 />
