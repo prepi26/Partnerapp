@@ -49,6 +49,7 @@ export interface Expense {
   paid_by: ParentKey;
   share_a: number;
   receipt_path: string | null;
+  need: NeedType;
   status: ExpenseStatus;
   created_by: string | null;
   created_at: string;
@@ -72,5 +73,79 @@ export interface JournalEntry {
   user_id: string;
   day: ISODate;
   text: string;
+  created_at: string;
+}
+
+export type NeedType = 'regular' | 'mehrbedarf' | 'sonderbedarf';
+
+export interface ChildInfo {
+  id: string;
+  family_id: string;
+  category: string;
+  label: string;
+  value: string;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export type DecisionStatus = 'proposed' | 'agreed' | 'rejected';
+
+export interface Decision {
+  id: string;
+  family_id: string;
+  category: string;
+  title: string;
+  details: string;
+  due_date: ISODate | null;
+  status: DecisionStatus;
+  answer_note: string;
+  created_by: string | null;
+  created_at: string;
+  answered_at: string | null;
+}
+
+export type HandoverStatus = 'on_time' | 'late' | 'missed';
+
+export interface Handover {
+  id: string;
+  family_id: string;
+  day: ISODate;
+  status: HandoverStatus;
+  minutes_late: number;
+  note: string;
+  reply: 'confirmed' | 'disputed' | null;
+  reply_note: string;
+  created_by: string | null;
+  created_at: string;
+  replied_at: string | null;
+}
+
+/** Abschnitt-Schlüssel → Text. */
+export type AgreementContent = Record<string, string>;
+
+export interface Agreement {
+  id: string;
+  family_id: string;
+  version: number;
+  content: AgreementContent;
+  hash: string;
+  created_by: string | null;
+  created_at: string;
+  accepted_a_at: string | null;
+  accepted_b_at: string | null;
+}
+
+export interface ProfessionalAccess {
+  id: string;
+  family_id: string;
+  label: string;
+  code: string;
+  invited_by: string | null;
+  invited_key: ParentKey;
+  other_approved_at: string | null;
+  professional: string | null;
+  joined_at: string | null;
+  expires_at: string;
+  revoked_at: string | null;
   created_at: string;
 }

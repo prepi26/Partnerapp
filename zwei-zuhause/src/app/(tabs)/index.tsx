@@ -7,13 +7,13 @@ import { InviteCard } from '@/components/InviteCard';
 import { parentColor } from '@/components/ParentTag';
 import { Card, GradientHeader, HeaderIcon, IconName } from '@/components/ui';
 import { useFamily } from '@/data/store';
-import { countdownLabel, daysBetween, formatWeekday, today } from '@/lib/dates';
+import { addDays, countdownLabel, daysBetween, formatWeekday, today } from '@/lib/dates';
 import { balanceAB, formatMoney } from '@/lib/money';
 import { acceptedChanges, dayInfo, nextHandover } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Home() {
-  const { family, me, myName, otherName, nameOf, otherJoined, schedule_changes, expenses, messages, userId } =
+  const { family, me, myName, otherName, nameOf, otherJoined, schedule_changes, expenses, messages, decisions, userId } =
     useFamily();
 
   const accepted = useMemo(() => acceptedChanges(schedule_changes), [schedule_changes]);
@@ -24,6 +24,14 @@ export default function Home() {
   const openChanges = schedule_changes.filter((c) => c.status === 'proposed' && c.created_by !== userId);
   const openExpenses = expenses.filter((e) => e.status === 'open' && e.created_by !== userId);
   const unread = messages.filter((m) => m.sender_key !== me && !m.read_at).length;
+  const openDecisions = decisions.filter((d) => d.status === 'proposed' && d.created_by !== userId).length;
+  // Heute oder gestern war Wechsel: kurz festhalten, wie die Übergabe lief.
+  const handoverRecent = [0, -1].some((offset) => {
+    const day = addDays(now, offset);
+    const before = dayInfo(family, accepted, new Map(), addDays(day, -1)).parent;
+    const after = dayInfo(family, accepted, new Map(), day).parent;
+    return !!before && !!after && before !== after;
+  });
 
   // Positiv: der andere schuldet mir.
   const raw = balanceAB(expenses);
@@ -63,6 +71,18 @@ export default function Home() {
           ) : null}
         </Card>
 
+        {handoverRecent ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/handover-new')}
+            style={({ pressed }) => [styles.banner, pressed && { opacity: 0.7 }]}
+          >
+            <Ionicons name="car" size={20} color={colors.primary} />
+            <Text style={styles.bannerText}>Übergabe gerade? Kurz festhalten, wie es lief.</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </Pressable>
+        ) : null}
+
         {!otherJoined ? <InviteCard code={family.invite_code} otherName={otherName} /> : null}
 
         <View style={styles.tiles}>
@@ -89,10 +109,11 @@ export default function Home() {
             onPress={() => router.navigate('/expenses')}
           />
           <Tile
-            icon="document-text"
-            title="Bericht"
-            value="PDF erstellen"
-            onPress={() => router.push('/report')}
+            icon="git-pull-request"
+            title="Entscheidungen"
+            value={openDecisions ? `${openDecisions} offen` : 'Keine offen'}
+            highlight={openDecisions > 0}
+            onPress={() => router.push('/decisions')}
           />
         </View>
 
@@ -158,5 +179,14 @@ const styles = StyleSheet.create({
   tileTitle: { fontSize: 13, color: colors.textMuted, fontWeight: '600' },
   tileValue: { fontSize: 18, color: colors.text, fontWeight: '800' },
   tileHint: { fontSize: 12, color: colors.primary, fontWeight: '700' },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primaryPale,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  bannerText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
   footer: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });

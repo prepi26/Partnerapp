@@ -8,13 +8,14 @@ import { errorMessage, useStore } from '@/data/store';
 import { colors, gradient, spacing } from '@/theme';
 
 export default function Onboarding() {
-  const { createFamily, joinFamily, signOut } = useStore();
+  const { createFamily, joinFamily, joinAsProfessional, signOut } = useStore();
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<'create' | 'join'>('create');
+  const [mode, setMode] = useState<'create' | 'join' | 'pro'>('create');
   const [myName, setMyName] = useState('');
   const [otherName, setOtherName] = useState('');
   const [kids, setKids] = useState('');
   const [code, setCode] = useState('');
+  const [proCode, setProCode] = useState('');
   const [busy, setBusy] = useState(false);
 
   const run = async (action: () => Promise<void>) => {
@@ -46,6 +47,7 @@ export default function Onboarding() {
           <View style={styles.switch}>
             <Chip label="Familie anlegen" selected={mode === 'create'} onPress={() => setMode('create')} />
             <Chip label="Ich habe einen Code" tint="accent" selected={mode === 'join'} onPress={() => setMode('join')} />
+            <Chip label="Ich bin Fachkraft" tint="accent" selected={mode === 'pro'} onPress={() => setMode('pro')} />
           </View>
 
           <Card style={styles.card}>
@@ -69,6 +71,29 @@ export default function Onboarding() {
                   icon="home"
                   disabled={busy || !myName.trim() || !otherName.trim()}
                   onPress={() => run(() => createFamily(myName.trim(), otherName.trim(), kids.trim()))}
+                />
+              </>
+            ) : mode === 'pro' ? (
+              <>
+                <Text style={styles.cardText}>
+                  Für Jugendamt, Beratungsstelle, Mediation, Verfahrensbeistand oder Anwalt: Die Eltern erstellen in der
+                  App einen 8-stelligen Code für dich. Der Zugang ist kostenlos und nur lesend.
+                </Text>
+                <Field
+                  label="Code der Familie"
+                  value={proCode}
+                  onChangeText={(t) => setProCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+                  placeholder="8 Zeichen"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  style={styles.code}
+                />
+                <PrimaryButton
+                  title={busy ? 'Prüfe…' : 'Zugang öffnen'}
+                  icon="key-outline"
+                  disabled={busy || proCode.length !== 8}
+                  onPress={() => run(() => joinAsProfessional(proCode))}
                 />
               </>
             ) : (
@@ -112,6 +137,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 16, color: colors.white, textAlign: 'center', opacity: 0.95, lineHeight: 22 },
   switch: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', flexWrap: 'wrap' },
   card: { gap: spacing.md, padding: spacing.lg },
+  cardText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   code: { fontSize: 24, letterSpacing: 6, textAlign: 'center', fontWeight: '800' },
   privacy: { fontSize: 14, color: colors.white, textAlign: 'center', lineHeight: 20, opacity: 0.95 },
 });

@@ -13,8 +13,14 @@ function icon(name: IconName, focusedName: IconName) {
 }
 
 export default function TabLayout() {
-  const { messages, me } = useFamily();
+  const { messages, me, userId, decisions, handovers, agreements, professional_access } = useFamily();
   const unread = messages.filter((m) => m.sender_key !== me && !m.read_at).length;
+  const latest = agreements[0];
+  const pending =
+    decisions.filter((d) => d.status === 'proposed' && d.created_by !== userId).length +
+    handovers.filter((h) => !h.reply && h.created_by !== userId).length +
+    (latest && !(me === 'a' ? latest.accepted_a_at : latest.accepted_b_at) ? 1 : 0) +
+    professional_access.filter((p) => !p.other_approved_at && !p.revoked_at && p.invited_key !== me).length;
   return (
     <Tabs
       screenOptions={{
@@ -38,7 +44,14 @@ export default function TabLayout() {
           tabBarBadge: unread > 0 ? unread : undefined,
         }}
       />
-      <Tabs.Screen name="journal" options={{ title: 'Tagebuch', tabBarIcon: icon('book-outline', 'book') }} />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'Mehr',
+          tabBarIcon: icon('grid-outline', 'grid'),
+          tabBarBadge: pending > 0 ? pending : undefined,
+        }}
+      />
     </Tabs>
   );
 }

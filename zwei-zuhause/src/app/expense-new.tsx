@@ -8,9 +8,9 @@ import { DateField } from '@/components/DateField';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { usePlus } from '@/data/plus';
 import { attempt, NewPhoto, useFamily } from '@/data/store';
-import { ExpenseKind, ParentKey } from '@/data/types';
+import { ExpenseKind, NeedType, ParentKey } from '@/data/types';
 import { toISO, today } from '@/lib/dates';
-import { CATEGORIES, formatMoney, parseMoney } from '@/lib/money';
+import { CATEGORIES, formatMoney, NEEDS, parseMoney } from '@/lib/money';
 import { other } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
@@ -26,6 +26,7 @@ export default function ExpenseNew() {
   // Mein Anteil in Prozent – gespeichert wird der Anteil von Elternteil a.
   const defaultMine = me === 'a' ? family.default_share_a : 100 - family.default_share_a;
   const [myShare, setMyShare] = useState(defaultMine);
+  const [need, setNeed] = useState<NeedType>('regular');
   const [receipt, setReceipt] = useState<NewPhoto | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -63,6 +64,7 @@ export default function ExpenseNew() {
         day,
         paid_by: paidBy,
         share_a: me === 'a' ? myShare : 100 - myShare,
+        need: kind === 'payment' ? 'regular' : need,
         receipt: receipt ?? undefined,
       }),
     );
@@ -130,6 +132,14 @@ export default function ExpenseNew() {
                 />
               ))}
             </View>
+
+            <Label>Art der Ausgabe</Label>
+            <View style={styles.chips}>
+              {NEEDS.map((n) => (
+                <Chip key={n.key} label={n.label} tint="accent" selected={need === n.key} onPress={() => setNeed(n.key)} />
+              ))}
+            </View>
+            <Text style={styles.hint}>{NEEDS.find((n) => n.key === need)?.text}</Text>
           </>
         )}
 

@@ -5,7 +5,7 @@ import { ExpenseStatus } from '@/components/ExpenseStatus';
 import { Card, confirmDestructive, EmptyState, SecondaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { formatDate, formatTimestamp } from '@/lib/dates';
-import { categoryOf, formatMoney, shareOf } from '@/lib/money';
+import { categoryOf, formatMoney, needOf, shareOf } from '@/lib/money';
 import { colors, radius, spacing } from '@/theme';
 
 export default function ExpenseDetail() {
@@ -37,6 +37,7 @@ export default function ExpenseDetail() {
         ) : (
           <>
             <Line label="Kategorie" value={categoryOf(e.category).label} />
+            {e.need && e.need !== 'regular' ? <Line label="Art" value={needOf(e.need).label} /> : null}
             <Line label="Bezahlt von" value={who(e.paid_by)} />
             <Line label={`Anteil ${nameOf('a')}`} value={`${e.share_a} % · ${formatMoney(shareOf(e, 'a'))}`} />
             <Line label={`Anteil ${nameOf('b')}`} value={`${100 - e.share_a} % · ${formatMoney(shareOf(e, 'b'))}`} />

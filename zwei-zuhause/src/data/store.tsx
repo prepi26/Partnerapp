@@ -2,24 +2,76 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { AppState } from 'react-native';
 
 import { showError } from '@/components/ui';
+import { unregisterForPush } from '@/lib/push';
 import { must, supabase } from '@/lib/supabase';
 
 import { deleteAllReceipts, deleteReceipt, signedReceiptUrls, uploadReceipt } from './receipts';
-import { Expense, ExpenseKind, Family, ISODate, JournalEntry, Message, ParentKey, ScheduleChange } from './types';
+import {
+  Agreement,
+  AgreementContent,
+  ChildInfo,
+  Decision,
+  Expense,
+  ExpenseKind,
+  Family,
+  Handover,
+  HandoverStatus,
+  ISODate,
+  JournalEntry,
+  Message,
+  NeedType,
+  ParentKey,
+  ProfessionalAccess,
+  ScheduleChange,
+} from './types';
 
 interface Data {
   schedule_changes: ScheduleChange[];
   expenses: Expense[];
   messages: Message[];
   journal: JournalEntry[];
+  child_info: ChildInfo[];
+  decisions: Decision[];
+  handovers: Handover[];
+  agreements: Agreement[];
+  professional_access: ProfessionalAccess[];
 }
 
 type Table = keyof Data;
-const TABLES: Table[] = ['schedule_changes', 'expenses', 'messages', 'journal'];
+const TABLES: Table[] = [
+  'schedule_changes',
+  'expenses',
+  'messages',
+  'journal',
+  'child_info',
+  'decisions',
+  'handovers',
+  'agreements',
+  'professional_access',
+];
 /** Diese Tabellen teilen beide Elternteile – Live-Updates. Das Tagebuch ist privat. */
-const SHARED: Table[] = ['schedule_changes', 'expenses', 'messages'];
+const SHARED: Table[] = [
+  'schedule_changes',
+  'expenses',
+  'messages',
+  'child_info',
+  'decisions',
+  'handovers',
+  'agreements',
+  'professional_access',
+];
 
-const emptyData: Data = { schedule_changes: [], expenses: [], messages: [], journal: [] };
+const emptyData: Data = {
+  schedule_changes: [],
+  expenses: [],
+  messages: [],
+  journal: [],
+  child_info: [],
+  decisions: [],
+  handovers: [],
+  agreements: [],
+  professional_access: [],
+};
 
 async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   let query = supabase.from(table).select('*');
@@ -27,6 +79,10 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   if (table === 'expenses') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
   if (table === 'journal') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
   if (table === 'schedule_changes') query = query.order('day', { ascending: true });
+  if (table === 'child_info') query = query.order('category').order('label');
+  if (table === 'decisions' || table === 'professional_access') query = query.order('created_at', { ascending: false });
+  if (table === 'handovers') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
+  if (table === 'agreements') query = query.order('version', { ascending: false });
   return must(await query) as Data[T];
 }
 
@@ -40,6 +96,8 @@ const ERRORS: Record<string, string> = {
   already_in_family: 'Du bist schon mit einer Familie verbunden.',
   not_authenticated: 'Bitte melde dich erneut an.',
   not_allowed: 'Das geht nicht mehr – vermutlich wurde es schon beantwortet.',
+  is_professional: 'Dieses Konto ist ein Fachkraft-Zugang. Für die eigene Familie brauchst du ein eigenes Konto.',
+  is_parent: 'Dieses Konto gehört zu einer Familie. Für den Fachkraft-Zugang brauchst du ein eigenes Konto.',
 };
 
 /** Übersetzt Server-Fehler in verständliche Sätze. */
@@ -74,6 +132,7 @@ export interface NewExpense {
   day: ISODate;
   paid_by: ParentKey;
   share_a: number;
+  need: NeedType;
   receipt?: NewPhoto;
 }
 
@@ -103,7 +162,8 @@ interface Store extends Data {
   createFamily(myName: string, otherName: string, children: string): Promise<void>;
   joinFamily(code: string): Promise<void>;
   updateFamily(patch: FamilyPatch): Promise<void>;
-  proposeChange(change: { day: ISODate; parent: ParentKey; note: string }): Promise<void>;
+  /** Ein oder mehrere Tage (z. B. Ferien) auf einmal vorschlagen. */
+  proposeChanges(change: { days: ISODate[]; parent: ParentKey; note: string }): Promise<void>;
   answerChange(id: string, accept: boolean): Promise<void>;
   withdrawChange(id: string): Promise<void>;
   addExpense(expense: NewExpense): Promise<void>;
@@ -112,6 +172,21 @@ interface Store extends Data {
   sendMessage(text: string): Promise<void>;
   markRead(): Promise<void>;
   addJournal(entry: { day: ISODate; text: string }): Promise<void>;
+  saveChildInfo(info: { id?: string; category: string; label: string; value: string }): Promise<void>;
+  removeChildInfo(id: string): Promise<void>;
+  addDecision(decision: { category: string; title: string; details: string; due_date: ISODate | null }): Promise<void>;
+  answerDecision(id: string, agree: boolean, note: string): Promise<void>;
+  withdrawDecision(id: string): Promise<void>;
+  addHandover(handover: { day: ISODate; status: HandoverStatus; minutes_late: number; note: string }): Promise<void>;
+  replyHandover(id: string, confirm: boolean, note: string): Promise<void>;
+  saveAgreement(content: AgreementContent): Promise<void>;
+  acceptAgreement(id: string): Promise<void>;
+  inviteProfessional(label: string, days: number): Promise<string>;
+  approveProfessional(id: string): Promise<void>;
+  revokeProfessional(id: string): Promise<void>;
+  /** Konto ist eine Fachkraft (Jugendamt, Beratung …) statt eines Elternteils. */
+  isProfessional: boolean;
+  joinAsProfessional(code: string): Promise<void>;
   removeJournal(id: string): Promise<void>;
   signOut(): Promise<void>;
   deleteAccount(): Promise<void>;
@@ -139,9 +214,15 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
   const refresh = useCallback(async () => {
     const f = await fetchFamily();
     setFamily(f);
-    // Das Tagebuch gehört dem Nutzer, nicht der Familie – es lädt auch ohne Familie.
+    // Ohne Familie: nur das eigene Tagebuch und ggf. Fachkraft-Zugänge.
     if (f) await Promise.all(TABLES.map(reload));
-    else setData({ ...emptyData, journal: await fetchTable('journal') });
+    else {
+      const [journal, professional_access] = await Promise.all([
+        fetchTable('journal'),
+        fetchTable('professional_access'),
+      ]);
+      setData({ ...emptyData, journal, professional_access });
+    }
   }, [reload]);
 
   useEffect(() => {
@@ -207,6 +288,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     };
 
     const cleanUp = async () => {
+      await unregisterForPush();
       await supabase.auth.signOut();
     };
 
@@ -247,8 +329,11 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         must(await supabase.from('families').update(patch).eq('id', family.id));
         setFamily(await fetchFamily());
       },
-      proposeChange: async (change) =>
-        after('schedule_changes', await supabase.from('schedule_changes').insert(change)),
+      proposeChanges: async ({ days, parent, note }) =>
+        after(
+          'schedule_changes',
+          await supabase.from('schedule_changes').insert(days.map((day) => ({ day, parent, note }))),
+        ),
       answerChange: async (id, accept) =>
         after('schedule_changes', await supabase.rpc('answer_schedule_change', { p_id: id, p_accept: accept })),
       withdrawChange: async (id) =>
@@ -271,6 +356,37 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       },
       addJournal: async (entry) => after('journal', await supabase.from('journal').insert(entry)),
       removeJournal: async (id) => after('journal', await supabase.from('journal').delete().eq('id', id)),
+      saveChildInfo: async ({ id, ...info }) =>
+        after(
+          'child_info',
+          id
+            ? await supabase.from('child_info').update(info).eq('id', id)
+            : await supabase.from('child_info').insert(info),
+        ),
+      removeChildInfo: async (id) => after('child_info', await supabase.from('child_info').delete().eq('id', id)),
+      addDecision: async (decision) => after('decisions', await supabase.from('decisions').insert(decision)),
+      answerDecision: async (id, agree, note) =>
+        after('decisions', await supabase.rpc('answer_decision', { p_id: id, p_agree: agree, p_note: note })),
+      withdrawDecision: async (id) => after('decisions', await supabase.from('decisions').delete().eq('id', id)),
+      addHandover: async (handover) => after('handovers', await supabase.from('handovers').insert(handover)),
+      replyHandover: async (id, confirm, note) =>
+        after('handovers', await supabase.rpc('reply_handover', { p_id: id, p_confirm: confirm, p_note: note })),
+      saveAgreement: async (content) => after('agreements', await supabase.from('agreements').insert({ content })),
+      acceptAgreement: async (id) => after('agreements', await supabase.rpc('accept_agreement', { p_id: id })),
+      inviteProfessional: async (label, days) => {
+        const code = must(await supabase.rpc('create_professional_invite', { p_label: label, p_days: days })) as string;
+        await reload('professional_access');
+        return code;
+      },
+      approveProfessional: async (id) =>
+        after('professional_access', await supabase.rpc('approve_professional', { p_id: id })),
+      revokeProfessional: async (id) =>
+        after('professional_access', await supabase.rpc('revoke_professional', { p_id: id })),
+      isProfessional: !family && data.professional_access.some((p) => p.professional === userId),
+      joinAsProfessional: async (code) => {
+        must(await supabase.rpc('join_as_professional', { p_code: code }));
+        await refresh();
+      },
       deleteAccount: async () => {
         // Bin ich der letzte in der Familie, verschwinden mit ihr auch die Belege.
         if (family && !otherJoined) await deleteAllReceipts(family.id);

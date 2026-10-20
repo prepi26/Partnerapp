@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Card, confirmDestructive, EmptyState, Fab, GradientHeader } from '@/components/ui';
+import { Card, confirmDestructive, EmptyState, Fab } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { formatTimestamp, formatWeekday } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
@@ -16,7 +16,6 @@ export default function Journal() {
 
   return (
     <View style={{ flex: 1 }}>
-      <GradientHeader title="Tagebuch" subtitle="🔒 Nur für dich" />
       <FlatList
         data={journal}
         keyExtractor={(j) => j.id}

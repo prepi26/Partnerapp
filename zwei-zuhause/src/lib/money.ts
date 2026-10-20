@@ -1,4 +1,4 @@
-import { Expense, ParentKey } from '@/data/types';
+import { Expense, NeedType, ParentKey } from '@/data/types';
 
 /** 1234 -> "12,34 €" (ohne Intl, das nicht auf jedem Gerät vollständig ist). */
 export function formatMoney(cents: number): string {
@@ -51,4 +51,23 @@ export const CATEGORIES: { key: string; label: string; emoji: string }[] = [
 
 export function categoryOf(key: string) {
   return CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[CATEGORIES.length - 1];
+}
+
+/** Nur zur Orientierung – die Einordnung im Einzelfall ist keine Frage, die die App beantwortet. */
+export const NEEDS: { key: NeedType; label: string; text: string }[] = [
+  { key: 'regular', label: 'Laufend', text: 'Alltägliches, das eigentlich der Unterhalt abdeckt – z. B. Kleidung, Schulsachen.' },
+  {
+    key: 'mehrbedarf',
+    label: 'Mehrbedarf',
+    text: 'Regelmäßig und vorhersehbar, zusätzlich zum Unterhalt – z. B. Kita-Beitrag, Nachhilfe, Zahnspange.',
+  },
+  {
+    key: 'sonderbedarf',
+    label: 'Sonderbedarf',
+    text: 'Unvorhersehbar und außergewöhnlich hoch – z. B. kurzfristige Behandlung. Zeitnah ansprechen: Der Anspruch ist befristet.',
+  },
+];
+
+export function needOf(key: NeedType) {
+  return NEEDS.find((n) => n.key === key) ?? NEEDS[0];
 }

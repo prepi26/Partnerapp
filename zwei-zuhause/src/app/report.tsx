@@ -1,32 +1,44 @@
-import * as Print from 'expo-print';
 import { router } from 'expo-router';
-import * as Sharing from 'expo-sharing';
 import { useState } from 'react';
-import { Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { Card, Chip, Label, PrimaryButton, showError } from '@/components/ui';
 import { usePlus } from '@/data/plus';
 import { errorMessage, useFamily } from '@/data/store';
 import { addDays, formatDate, toISO, today } from '@/lib/dates';
-import { buildReportHtml } from '@/lib/report';
+import { ReportSection } from '@/lib/report';
+import { RANGES, shareReport } from '@/lib/shareReport';
 import { colors, spacing } from '@/theme';
 
-const RANGES = [
-  { key: '30', label: '30 Tage', days: 30 },
-  { key: '90', label: '3 Monate', days: 90 },
-  { key: '365', label: '12 Monate', days: 365 },
-] as const;
+const SECTIONS: { key: ReportSection; title: string; text: string }[] = [
+  { key: 'schedule', title: 'Umgang', text: 'Tage je Elternteil, Tauschwünsche' },
+  { key: 'handovers', title: 'Übergaben', text: 'Pünktlich, verspätet, ausgefallen' },
+  { key: 'decisions', title: 'Entscheidungen', text: 'Fragen und Antworten' },
+  { key: 'agreement', title: 'Elternvereinbarung', text: 'Aktuelle Fassung mit Zustimmungen' },
+  { key: 'expenses', title: 'Kosten', text: 'Ausgaben, Anteile, Saldo' },
+  { key: 'messages', title: 'Nachrichten', text: 'Vollständiger Verlauf mit Prüfsummen' },
+  { key: 'journal', title: 'Mein Tagebuch', text: 'Nur deine eigenen Notizen' },
+];
 
 export default function Report() {
   const store = useFamily();
   const { active: plus } = usePlus();
+  const [mode, setMode] = useState<'kurz' | 'voll'>('kurz');
   const [range, setRange] = useState<string>('90');
-  const [sections, setSections] = useState({ schedule: true, expenses: true, messages: true, journal: false });
+  const [sections, setSections] = useState<Record<ReportSection, boolean>>({
+    schedule: true,
+    handovers: true,
+    decisions: true,
+    agreement: true,
+    expenses: true,
+    messages: true,
+    journal: false,
+  });
   const [busy, setBusy] = useState(false);
 
   const to = toISO(today());
   const from = toISO(addDays(today(), -(RANGES.find((r) => r.key === range)?.days ?? 90) + 1));
-  const toggle = (key: keyof typeof sections) => setSections((s) => ({ ...s, [key]: !s[key] }));
+  const toggle = (key: ReportSection) => setSections((s) => ({ ...s, [key]: !s[key] }));
 
   const create = async () => {
     if (!plus) {
@@ -35,23 +47,22 @@ export default function Report() {
     }
     setBusy(true);
     try {
-      const html = buildReportHtml({
+      await shareReport({
         family: store.family,
-        me: store.me,
+        author: store.myName,
+        journalOwner: store.me,
         from,
         to,
+        mode,
         sections,
         changes: store.schedule_changes,
         expenses: store.expenses,
         messages: store.messages,
+        decisions: store.decisions,
+        handovers: store.handovers,
+        agreements: store.agreements,
         journal: store.journal,
       });
-      if (Platform.OS === 'web') {
-        await Print.printAsync({ html });
-      } else {
-        const { uri } = await Print.printToFileAsync({ html });
-        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: 'Bericht teilen' });
-      }
     } catch (e) {
       showError('PDF nicht erstellt', errorMessage(e));
     }
@@ -61,9 +72,19 @@ export default function Report() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.intro}>
-        Ein sachlicher Überblick für Beratungsstelle, Jugendamt, Mediation oder Anwalt – mit Datum und Uhrzeit zu jedem
-        Eintrag.
+        Für Beratungsstelle, Jugendamt, Mediation oder Anwalt – mit Datum und Uhrzeit zu jedem Eintrag, vollständig und
+        chronologisch.
       </Text>
+      <View style={styles.chips}>
+        <Chip label="Kurzbericht (1 Seite)" selected={mode === 'kurz'} onPress={() => setMode('kurz')} />
+        <Chip label="Vollständig" tint="accent" selected={mode === 'voll'} onPress={() => setMode('voll')} />
+      </View>
+      <Text style={styles.small}>
+        {mode === 'kurz'
+          ? 'Zahlen auf einen Blick: Betreuungstage, Übergaben, Antwortzeiten, Kosten, offene Entscheidungen. Ideal fürs Erstgespräch.'
+          : 'Alle Einträge im Detail.'}
+      </Text>
+
       <Label>Zeitraum</Label>
       <View style={styles.chips}>
         {RANGES.map((r) => (
@@ -74,22 +95,21 @@ export default function Report() {
         {formatDate(from)} bis {formatDate(to)}
       </Text>
 
-      <Card style={{ gap: spacing.md }}>
-        <Toggle title="Umgang" text="Tage je Elternteil, Tauschwünsche" value={sections.schedule} onChange={() => toggle('schedule')} />
-        <Toggle title="Kosten" text="Ausgaben, Anteile, Saldo" value={sections.expenses} onChange={() => toggle('expenses')} />
-        <Toggle title="Nachrichten" text="Vollständiger Verlauf mit Prüfsummen" value={sections.messages} onChange={() => toggle('messages')} />
-        <Toggle title="Mein Tagebuch" text="Nur deine eigenen Notizen" value={sections.journal} onChange={() => toggle('journal')} />
-      </Card>
+      {mode === 'voll' ? (
+        <Card style={{ gap: spacing.md }}>
+          {SECTIONS.map((s) => (
+            <Toggle key={s.key} title={s.title} text={s.text} value={sections[s.key]} onChange={() => toggle(s.key)} />
+          ))}
+        </Card>
+      ) : null}
 
       <PrimaryButton
         title={busy ? 'Erstelle PDF…' : plus ? 'PDF erstellen' : 'PDF erstellen (Plus)'}
         icon="document-text"
-        disabled={busy || !Object.values(sections).some(Boolean)}
+        disabled={busy || (mode === 'voll' && !Object.values(sections).some(Boolean))}
         onPress={create}
       />
-      <Text style={styles.small}>
-        Der Bericht entsteht auf deinem Handy. Du entscheidest, an wen du ihn weitergibst.
-      </Text>
+      <Text style={styles.small}>Der Bericht entsteht auf deinem Handy. Du entscheidest, an wen du ihn weitergibst.</Text>
     </ScrollView>
   );
 }

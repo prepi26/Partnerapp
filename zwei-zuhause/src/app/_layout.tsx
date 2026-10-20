@@ -1,6 +1,8 @@
-import { Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { DialogHost, PrimaryButton } from '@/components/ui';
@@ -8,6 +10,7 @@ import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
 import { StoreProvider, useStore } from '@/data/store';
+import { registerForPush, urlFromResponse } from '@/lib/push';
 import { colors, spacing } from '@/theme';
 
 export default function RootLayout() {
@@ -29,7 +32,7 @@ export default function RootLayout() {
 function Gate() {
   const { loading, session } = useAuth();
   if (loading) return <Blank />;
-  if (!session) return <RootStack signedIn={false} hasFamily={false} />;
+  if (!session) return <RootStack signedIn={false} hasFamily={false} professional={false} />;
   return (
     // key: beim Kontowechsel wird aller Zustand verworfen.
     <StoreProvider key={session.user.id} userId={session.user.id}>
@@ -39,7 +42,7 @@ function Gate() {
 }
 
 function SignedIn() {
-  const { loading, loadFailed, family, retry } = useStore();
+  const { loading, loadFailed, family, isProfessional, retry } = useStore();
   if (loading) return <Blank />;
   if (loadFailed) {
     return (
@@ -52,12 +55,42 @@ function SignedIn() {
   }
   return (
     <PlusProvider>
-      <RootStack signedIn hasFamily={family !== null} />
+      <RootStack signedIn hasFamily={family !== null} professional={isProfessional} />
+      {(family || isProfessional) && Platform.OS !== 'web' ? <PushSetup /> : null}
     </PlusProvider>
   );
 }
 
-function RootStack({ signedIn, hasFamily }: { signedIn: boolean; hasFamily: boolean }) {
+/** Meldet das Handy für Mitteilungen an und öffnet beim Antippen einer Mitteilung den passenden Bildschirm. */
+function PushSetup() {
+  const response = Notifications.useLastNotificationResponse();
+
+  useEffect(() => {
+    registerForPush();
+  }, []);
+
+  useEffect(() => {
+    const url = urlFromResponse(response);
+    if (!url) return;
+    try {
+      router.navigate(url as Parameters<typeof router.navigate>[0]);
+    } catch {
+      // Navigation noch nicht bereit – dann bleibt die Startseite offen.
+    }
+  }, [response]);
+
+  return null;
+}
+
+function RootStack({
+  signedIn,
+  hasFamily,
+  professional,
+}: {
+  signedIn: boolean;
+  hasFamily: boolean;
+  professional: boolean;
+}) {
   return (
     <Stack
       screenOptions={{
@@ -74,8 +107,12 @@ function RootStack({ signedIn, hasFamily }: { signedIn: boolean; hasFamily: bool
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="login" />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !hasFamily}>
+      <Stack.Protected guard={signedIn && !hasFamily && !professional}>
         <Stack.Screen name="onboarding" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && professional}>
+        <Stack.Screen name="cases" />
+        <Stack.Screen name="case/[id]" options={{ headerShown: true, title: '' }} />
       </Stack.Protected>
       <Stack.Protected guard={signedIn && hasFamily}>
         <Stack.Screen name="(tabs)" />
@@ -85,6 +122,17 @@ function RootStack({ signedIn, hasFamily }: { signedIn: boolean; hasFamily: bool
         <Stack.Screen name="journal-new" options={modal('Neuer Eintrag')} />
         <Stack.Screen name="schedule" options={modal('Umgangsplan')} />
         <Stack.Screen name="report" options={{ headerShown: true, title: 'Bericht als PDF' }} />
+        <Stack.Screen name="journal" options={{ headerShown: true, title: 'Tagebuch 🔒' }} />
+        <Stack.Screen name="decisions" options={{ headerShown: true, title: 'Entscheidungen' }} />
+        <Stack.Screen name="decision-new" options={modal('Neue Frage')} />
+        <Stack.Screen name="handovers" options={{ headerShown: true, title: 'Übergaben' }} />
+        <Stack.Screen name="handover-new" options={modal('Übergabe eintragen')} />
+        <Stack.Screen name="child-info" options={{ headerShown: true, title: 'Infos zum Kind' }} />
+        <Stack.Screen name="child-info-edit" options={modal('Info')} />
+        <Stack.Screen name="agreement" options={{ headerShown: true, title: 'Elternvereinbarung' }} />
+        <Stack.Screen name="agreement-edit" options={modal('Vereinbarung bearbeiten')} />
+        <Stack.Screen name="professionals" options={{ headerShown: true, title: 'Fachkräfte' }} />
+        <Stack.Screen name="help" options={{ headerShown: true, title: 'Hilfe & Beratung' }} />
         <Stack.Screen name="settings" options={modal('Einstellungen')} />
         <Stack.Screen name="plus" options={modal('Zwei Zuhause Plus')} />
       </Stack.Protected>
