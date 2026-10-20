@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Android: Bildmarke in der sicheren Zone (ca. 66 %), Hintergrund kommt aus android-background.svg. -->
+  <g transform="translate(512 512) scale(0.62) translate(-512 -560)">
+  <g fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M196 520 L360 372 L500 498 V752 H236 V484"/>
+    <path d="M828 520 L664 372 L524 498 V752 H788 V484"/>
+  </g>
+  <path d="M512 760 C 420 690 386 646 386 604 C 386 563 418 538 452 538 C 479 538 499 553 512 573 C 525 553 545 538 572 538 C 606 538 638 563 638 604 C 638 646 604 690 512 760 Z" fill="#F4B36B" stroke="#3B88A3" stroke-width="28" stroke-linejoin="round"/>
+  </g>
+</svg>

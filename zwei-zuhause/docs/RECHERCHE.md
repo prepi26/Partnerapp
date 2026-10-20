@@ -97,7 +97,7 @@ Hinweis: ohne gerichtliche Billigung (§ 156 Abs. 2 FamFG) nicht vollstreckbar.
 | Kosten: Mehr-/Sonderbedarf-Kennzeichnung | ✅ gebaut |
 | Hilfe & Beratung (Notfallnummern, Jugendamt-Hinweise) | ✅ gebaut |
 | Zeitraum-Tausch (Ferien) | ✅ gebaut |
-| Fachkraft-Lesezugang (Jugendamt, Beratung, Verfahrensbeistand) | ✅ gebaut (Zustimmung des einladenden Elternteils, für den anderen sichtbar) |
+| Fachkraft-Lesezugang (Jugendamt, Beratung, Verfahrensbeistand) | ✅ gebaut (Zustimmung beider Eltern, befristet, widerrufbar, nie das Tagebuch) |
 | Unterhalt Soll/Ist | ⏳ Phase 2 |
 | KI-Umformulierung (Ton) | ⏳ Phase 2 (LLM-Kosten, AV-Vertrag) |
 | Schulferien je Bundesland | ⏳ Phase 2 (Datenquelle nötig) |

@@ -9,7 +9,7 @@ async function newParent(browser, label) {
   page.on('pageerror', (e) => errors.push(`${label} PAGEERROR: ${e.message}`));
   return page;
 }
-const shot = (page, name) => page.screenshot({ path: `' + (process.env.SHOTS || '/tmp/zz-shots') + '/${name}.png` });
+const shot = (page, name) => page.screenshot({ path: `${process.env.SHOTS || '/tmp/zz-shots'}/${name}.png` });
 async function signup(page, email) {
   await page.goto(URL);
   await page.getByPlaceholder('name@beispiel.de').fill(email);

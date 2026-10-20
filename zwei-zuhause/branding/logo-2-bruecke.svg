@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Konzept 2 „Brücke“: zwei Eltern-Punkte, ein Bogen, das Kind obenauf – Verbindung trotz Abstand. -->
+  <rect width="1024" height="1024" fill="#F6F8F7"/>
+  <path d="M232 700 Q512 260 792 700" fill="none" stroke="#2F8F83" stroke-width="64" stroke-linecap="round"/>
+  <circle cx="232" cy="700" r="84" fill="#2F8F83"/>
+  <circle cx="792" cy="700" r="84" fill="#D9893A"/>
+  <circle cx="512" cy="392" r="64" fill="#4F7CC9"/>
+</svg>

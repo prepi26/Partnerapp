@@ -10,7 +10,7 @@ async function newUser(browser, label) {
   await page.addInitScript(() => { window.print = () => { window.__printed = (window.__printed || 0) + 1; }; });
   return page;
 }
-const shot = (page, name) => page.screenshot({ path: `' + (process.env.SHOTS || '/tmp/zz-shots') + '/${name}.png`, fullPage: false });
+const shot = (page, name) => page.screenshot({ path: `${process.env.SHOTS || '/tmp/zz-shots'}/${name}.png`, fullPage: false });
 async function signup(page, email) {
   await page.goto(URL);
   await page.getByPlaceholder('name@beispiel.de').fill(email);
