@@ -2,12 +2,19 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Sharing from 'expo-sharing';
 import { useRef, useState } from 'react';
-import { Image, Modal, Platform, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { colors, gradient, radius, spacing } from '@/theme';
 
 import { HeaderIcon, PrimaryButton, SecondaryButton, showError } from './ui';
+
+const APP_LINK = 'https://apps.apple.com/app/id6820457302';
+const SHARE_TEXT = `Unser Zusammen-Zähler aus „Wir zwei“ 💖 Die App für Paare: ${APP_LINK}`;
+
+/** Deko oben auf der Karte – „Ohne“ für Fotos, auf denen Emojis stören würden. */
+const DEFAULT_DECORATION = '🌴💖🌊';
+const DECORATIONS = ['', DEFAULT_DECORATION, '💖', '💍', '💑', '🥂', '🌹', '✨'];
 
 interface ShareCardProps {
   names: string;
@@ -26,22 +33,38 @@ export function ShareCardButton(props: ShareCardProps) {
   const [busy, setBusy] = useState(false);
   // Eigenes Paarfoto als Hintergrund – bleibt nur auf dem Handy, wird nirgends hochgeladen.
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  // null = automatisch: mit Foto keine Deko, ohne Foto Palme/Herz/Welle.
+  const [decoration, setDecoration] = useState<string | null>(null);
+  const shownDecoration = decoration ?? (photoUri ? '' : DEFAULT_DECORATION);
   const cardRef = useRef<View>(null);
 
   if (Platform.OS === 'web') return null;
 
   const share = async () => {
     setBusy(true);
+    let uri: string;
     try {
-      const uri = await captureRef(cardRef, { format: 'png', width: 1080, height: 1920, result: 'tmpfile' });
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png', dialogTitle: 'Eure Karte teilen' });
+      uri = await captureRef(cardRef, { format: 'png', width: 1080, height: 1920, result: 'tmpfile' });
+    } catch {
+      setBusy(false);
+      showError('Bild konnte nicht erstellt werden', 'Bitte versuch es noch einmal.');
+      return;
+    }
+    // Erst die Vorschau schließen, dann das Teilen-Menü öffnen – zwei Fenster übereinander
+    // lässt iOS manchmal nicht zu, dann ging Teilen erst nach einem Neustart wieder.
+    setOpen(false);
+    setBusy(false);
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    try {
+      if (Platform.OS === 'ios') {
+        // Bild + Text mit App-Store-Link, damit Freunde die App direkt finden.
+        await Share.share({ url: uri, message: SHARE_TEXT });
+      } else if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Eure Karte teilen' });
       }
-      setOpen(false);
     } catch {
       showError('Teilen hat nicht geklappt', 'Bitte versuch es noch einmal.');
     }
-    setBusy(false);
   };
 
   const pickPhoto = async () => {
@@ -60,8 +83,26 @@ export function ShareCardButton(props: ShareCardProps) {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <View style={styles.backdrop}>
           <View ref={cardRef} collapsable={false} style={styles.cardFrame}>
-            <ShareCard {...props} photoUri={photoUri} />
+            <ShareCard {...props} photoUri={photoUri} decoration={shownDecoration} />
           </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.decoScroll}
+            contentContainerStyle={styles.decoRow}
+          >
+            {DECORATIONS.map((d) => (
+              <Pressable
+                key={d || 'none'}
+                accessibilityRole="button"
+                accessibilityLabel={d ? `Deko ${d}` : 'Ohne Deko'}
+                onPress={() => setDecoration(d)}
+                style={[styles.decoChip, shownDecoration === d && styles.decoChipActive]}
+              >
+                <Text style={d ? styles.decoEmoji : styles.decoNone}>{d || 'Ohne'}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
           <View style={styles.actions}>
             <PrimaryButton
               title={busy ? 'Einen Moment…' : 'Teilen'}
@@ -91,7 +132,16 @@ export function ShareCardButton(props: ShareCardProps) {
   );
 }
 
-function ShareCard({ names, days, daysLabel, since, extra, photoUri }: ShareCardProps & { photoUri?: string | null }) {
+function ShareCard({
+  names,
+  days,
+  daysLabel,
+  since,
+  extra,
+  photoUri,
+  decoration,
+}: ShareCardProps & { photoUri?: string | null; decoration: string }) {
+  const deco = decoration ? <Text style={styles.emoji}>{decoration}</Text> : <View style={styles.emojiSpace} />;
   const counter = (
     <View style={styles.center}>
       <Text style={styles.names}>{names}</Text>
@@ -122,7 +172,7 @@ function ShareCard({ names, days, daysLabel, since, extra, photoUri }: ShareCard
           style={styles.fill}
         />
         <View style={styles.photoContent}>
-          <Text style={styles.emoji}>🌴💖🌊</Text>
+          {deco}
           <View style={{ flex: 1 }} />
           {counter}
           {footer}
@@ -133,7 +183,7 @@ function ShareCard({ names, days, daysLabel, since, extra, photoUri }: ShareCard
 
   return (
     <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
-      <Text style={styles.emoji}>🌴💖🌊</Text>
+      {deco}
       {counter}
       {footer}
     </LinearGradient>
@@ -154,6 +204,23 @@ const styles = StyleSheet.create({
   cardFrame: { width: CARD_WIDTH, aspectRatio: 9 / 16, borderRadius: radius.lg, overflow: 'hidden' },
   card: { flex: 1, padding: spacing.lg, alignItems: 'center', justifyContent: 'space-between' },
   emoji: { fontSize: 30, marginTop: spacing.md },
+  emojiSpace: { height: 30 + spacing.md },
+  decoScroll: { flexGrow: 0, alignSelf: 'stretch', maxWidth: 420 },
+  decoRow: { gap: spacing.sm, paddingHorizontal: spacing.xs, alignItems: 'center' },
+  decoChip: {
+    minWidth: 48,
+    height: 44,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  decoChipActive: { borderColor: colors.white, backgroundColor: 'rgba(255,255,255,0.3)' },
+  decoEmoji: { fontSize: 20 },
+  decoNone: { fontSize: 14, fontWeight: '700', color: colors.white },
   photoCard: { flex: 1, backgroundColor: colors.text },
   fill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   photoContent: { flex: 1, padding: spacing.lg, alignItems: 'center', gap: spacing.md },
