@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { InviteCard } from '@/components/InviteCard';
 import { MoodCard } from '@/components/MoodCard';
 import { ShareCardButton } from '@/components/ShareCard';
-import { AchievementsTile, ThoughtLeaderboard } from '@/components/ThoughtLeaderboard';
+import { AchievementsTile, ThoughtLeaderboard, YearTile } from '@/components/ThoughtLeaderboard';
 import { ThinkingCard } from '@/components/Thoughts';
 import { Card, HeaderIcon } from '@/components/ui';
 import { questionForDay } from '@/data/questions';
@@ -166,6 +166,7 @@ export default function Home() {
         </Card>
 
         <AchievementsTile />
+        <YearTile />
 
         <Text style={styles.section}>Auf einen Blick</Text>
         <View style={styles.tiles}>

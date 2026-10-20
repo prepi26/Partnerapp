@@ -1,15 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Sharing from 'expo-sharing';
 import { useRef, useState } from 'react';
-import { Image, Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
+import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { APP_LINK, captureStory, shareImage } from '@/lib/shareImage';
 import { colors, gradient, radius, spacing } from '@/theme';
 
 import { HeaderIcon, PrimaryButton, SecondaryButton, showError } from './ui';
 
-const APP_LINK = 'https://apps.apple.com/app/id6820457302';
 const SHARE_TEXT = `Unser Zusammen-Zähler aus „Wir zwei“ 💖 Die App für Paare: ${APP_LINK}`;
 
 /** Deko oben auf der Karte – „Ohne“ für Fotos, auf denen Emojis stören würden. */
@@ -43,7 +41,7 @@ export function ShareCardButton(props: ShareCardProps) {
     setBusy(true);
     let uri: string;
     try {
-      uri = await captureRef(cardRef, { format: 'png', width: 1080, height: 1920, result: 'tmpfile' });
+      uri = await captureStory(cardRef);
     } catch {
       setBusy(false);
       showError('Bild konnte nicht erstellt werden', 'Bitte versuch es noch einmal.');
@@ -55,12 +53,8 @@ export function ShareCardButton(props: ShareCardProps) {
     setBusy(false);
     await new Promise((resolve) => setTimeout(resolve, 450));
     try {
-      if (Platform.OS === 'ios') {
-        // Bild + Text mit App-Store-Link, damit Freunde die App direkt finden.
-        await Share.share({ url: uri, message: SHARE_TEXT });
-      } else if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Eure Karte teilen' });
-      }
+      // Bild + Text mit App-Store-Link, damit Freunde die App direkt finden.
+      await shareImage(uri, SHARE_TEXT);
     } catch {
       showError('Teilen hat nicht geklappt', 'Bitte versuch es noch einmal.');
     }

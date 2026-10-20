@@ -78,6 +78,27 @@ function Bar({
   );
 }
 
+/** Kachel auf der Startseite: Jahresrückblick. */
+export function YearTile() {
+  const year = new Date().getFullYear();
+  return (
+    <Pressable accessibilityRole="button" onPress={() => router.push('/year')}>
+      {({ pressed }) => (
+        <Card style={[styles.tile, pressed && { opacity: 0.7 }]}>
+          <Text style={styles.tileEmoji}>🗓️</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Euer Jahr {year}</Text>
+            <Text style={styles.verdict} numberOfLines={1}>
+              Herzen, Zettel, Erinnerungen – als Bild zum Teilen
+            </Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Card>
+      )}
+    </Pressable>
+  );
+}
+
 /** Kachel auf der Startseite: Fortschritt der Paar-Erfolge. */
 export function AchievementsTile() {
   const achievements = useAchievements();
