@@ -407,6 +407,33 @@ drop policy if exists quiz_insert on public.quiz_answers;
 create policy quiz_insert on public.quiz_answers for insert
   with check (couple_id = public.my_couple_id() and user_id = auth.uid());
 
+-- ───────────── Zeichnungen (Plus) ─────────────
+-- strokes: [{ "c": "#FF5FA2", "w": 6, "p": [[x, y], …] }] mit x/y von 0 bis 1000 (unabhängig von der Bildschirmgröße).
+create table if not exists public.drawings (
+  id uuid primary key default gen_random_uuid(),
+  couple_id uuid not null default public.my_couple_id() references public.couples (id) on delete cascade,
+  from_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  strokes jsonb not null check (jsonb_typeof(strokes) = 'array' and length(strokes::text) < 300000),
+  created_at timestamptz not null default now()
+);
+create index if not exists drawings_couple_created on public.drawings (couple_id, created_at desc);
+
+alter table public.drawings enable row level security;
+drop policy if exists drawings_select on public.drawings;
+create policy drawings_select on public.drawings for select using (couple_id = public.my_couple_id());
+-- Plus-Funktion: solange Plus noch nicht kaufbar ist (app_settings.plus_enabled = false), dürfen alle malen.
+drop policy if exists drawings_insert on public.drawings;
+create policy drawings_insert on public.drawings for insert with check (
+  couple_id = public.my_couple_id()
+  and from_id = auth.uid()
+  and (
+    not coalesce((select plus_enabled from public.app_settings where id), false)
+    or public.couple_has_plus(couple_id)
+  )
+);
+drop policy if exists drawings_delete on public.drawings;
+create policy drawings_delete on public.drawings for delete using (couple_id = public.my_couple_id() and from_id = auth.uid());
+
 -- ───────────── Push-Benachrichtigungen ─────────────
 -- Jedes Handy meldet sein Expo-Push-Token. Neue Herzen, Zettel, Antworten und Erinnerungen schicken
 -- über pg_net eine Mitteilung an das Handy des Partners (Expo Push Service, exp.host).
@@ -457,7 +484,11 @@ grant execute on function public.register_push_token(text) to authenticated;
 grant execute on function public.unregister_push_token(text) to authenticated;
 
 -- Schickt eine Mitteilung an alle Handys des Partners von p_sender.
-create or replace function public.notify_partner(p_couple uuid, p_sender uuid, p_title text, p_body text, p_url text)
+-- p_background: zusätzlich die App im Hintergrund wecken (z. B. um das Zeichnungs-Widget zu aktualisieren).
+drop function if exists public.notify_partner(uuid, uuid, text, text, text);
+create or replace function public.notify_partner(
+  p_couple uuid, p_sender uuid, p_title text, p_body text, p_url text, p_background boolean default false
+)
 returns void
 language plpgsql
 security definer
@@ -479,7 +510,8 @@ begin
            'title', p_title,
            'body', p_body,
            'sound', 'default',
-           'data', jsonb_build_object('url', p_url)))
+           'data', jsonb_build_object('url', p_url),
+           '_contentAvailable', p_background))
     into v_messages
     from public.push_tokens
    where user_id = v_partner;
@@ -497,7 +529,7 @@ exception when others then
 end;
 $$;
 
-revoke execute on function public.notify_partner(uuid, uuid, text, text, text) from public, anon, authenticated;
+revoke execute on function public.notify_partner(uuid, uuid, text, text, text, boolean) from public, anon, authenticated;
 
 create or replace function public.push_on_insert()
 returns trigger
@@ -528,6 +560,8 @@ begin
     v_sender := new.user_id;
   elsif tg_table_name = 'memories' then
     v_sender := new.created_by;
+  elsif tg_table_name = 'drawings' then
+    v_sender := new.from_id;
   else
     return null;
   end if;
@@ -555,6 +589,11 @@ begin
       v_body := 'Antworte auch, dann siehst du die Antwort.';
     end if;
     v_url := '/question';
+  elsif tg_table_name = 'drawings' then
+    perform public.notify_partner(
+      new.couple_id, v_sender, '🎨 ' || v_name || ' hat dir etwas gemalt', 'Schau auf dein Widget oder tipp hier.', '/draw', true
+    );
+    return null;
   else
     v_title := '📸 Neue Erinnerung';
     v_body := v_name || ' hat einen gemeinsamen Moment festgehalten.';
@@ -570,7 +609,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['thoughts', 'notes', 'answers', 'memories'] loop
+  foreach t in array array['thoughts', 'notes', 'answers', 'memories', 'drawings'] loop
     execute format('drop trigger if exists push_on_insert on public.%I', t);
     execute format(
       'create trigger push_on_insert after insert on public.%I for each row execute function public.push_on_insert()', t);
@@ -654,7 +693,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'pack_answers', 'date_ideas', 'thoughts', 'quiz_answers'] loop
+  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'pack_answers', 'date_ideas', 'thoughts', 'quiz_answers', 'drawings'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

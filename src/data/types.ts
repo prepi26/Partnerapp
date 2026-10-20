@@ -110,3 +110,18 @@ export interface QuizAnswer {
   guess: number;
   created_at: string;
 }
+
+/** Ein Strich: Farbe, Breite und Punkte mit x/y von 0 bis 1000. */
+export interface Stroke {
+  c: string;
+  w: number;
+  p: [number, number][];
+}
+
+export interface Drawing {
+  id: string;
+  couple_id: string;
+  from_id: string;
+  strokes: Stroke[];
+  created_at: string;
+}

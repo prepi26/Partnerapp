@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InviteCard } from '@/components/InviteCard';
+import { DrawTile } from '@/components/DrawTile';
 import { MoodCard } from '@/components/MoodCard';
 import { QuizTile } from '@/components/QuizTile';
 import { ShareCardButton } from '@/components/ShareCard';
@@ -125,6 +126,7 @@ export default function Home() {
         <Text style={styles.section}>Heute</Text>
         <MoodCard />
         <ThinkingCard />
+        <DrawTile />
         <ThoughtLeaderboard />
         <Pressable accessibilityRole="button" onPress={() => router.push('/question')}>
           {({ pressed }) => (

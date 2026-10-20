@@ -264,9 +264,210 @@ struct CounterWidget: Widget {
   }
 }
 
+// MARK: - Zeichnungs-Widget
+
+/// Ein Strich, wie ihn die App speichert: Farbe, Breite, Punkte mit x/y von 0 bis 1000.
+struct StrokeData: Decodable {
+  let c: String
+  let w: Double
+  let p: [[Double]]
+}
+
+extension Color {
+  init(hex: String) {
+    var text = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+    if text.hasPrefix("#") { text.removeFirst() }
+    var value: UInt64 = 0
+    Scanner(string: text).scanHexInt64(&value)
+    self.init(
+      red: Double((value >> 16) & 0xFF) / 255,
+      green: Double((value >> 8) & 0xFF) / 255,
+      blue: Double(value & 0xFF) / 255)
+  }
+}
+
+struct DrawingEntry: TimelineEntry {
+  let date: Date
+  let strokes: [StrokeData]
+  let from: String
+  let sentAt: Date?
+
+  static func load() -> DrawingEntry {
+    let defaults = UserDefaults(suiteName: appGroup)
+    let json = defaults?.string(forKey: "drawing") ?? ""
+    let strokes = (try? JSONDecoder().decode([StrokeData].self, from: Data(json.utf8))) ?? []
+    // Supabase liefert UTC, z. B. 2026-10-20T12:34:56.123456+00:00 – die ersten 19 Zeichen reichen.
+    var sentAt: Date?
+    if let raw = defaults?.string(forKey: "drawingAt"), raw.count >= 19 {
+      let formatter = DateFormatter()
+      formatter.locale = Locale(identifier: "en_US_POSIX")
+      formatter.timeZone = TimeZone(identifier: "UTC")
+      formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+      sentAt = formatter.date(from: String(raw.prefix(19)))
+    }
+    return DrawingEntry(date: Date(), strokes: strokes, from: defaults?.string(forKey: "drawingFrom") ?? "", sentAt: sentAt)
+  }
+
+  static var sample: DrawingEntry {
+    let heart: [[Double]] = [
+      [500, 820], [260, 590], [200, 420], [260, 280], [380, 240], [500, 340],
+      [620, 240], [740, 280], [800, 420], [740, 590], [500, 820],
+    ]
+    return DrawingEntry(date: Date(), strokes: [StrokeData(c: "#FF5FA2", w: 28, p: heart)], from: "Max", sentAt: Date())
+  }
+}
+
+struct DrawingProvider: TimelineProvider {
+  func placeholder(in context: Context) -> DrawingEntry { .sample }
+
+  func getSnapshot(in context: Context, completion: @escaping (DrawingEntry) -> Void) {
+    let entry = DrawingEntry.load()
+    completion(entry.strokes.isEmpty ? .sample : entry)
+  }
+
+  func getTimeline(in context: Context, completion: @escaping (Timeline<DrawingEntry>) -> Void) {
+    // Neue Zeichnungen meldet die App selbst (WidgetCenter.reloadAllTimelines) – stündlich nur zur Sicherheit.
+    let next = Calendar.current.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
+    completion(Timeline(entries: [DrawingEntry.load()], policy: .after(next)))
+  }
+}
+
+struct StrokesView: View {
+  let strokes: [StrokeData]
+  var monochrome = false
+
+  var body: some View {
+    GeometryReader { geo in
+      let side = min(geo.size.width, geo.size.height)
+      let scale = side / 1000
+      ZStack {
+        ForEach(0..<strokes.count, id: \.self) { index in
+          let stroke = strokes[index]
+          Path { path in
+            guard let first = stroke.p.first, first.count >= 2 else { return }
+            path.move(to: CGPoint(x: first[0] * scale, y: first[1] * scale))
+            if stroke.p.count == 1 {
+              path.addLine(to: CGPoint(x: first[0] * scale + 0.5, y: first[1] * scale + 0.5))
+            }
+            for point in stroke.p.dropFirst() where point.count >= 2 {
+              path.addLine(to: CGPoint(x: point[0] * scale, y: point[1] * scale))
+            }
+          }
+          .stroke(
+            monochrome ? Color.primary : Color(hex: stroke.c),
+            style: StrokeStyle(lineWidth: max(1, stroke.w * scale), lineCap: .round, lineJoin: .round))
+        }
+      }
+      .frame(width: side, height: side)
+      .position(x: geo.size.width / 2, y: geo.size.height / 2)
+    }
+  }
+}
+
+struct DrawingCaption: View {
+  let entry: DrawingEntry
+
+  var body: some View {
+    HStack(spacing: 3) {
+      Text(entry.from.isEmpty ? "Zeichnung" : "von \(entry.from)")
+        .fontWeight(.semibold)
+      if let sentAt = entry.sentAt {
+        Text("·")
+        Text(sentAt, style: .relative)
+      }
+    }
+    .font(.caption2)
+    .foregroundStyle(pink)
+    .lineLimit(1)
+    .minimumScaleFactor(0.7)
+  }
+}
+
+struct DrawingEmpty: View {
+  var body: some View {
+    VStack(spacing: 4) {
+      Text("🎨").font(.title)
+      Text("Noch keine Zeichnung")
+        .font(.caption.weight(.bold))
+        .foregroundStyle(pink)
+      Text("Öffne Wir zwei und mal deinem Schatz etwas.")
+        .font(.caption2)
+        .multilineTextAlignment(.center)
+        .foregroundStyle(.secondary)
+    }
+  }
+}
+
+struct DrawingWidgetView: View {
+  @Environment(\.widgetFamily) var family
+  let entry: DrawingEntry
+
+  var body: some View {
+    switch family {
+    case .accessoryCircular:
+      StrokesView(strokes: entry.strokes, monochrome: true)
+        .padding(6)
+        .containerBackground(for: .widget) { AccessoryWidgetBackground() }
+    case .accessoryRectangular:
+      HStack(spacing: 6) {
+        StrokesView(strokes: entry.strokes, monochrome: true)
+          .frame(width: 50, height: 50)
+        VStack(alignment: .leading, spacing: 1) {
+          Text("🎨 Zeichnung").font(.headline).lineLimit(1)
+          Text(entry.from.isEmpty ? "von deinem Schatz" : "von \(entry.from)").font(.caption).lineLimit(1)
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      .containerBackground(for: .widget) { Color.clear }
+    case .systemMedium:
+      Group {
+        if entry.strokes.isEmpty {
+          DrawingEmpty()
+        } else {
+          HStack(spacing: 12) {
+            StrokesView(strokes: entry.strokes)
+            VStack(alignment: .leading, spacing: 4) {
+              Text("💌 Für dich").font(.headline.weight(.heavy)).foregroundStyle(pink)
+              DrawingCaption(entry: entry)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+          }
+        }
+      }
+      .containerBackground(for: .widget) { Color.white }
+    default:
+      Group {
+        if entry.strokes.isEmpty {
+          DrawingEmpty()
+        } else {
+          VStack(spacing: 4) {
+            StrokesView(strokes: entry.strokes)
+            DrawingCaption(entry: entry)
+          }
+        }
+      }
+      .containerBackground(for: .widget) { Color.white }
+    }
+  }
+}
+
+struct DrawingWidget: Widget {
+  let kind = "WirZweiDrawing"
+
+  var body: some WidgetConfiguration {
+    StaticConfiguration(kind: kind, provider: DrawingProvider()) { entry in
+      DrawingWidgetView(entry: entry)
+    }
+    .configurationDisplayName("Zeichnung")
+    .description("Die neueste Zeichnung deines Schatzes.")
+    .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .accessoryCircular, .accessoryRectangular])
+  }
+}
+
 @main
 struct WirZweiWidgets: WidgetBundle {
   var body: some Widget {
     CounterWidget()
+    DrawingWidget()
   }
 }

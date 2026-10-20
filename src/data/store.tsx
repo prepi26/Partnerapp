@@ -5,7 +5,7 @@ import { showError } from '@/components/ui';
 import { toISO, today } from '@/lib/dates';
 import { unregisterForPush } from '@/lib/push';
 import { cancelReminders } from '@/lib/reminders';
-import { updateWidget } from '@/lib/widget';
+import { updateWidget, updateWidgetDrawing } from '@/lib/widget';
 import { must, supabase } from '@/lib/supabase';
 
 import { deletePhoto, signedPhotoUrls, uploadPhoto } from './photos';
@@ -13,6 +13,7 @@ import {
   Answer,
   Couple,
   DateIdea,
+  Drawing,
   ISODate,
   Memory,
   Mood,
@@ -22,6 +23,7 @@ import {
   QuestionPack,
   QuizAnswer,
   SpecialDate,
+  Stroke,
   Thought,
   Wish,
   WishCategory,
@@ -38,6 +40,7 @@ interface Data {
   date_ideas: DateIdea[];
   thoughts: Thought[];
   quiz_answers: QuizAnswer[];
+  drawings: Drawing[];
 }
 
 type Table = keyof Data;
@@ -52,6 +55,7 @@ const TABLES: Table[] = [
   'date_ideas',
   'thoughts',
   'quiz_answers',
+  'drawings',
 ];
 
 const emptyData: Data = {
@@ -65,6 +69,7 @@ const emptyData: Data = {
   date_ideas: [],
   thoughts: [],
   quiz_answers: [],
+  drawings: [],
 };
 
 async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
@@ -75,6 +80,8 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
     since.setDate(since.getDate() - 2);
     query = query.gte('created_at', since.toISOString()).order('created_at', { ascending: true });
   }
+  // Nur die letzten Zeichnungen – die Striche sind groß.
+  if (table === 'drawings') query = query.order('created_at', { ascending: false }).limit(30);
   if (table === 'moods') {
     const since = new Date();
     since.setDate(since.getDate() - 30);
@@ -82,7 +89,8 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   }
   const result = await query;
   // Ältere Datenbanken ohne Plus-/Quiz-Tabelle: die Funktion fehlt nur, statt dass die ganze App nicht lädt.
-  if ((table === 'pack_answers' || table === 'quiz_answers') && result.error) return [] as Data[T];
+  if ((table === 'pack_answers' || table === 'quiz_answers' || table === 'drawings') && result.error)
+    return [] as Data[T];
   return must(result) as Data[T];
 }
 
@@ -152,6 +160,8 @@ interface Store extends Data {
   removeNote(id: string): Promise<void>;
   setMood(emoji: string): Promise<void>;
   answer(day: ISODate, text: string): Promise<void>;
+  sendDrawing(strokes: Stroke[]): Promise<void>;
+  removeDrawing(id: string): Promise<void>;
   answerQuiz(day: ISODate, items: { question_id: string; own: number; guess: number }[]): Promise<void>;
   answerPack(pack: QuestionPack, day: ISODate, text: string): Promise<void>;
   addIdea(idea: { title: string; emoji: string }): Promise<void>;
@@ -316,6 +326,8 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
             .upsert({ day: toISO(today()), emoji, user_id: userId }, { onConflict: 'user_id,day' }),
         ),
       answer: async (day, text) => after('answers', await supabase.from('answers').insert({ day, answer: text })),
+      sendDrawing: async (strokes) => after('drawings', await supabase.from('drawings').insert({ strokes })),
+      removeDrawing: async (id) => after('drawings', await supabase.from('drawings').delete().eq('id', id)),
       // Alle Fragen einer Runde in einem Rutsch – so gibt es genau eine Mitteilung für den Partner.
       answerQuiz: async (day, items) =>
         after('quiz_answers', await supabase.from('quiz_answers').insert(items.map((item) => ({ day, ...item })))),
@@ -336,6 +348,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await unregisterForPush();
         await cancelReminders();
         updateWidget(null);
+        updateWidgetDrawing(null, '');
         must(await supabase.rpc('delete_my_account'));
         await supabase.auth.signOut();
       },
@@ -343,6 +356,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await unregisterForPush();
         await cancelReminders();
         updateWidget(null);
+        updateWidgetDrawing(null, '');
         await supabase.auth.signOut();
       },
     };

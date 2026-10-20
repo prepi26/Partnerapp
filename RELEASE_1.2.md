@@ -1,25 +1,36 @@
-# Version 1.2 – Widget „Zusammen-Zähler“
+# Version 1.2
 
-Neu:
-- **Home-Bildschirm-Widget** (klein und mittel): Namen, Tage zusammen, bei Verlobten/Verheirateten der 💍-Countdown.
-  Zählt um Mitternacht selbst weiter, auch wenn die App geschlossen bleibt.
-- **Sperrbildschirm-Widgets**: rund (♥ + Tage), rechteckig („♥ 977 Tage – mit Max“) und über der Uhr.
+## Neu
 
-- **Herz-Rangliste** auf der Startseite: wer wie oft an wen gedacht hat – heute, Woche, Monat, Jahr (👑 für den Vorne).
-- **Paar-Erfolge** (19 Stück, z. B. 3/7/30/100 Tage Serie, 100 Herzen an einem Tag, erster Zettel, 1.000 Tage):
-  Kachel auf der Startseite → Bildschirm „Eure Erfolge“ mit Fortschritt.
-- Behoben: Zurück-Knopf zeigt nicht mehr „(tabs)“; Wünsche werden nur noch über den Kreis abgehakt.
+- **Widgets** (Home- und Sperrbildschirm):
+  - „Zusammen-Zähler“: Namen, Tage zusammen, 💍-Countdown – zählt um Mitternacht selbst weiter.
+  - „Zeichnung“: die neueste Zeichnung des Partners (klein/mittel/groß, rund/rechteckig auf dem Sperrbildschirm).
+- **Malen** (Plus, solange Plus noch nicht kaufbar ist für alle): Startseite → „Mal … etwas“. Der Partner bekommt eine
+  Mitteilung; die App wird im Hintergrund geweckt und aktualisiert das Widget (iOS entscheidet, wie oft – spätestens
+  beim Öffnen der App ist es aktuell).
+- **Quiz „Wie gut kennst du mich?“**: täglich 3 Fragen – erst über dich, dann Tipp für den Partner. Ergebnis, sobald
+  beide gespielt haben; Mitteilung an den Partner.
+- **Herz-Rangliste** (Heute/Woche/Monat/Jahr) und **22 Paar-Erfolge**.
+- **Jahresrückblick** („Euer Jahr 2026“) als Bild zum Teilen.
+- **Teilen-Karte** neu: Namen groß oben, Emojis optional, App-Store-Link wird mitgeschickt; Teilen hängt nicht mehr.
+- **Dunkelmodus** (folgt der iPhone-Einstellung).
+- **Absturzberichte** über Sentry (aktiv, sobald `EXPO_PUBLIC_SENTRY_DSN` in `.env` steht).
+- **Plus mit In-App-Kauf** vorbereitet – Einrichtung siehe `PLUS_SETUP.md`.
+- Behoben: Zurück-Knopf ohne „(tabs)“, Wünsche nur über den Kreis abhaken.
 
-Technik: `targets/widget/` (SwiftUI, Plugin `@bacons/apple-targets`), App Group `group.de.wirzwei.app`.
-Die App schreibt Namen/Datum/Status über `src/lib/widget.ts` in die App Group.
+## 0. Supabase: Datenbank aktualisieren (Pflicht)
 
-## 0. Supabase: Datenbank aktualisieren (Pflicht!)
+`supabase/schema.sql` kopieren (GitHub → „Copy raw file“), im SQL Editor **Run** → „Run and enable RLS“.
+Neu: Tabellen `quiz_answers`, `drawings`, Funktion `thought_stats`, Mitteilungen für Quiz und Zeichnungen.
 
-`supabase/schema.sql` wie gewohnt kopieren (GitHub → „Copy raw file“) und im SQL Editor mit **Run** ausführen.
-Ohne diesen Schritt: Fehler „Could not find the 'status' column“ beim Speichern von Verlobt/Verheiratet,
-und Rangliste/Erfolge bleiben leer. Die Datei lädt am Ende den Schema-Cache neu.
+## 1. Optional vor dem Build
 
-## 1. Bauen (PowerShell)
+- **Plus** einrichten (`PLUS_SETUP.md`) – dann den RevenueCat-Key in `.env` eintragen lassen, bevor du baust.
+  Ohne Key ist Plus unsichtbar und alles frei.
+- **Sentry**: https://sentry.io → Konto (Region **EU**) → Projekt „React Native“ → DSN kopieren und mir schicken
+  (der DSN ist öffentlich und darf in den Chat) – ich trage ihn ein.
+
+## 2. Bauen (PowerShell)
 
 ```
 cd Partnerapp
@@ -29,28 +40,31 @@ $env:EXPO_APPLE_ID = "prepitoys" + [char]64 + "gmail.com"
 npx eas-cli@latest build --platform ios --profile production
 ```
 
-Neu bei diesem Build – EAS richtet das Widget als zweites „Ziel“ ein:
-- „Do you want to log in to your Apple account?“ → **Y** (wird für das neue Widget-Profil gebraucht)
-- Fragen zu einem neuen **Provisioning Profile** / **Distribution Certificate** für `de.wirzwei.app.widget` → **Y**
-- Fragen zu **Capabilities / App Groups** synchronisieren → **Y**
+Neu bei diesem Build:
+- Profil für das **Widget** (`de.wirzwei.app.widget`) anlegen → **Y**
+- **Capabilities / App Groups** abgleichen → **Y**
 - Alles andere → Enter
 
-Danach:
-```
-npx eas-cli@latest submit --platform ios --latest
-```
+Schlägt der Build fehl: expo.dev-Link öffnen → roten Schritt anklicken → Screenshot der ersten roten Zeile schicken.
 
-## 2. Widget auf dem iPhone hinzufügen (TestFlight-Build)
+Danach: `npx eas-cli@latest submit --platform ios --latest`
 
-1. App einmal öffnen (sie schreibt dabei eure Daten für das Widget).
-2. Home-Bildschirm: lange auf eine freie Stelle drücken → oben links **„Bearbeiten“** → **„Widget hinzufügen“**.
-3. **„Wir zwei“** suchen → klein oder mittel wählen → **„Widget hinzufügen“**.
-4. Sperrbildschirm: lange drücken → **„Anpassen“** → **Sperrbildschirm** → Feld unter der Uhr → **„Wir zwei“**.
+## 3. Testen (TestFlight, beide Handys)
 
-## 3. App Store Connect
+1. Startseite: Herz-Rangliste, Quiz-Kachel, Malen-Kachel, Erfolge, Jahresrückblick sichtbar?
+2. Quiz spielen – bei beiden, Ergebnis + Mitteilung prüfen.
+3. Malen → senden → beim anderen: Mitteilung, Zeichnung in der App, Widget „Zeichnung“ aktualisiert?
+4. Widgets hinzufügen: Home-Bildschirm lange drücken → „Bearbeiten“ → „Widget hinzufügen“ → „Wir zwei“.
+5. iPhone auf Dunkelmodus stellen (Kontrollzentrum) → alle Bildschirme lesbar?
+6. Teilen-Karte mehrmals hintereinander teilen und abbrechen.
 
-Version **1.2.0** anlegen, Build wählen, „Neuerungen in dieser Version“:
+## 4. App Store Connect
+
+- Version **1.2.0** anlegen, Build wählen.
+- App-Datenschutz ergänzen, falls Sentry aktiv: **Diagnose → Absturzdaten**, nicht verknüpft, kein Tracking.
+- Bei Plus: Abos unter „In-App-Käufe und Abonnements“ zur Version hinzufügen.
+- „Neuerungen in dieser Version“:
+
 ```
-Neu: Euer Zusammen-Zähler als Widget für Home- und Sperrbildschirm! Dazu die Herz-Rangliste – wer denkt öfter an wen? – und 19 Paar-Erfolge zum Freischalten. Außerdem: Wünsche hakt ihr jetzt gezielt über den Kreis ab.
+Riesen-Update! Euer Zusammen-Zähler und eure Zeichnungen als Widget für Home- und Sperrbildschirm. Neu: das tägliche Quiz „Wie gut kennst du mich?“, die Herz-Rangliste, 22 Paar-Erfolge und euer Jahresrückblick zum Teilen. Außerdem: Dunkelmodus, schönere Teilen-Karte mit eigenem Foto und viele kleine Verbesserungen.
 ```
-Optional: einen Screenshot mit Widget in die Screenshots aufnehmen.
