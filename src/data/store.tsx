@@ -5,6 +5,7 @@ import { showError } from '@/components/ui';
 import { toISO, today } from '@/lib/dates';
 import { unregisterForPush } from '@/lib/push';
 import { cancelReminders } from '@/lib/reminders';
+import { updateWidget } from '@/lib/widget';
 import { must, supabase } from '@/lib/supabase';
 
 import { deletePhoto, signedPhotoUrls, uploadPhoto } from './photos';
@@ -326,12 +327,14 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         }
         await unregisterForPush();
         await cancelReminders();
+        updateWidget(null);
         must(await supabase.rpc('delete_my_account'));
         await supabase.auth.signOut();
       },
       signOut: async () => {
         await unregisterForPush();
         await cancelReminders();
+        updateWidget(null);
         await supabase.auth.signOut();
       },
     };

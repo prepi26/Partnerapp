@@ -3,7 +3,7 @@
     "name": "Wir zwei",
     "slug": "wir-zwei",
     "scheme": "wirzwei",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -20,7 +20,13 @@
       },
       "associatedDomains": [
         "applinks:prepi26.github.io"
-      ]
+      ],
+      "appleTeamId": "AQVUW2CL2F",
+      "entitlements": {
+        "com.apple.security.application-groups": [
+          "group.de.wirzwei.app"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -48,7 +54,8 @@
         {
           "color": "#FF5FA2"
         }
-      ]
+      ],
+      "@bacons/apple-targets"
     ],
     "owner": "prepi26",
     "extra": {

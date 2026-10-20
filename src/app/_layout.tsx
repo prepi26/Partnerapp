@@ -10,6 +10,7 @@ import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
 import { Reminders } from '@/components/Reminders';
+import { WidgetSync } from '@/components/WidgetSync';
 import { registerForPush, urlFromResponse } from '@/lib/push';
 import { refreshReminders } from '@/lib/reminders';
 import { StoreProvider, useStore } from '@/data/store';
@@ -60,6 +61,7 @@ function SignedIn() {
       <RootStack signedIn hasCouple={couple !== null} />
       {couple && Platform.OS !== 'web' ? <PushSetup /> : null}
       {couple && Platform.OS !== 'web' ? <Reminders /> : null}
+      {couple && Platform.OS === 'ios' ? <WidgetSync /> : null}
     </PlusProvider>
   );
 }
