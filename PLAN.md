@@ -43,3 +43,14 @@ Ergebnis der „grill me“-Runde. Am **15. November** und am **31. Dezember** h
 | Datum | Downloads gesamt | Paare (verbunden) | Notiz |
 |---|---|---|---|
 | | | | |
+
+## Version 1.3 (beschlossen, nach Release von 1.2)
+
+1. **Termin-Erinnerungen**: Mitteilung vor Geburtstagen, Jahrestagen und eigenen Terminen.
+2. **Brief mit Zeitschloss**: Vorlagen (z. B. „zum nächsten Jahrestag“, „Valentinstag“, „in einem Jahr“) **und** eigenes
+   Datum; erst ab dem Datum lesbar; Schreibdatum sichtbar. Plus-Funktion.
+3. **Sprachnachricht als Zettel**.
+4. **App-Icon und Farbthema wählbar** (Plus).
+5. **Stimmungs-Verlauf** (Kurve der letzten 30 Tage).
+
+Offen / später: Foto des Tages, „Unser Song“, Android.
