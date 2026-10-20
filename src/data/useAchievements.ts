@@ -5,11 +5,12 @@ import { daysBetween, parseISO, today } from '@/lib/dates';
 import { longestStreak } from '@/lib/streak';
 
 import { useCouple } from './store';
-import { useThoughtStats } from './thoughtStats';
+import { useCoupleStats, useThoughtStats } from './thoughtStats';
 
 export function useAchievements() {
   const { couple, answers, userId, notes, memories, wishes, date_ideas, quiz_answers } = useCouple();
   const stats = useThoughtStats();
+  const extra = useCoupleStats();
 
   const mine = new Set(answers.filter((a) => a.user_id === userId).map((a) => a.day));
   const bothAnsweredDays = new Set(answers.filter((a) => a.user_id !== userId && mine.has(a.day)).map((a) => a.day))
@@ -21,7 +22,14 @@ export function useAchievements() {
     longestStreak: longestStreak(answers, userId),
     bothAnsweredDays,
     daysTogether: Math.max(0, daysBetween(parseISO(couple.start_date), today())),
-    notes: notes.length,
+    notes: Math.max(notes.length, extra?.notes ?? 0),
+    drawings: extra?.drawings ?? 0,
+    moodDays: extra?.mood_days ?? 0,
+    heartStreak: extra?.heart_streak ?? null,
+    nightHearts: extra?.night_hearts ?? null,
+    earlyHearts: extra?.early_hearts ?? null,
+    engaged: couple.status === 'engaged' || couple.status === 'married' ? 1 : 0,
+    married: couple.status === 'married' ? 1 : 0,
     memories: memories.length,
     wishesDone: wishes.filter((w) => w.done).length,
     ideasDone: date_ideas.filter((i) => i.done).length,

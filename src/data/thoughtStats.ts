@@ -48,3 +48,41 @@ export function useThoughtStats() {
 
   return stats;
 }
+
+export interface CoupleStats {
+  notes: number;
+  drawings: number;
+  heart_streak: number;
+  night_hearts: number;
+  early_hearts: number;
+  mood_days: number;
+}
+
+/** Zahlen, die die App nicht selbst zählen kann (Server-Funktion couple_stats). `null`, solange nichts geladen ist. */
+export function useCoupleStats() {
+  const { thoughts, notes, drawings, moods } = useCouple();
+  const [stats, setStats] = useState<CoupleStats | null>(null);
+  const key = [thoughts.length, notes.length, drawings.length, moods.length].join('/');
+
+  useEffect(() => {
+    let active = true;
+    supabase.rpc('couple_stats').then(({ data, error }) => {
+      if (!active || error || !data || typeof data !== 'object') return;
+      const row = data as Record<string, unknown>;
+      const n = (k: string) => Number(row[k]) || 0;
+      setStats({
+        notes: n('notes'),
+        drawings: n('drawings'),
+        heart_streak: n('heart_streak'),
+        night_hearts: n('night_hearts'),
+        early_hearts: n('early_hearts'),
+        mood_days: n('mood_days'),
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, [key]);
+
+  return stats;
+}
