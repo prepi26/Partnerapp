@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { must, supabase } from '@/lib/supabase';
 
+import { FAMILY_COLUMNS } from './columns';
 import { signedReceiptUrls } from './receipts';
 import { Agreement, ChildInfo, Decision, Expense, Family, Handover, Message, ScheduleChange } from './types';
 
@@ -19,9 +20,12 @@ export interface CaseData {
 }
 
 async function load(familyId: string): Promise<CaseData | null> {
-  const rows = must(await supabase.from('families').select('*').eq('id', familyId)) as Family[];
-  const family = rows[0];
-  if (!family) return null;
+  const rows = must(await supabase.from('families').select(FAMILY_COLUMNS).eq('id', familyId)) as Omit<
+    Family,
+    'invite_code'
+  >[];
+  if (!rows[0]) return null;
+  const family: Family = { ...rows[0], invite_code: '' };
   const q = (table: string) => supabase.from(table).select('*').eq('family_id', familyId);
   const [schedule_changes, expenses, messages, child_info, decisions, handovers, agreements] = await Promise.all([
     q('schedule_changes').order('day'),

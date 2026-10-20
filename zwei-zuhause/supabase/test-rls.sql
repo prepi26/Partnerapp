@@ -61,3 +61,30 @@ select my_parent_key(), other_parent_present();
 select delete_my_account();
 reset role;
 select count(*) as families_left from families;
+
+-- ───── Nachbesserungen aus dem Review ─────
+reset role;
+insert into auth.users (id) values ('00000000-0000-0000-0000-0000000000d1'),('00000000-0000-0000-0000-0000000000d2'),('00000000-0000-0000-0000-0000000000d3');
+set role authenticated;
+select as_user('00000000-0000-0000-0000-0000000000d1');
+select create_family('Anna','Ben','Lea') as code2 \gset
+-- Reihenfolge und Zeit kommen vom Server, nicht vom Gerät
+insert into messages (text, seq) values ('gefälscht', 1);
+insert into messages (text, created_at) values ('gefälscht', '2000-01-01');
+insert into messages (text) values ('echt');
+insert into handovers (day, status, created_at, reply) values ('2026-10-10', 'on_time', '2000-01-01', null);
+select created_at > '2020-01-01' as handover_time_from_server from handovers;
+-- Code wird beim Beitritt erneuert
+select as_user('00000000-0000-0000-0000-0000000000d2');
+select join_family(:'code2') is not null as joined;
+select my_invite_code() <> :'code2' as code_rotated;
+select delete_my_account();
+select as_user('00000000-0000-0000-0000-0000000000d3');
+select join_family(:'code2') is null as old_code_dead;
+-- Durchprobieren wird gebremst
+select join_family('AAAAAA'), join_family('AAAAAB'), join_family('AAAAAC'), join_family('AAAAAD'), join_family('AAAAAE'),
+       join_family('AAAAAF'), join_family('AAAAAG'), join_family('AAAAAH');
+select join_family('AAAAAI');
+select join_family('AAAAAJ');
+-- Fachkraft sieht den Einladungscode nicht
+select invite_code from families;

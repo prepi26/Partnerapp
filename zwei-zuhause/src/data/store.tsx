@@ -5,6 +5,7 @@ import { showError } from '@/components/ui';
 import { unregisterForPush } from '@/lib/push';
 import { must, supabase } from '@/lib/supabase';
 
+import { FAMILY_COLUMNS } from './columns';
 import { deleteAllReceipts, deleteReceipt, signedReceiptUrls, uploadReceipt } from './receipts';
 import {
   Agreement,
@@ -89,13 +90,17 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
 /** Die Familie, in der der Nutzer Elternteil ist – nicht die, die er als Fachkraft lesen darf. */
 async function fetchFamily(userId: string): Promise<Family | null> {
   const rows = must(
-    await supabase.from('families').select('*').or(`parent_a.eq.${userId},parent_b.eq.${userId}`).limit(1),
-  ) as Family[];
-  return rows[0] ?? null;
+    await supabase.from('families').select(FAMILY_COLUMNS).or(`parent_a.eq.${userId},parent_b.eq.${userId}`).limit(1),
+  ) as Omit<Family, 'invite_code'>[];
+  if (!rows[0]) return null;
+  // Den Einladungscode gibt der Server nur Eltern heraus, nicht über die Tabelle.
+  const code = must(await supabase.rpc('my_invite_code')) as string | null;
+  return { ...rows[0], invite_code: code ?? '' };
 }
 
 const ERRORS: Record<string, string> = {
   invalid_code: 'Dieser Code passt nicht oder wurde schon benutzt.',
+  too_many_attempts: 'Zu viele Versuche. Bitte warte eine Stunde und prüfe den Code.',
   already_in_family: 'Du bist schon mit einer Familie verbunden.',
   not_authenticated: 'Bitte melde dich erneut an.',
   not_allowed: 'Das geht nicht mehr – vermutlich wurde es schon beantwortet.',
@@ -324,7 +329,8 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await refresh();
       },
       joinFamily: async (code) => {
-        must(await supabase.rpc('join_family', { p_code: code }));
+        // Falscher Code: der Server liefert null (statt Fehler), damit der Versuch gezählt bleibt.
+        if (!must(await supabase.rpc('join_family', { p_code: code }))) throw new Error('invalid_code');
         await refresh();
       },
       updateFamily: async (patch) => {
@@ -387,7 +393,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         after('professional_access', await supabase.rpc('revoke_professional', { p_id: id })),
       isProfessional: !family && data.professional_access.some((p) => p.professional === userId),
       joinAsProfessional: async (code) => {
-        must(await supabase.rpc('join_as_professional', { p_code: code }));
+        if (!must(await supabase.rpc('join_as_professional', { p_code: code }))) throw new Error('invalid_code');
         await refresh();
       },
       deleteAccount: async () => {

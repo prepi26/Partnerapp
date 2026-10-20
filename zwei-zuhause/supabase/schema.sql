@@ -71,6 +71,53 @@ as $$
   limit 1
 $$;
 
+-- Neuer, noch unbenutzter Einladungscode (6 Großbuchstaben ohne I und O).
+create or replace function public.new_invite_code()
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_code text;
+begin
+  loop
+    v_code := (
+      select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ', (floor(random() * 24) + 1)::int, 1), '')
+      from generate_series(1, 6)
+    );
+    exit when not exists (select 1 from public.families where invite_code = v_code);
+  end loop;
+  return v_code;
+end;
+$$;
+
+-- Schutz gegen Durchprobieren von Codes: höchstens 10 Versuche pro Stunde und Konto.
+create table if not exists public.code_attempts (
+  user_id uuid not null references auth.users (id) on delete cascade,
+  at timestamptz not null default now()
+);
+create index if not exists code_attempts_user on public.code_attempts (user_id, at);
+alter table public.code_attempts enable row level security;
+
+create or replace function public.count_code_attempt()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.code_attempts where at < now() - interval '1 day';
+  if (select count(*) from public.code_attempts where user_id = auth.uid() and at > now() - interval '1 hour') >= 10 then
+    raise exception 'too_many_attempts';
+  end if;
+  insert into public.code_attempts (user_id) values (auth.uid());
+end;
+$$;
+
+revoke execute on function public.new_invite_code() from public, anon, authenticated;
+revoke execute on function public.count_code_attempt() from public, anon, authenticated;
+
 create or replace function public.create_family(p_name_a text, p_name_b text, p_children text)
 returns text
 language plpgsql
@@ -89,13 +136,7 @@ begin
   if public.is_professional() then
     raise exception 'is_professional';
   end if;
-  loop
-    v_code := (
-      select string_agg(substr('ABCDEFGHJKLMNPQRSTUVWXYZ', (floor(random() * 24) + 1)::int, 1), '')
-      from generate_series(1, 6)
-    );
-    exit when not exists (select 1 from public.families where invite_code = v_code);
-  end loop;
+  v_code := public.new_invite_code();
   insert into public.families (parent_a, name_a, name_b, children, invite_code)
   values (auth.uid(), p_name_a, p_name_b, coalesce(p_children, ''), v_code);
   return v_code;
@@ -120,16 +161,16 @@ begin
   if public.is_professional() then
     raise exception 'is_professional';
   end if;
+  perform public.count_code_attempt();
+  -- Nach dem Beitritt bekommt die Familie einen neuen Code: Der alte taugt nie wieder, auch wenn der Platz frei wird.
   update public.families
-     set parent_b = auth.uid()
+     set parent_b = auth.uid(), invite_code = public.new_invite_code()
    where invite_code = upper(trim(p_code))
      and parent_b is null
      and parent_a is not null
      and parent_a <> auth.uid()
   returning id into v_id;
-  if v_id is null then
-    raise exception 'invalid_code';
-  end if;
+  -- Bei falschem Code null statt Fehler, damit der Versuch gezählt bleibt.
   return v_id;
 end;
 $$;
@@ -144,6 +185,21 @@ drop policy if exists families_update on public.families;
 create policy families_update on public.families
   for update using (parent_a = auth.uid() or parent_b = auth.uid())
   with check (parent_a = auth.uid() or parent_b = auth.uid());
+
+-- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
+revoke select on public.families from authenticated;
+grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
+              default_share_a, created_at) on public.families to authenticated;
+
+create or replace function public.my_invite_code()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select invite_code from public.families where parent_a = auth.uid() or parent_b = auth.uid() limit 1
+$$;
 
 -- Wer zur Familie gehört und der Code sind tabu; Namen, Kinder und Umgangsplan dürfen beide ändern.
 revoke update on public.families from authenticated;
@@ -270,7 +326,8 @@ create table if not exists public.messages (
   hash text not null default ''
 );
 
-create index if not exists messages_family_seq on public.messages (family_id, seq);
+drop index if exists public.messages_family_seq;
+create unique index if not exists messages_family_seq_key on public.messages (family_id, seq);
 
 create or replace function public.messages_before_insert()
 returns trigger
@@ -283,6 +340,8 @@ declare
 begin
   -- Mehrere gleichzeitige Nachrichten derselben Familie nacheinander verketten.
   perform pg_advisory_xact_lock(hashtext(new.family_id::text));
+  -- Reihenfolge erst nach der Sperre vergeben – sonst passt die Prüfsummen-Kette nicht zur Anzeige.
+  new.seq := nextval(pg_get_serial_sequence('public.messages', 'seq'));
   new.sender := auth.uid();
   new.sender_key := public.my_parent_key();
   new.created_at := now();
@@ -309,7 +368,9 @@ drop policy if exists messages_select on public.messages;
 create policy messages_select on public.messages for select using (family_id = public.my_family_id());
 drop policy if exists messages_insert on public.messages;
 create policy messages_insert on public.messages for insert with check (family_id = public.my_family_id());
-revoke update, delete on public.messages from authenticated;
+revoke insert, update, delete on public.messages from authenticated;
+-- Nur der Text kommt vom Gerät; Absender, Zeit, Reihenfolge und Prüfsumme setzt der Server.
+grant insert (text) on public.messages to authenticated;
 
 -- Gelesen-Markierung setzt nur der Empfänger, und nur einmal.
 create or replace function public.mark_messages_read()
@@ -339,6 +400,35 @@ create table if not exists public.journal (
 alter table public.journal enable row level security;
 drop policy if exists journal_own on public.journal;
 create policy journal_own on public.journal for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ───────────── Server-Zeitstempel ─────────────
+-- Beim Einfügen setzt der Server Verfasser und Zeit und leert Antwortfelder – vom Gerät kommt nur der Inhalt.
+
+create or replace function public.force_insert_meta()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.created_by := auth.uid();
+  new.created_at := now();
+  if tg_table_name = 'handovers' then
+    new.reply := null;
+    new.reply_note := '';
+    new.replied_at := null;
+  elsif tg_table_name = 'decisions' then
+    new.status := 'proposed';
+    new.answer_note := '';
+    new.answered_at := null;
+  elsif tg_table_name = 'expenses' then
+    new.status := 'open';
+    new.answered_at := null;
+  elsif tg_table_name = 'schedule_changes' then
+    new.status := 'proposed';
+    new.answered_at := null;
+  end if;
+  return new;
+end;
+$$;
 
 -- ───────────── Infos zum Kind ─────────────
 -- Ärzte, Schule, Allergien, Größen … beide pflegen dieselbe Liste; wer zuletzt geändert hat, steht dabei.
@@ -465,6 +555,19 @@ begin
   if not found then
     raise exception 'not_allowed';
   end if;
+end;
+$$;
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['schedule_changes', 'expenses', 'decisions', 'handovers'] loop
+    execute format('drop trigger if exists force_insert_meta on public.%I', t);
+    execute format(
+      'create trigger force_insert_meta before insert on public.%I for each row execute function public.force_insert_meta()', t
+    );
+  end loop;
 end;
 $$;
 
@@ -672,16 +775,16 @@ begin
   if public.my_family_id() is not null then
     raise exception 'is_parent';
   end if;
+  perform public.count_code_attempt();
+  -- Ein Code gilt genau einmal (joined_at), auch wenn das Fachkraft-Konto später gelöscht wird.
   update public.professional_access
      set professional = auth.uid(), joined_at = now()
    where code = upper(trim(p_code))
      and professional is null
+     and joined_at is null
      and revoked_at is null
      and expires_at > now()
   returning family_id into v_id;
-  if v_id is null then
-    raise exception 'invalid_code';
-  end if;
   return v_id;
 end;
 $$;
@@ -711,10 +814,26 @@ insert into storage.buckets (id, name, public)
 values ('receipts', 'receipts', false)
 on conflict (id) do nothing;
 
+-- Lesen und Hochladen für beide Eltern. Kein Überschreiben. Löschen nur eigene Belege, die zu keiner bestätigten
+-- Ausgabe gehören – oder alles, wenn man als letzter Elternteil übrig ist (Konto löschen).
 drop policy if exists receipts_family on storage.objects;
-create policy receipts_family on storage.objects for all
-  using (bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text)
+drop policy if exists receipts_select on storage.objects;
+create policy receipts_select on storage.objects for select
+  using (bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text);
+drop policy if exists receipts_insert on storage.objects;
+create policy receipts_insert on storage.objects for insert
   with check (bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text);
+drop policy if exists receipts_delete on storage.objects;
+create policy receipts_delete on storage.objects for delete
+  using (
+    bucket_id = 'receipts'
+    and (storage.foldername(name))[1] = public.my_family_id()::text
+    and (
+      not public.other_parent_present()
+      or (owner_id = auth.uid()::text
+          and not exists (select 1 from public.expenses e where e.receipt_path = name and e.status = 'confirmed'))
+    )
+  );
 
 drop policy if exists receipts_professional on storage.objects;
 create policy receipts_professional on storage.objects for select
@@ -753,6 +872,7 @@ begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
+  update public.professional_access set revoked_at = now() where professional = auth.uid() and revoked_at is null;
   delete from auth.users where id = auth.uid();
   if v_family is not null then
     delete from public.families where id = v_family and parent_a is null and parent_b is null;
@@ -769,7 +889,7 @@ begin
     'answer_expense(uuid, boolean)', 'mark_messages_read()', 'delete_my_account()',
     'answer_decision(uuid, boolean, text)', 'reply_handover(uuid, boolean, text)', 'accept_agreement(uuid)',
     'create_professional_invite(text, int)', 'approve_professional(uuid)', 'revoke_professional(uuid)',
-    'join_as_professional(text)'
+    'join_as_professional(text)', 'my_invite_code()'
   ] loop
     execute format('revoke execute on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);

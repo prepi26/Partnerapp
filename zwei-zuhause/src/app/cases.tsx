@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Field, GradientHeader, HeaderIcon, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
+import { FAMILY_COLUMNS } from '@/data/columns';
 import { errorMessage, useStore } from '@/data/store';
 import { Family } from '@/data/types';
 import { formatDate } from '@/lib/dates';
@@ -23,7 +24,7 @@ export default function Cases() {
     if (!ids) return;
     supabase
       .from('families')
-      .select('*')
+      .select(FAMILY_COLUMNS)
       .in('id', ids.split(','))
       .then(({ data }) => setFamilies(Object.fromEntries(((data ?? []) as Family[]).map((f) => [f.id, f]))));
   }, [ids]);

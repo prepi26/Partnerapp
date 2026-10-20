@@ -28,9 +28,16 @@ export async function deleteReceipt(path: string | null) {
 
 /** Alle Belege der Familie löschen (wenn der letzte Elternteil sein Konto löscht). */
 export async function deleteAllReceipts(familyId: string) {
-  const files = must(await supabase.storage.from(BUCKET).list(familyId, { limit: 1000 })) ?? [];
-  const paths = files.map((f: { name: string }) => `${familyId}/${f.name}`);
-  if (paths.length) must(await supabase.storage.from(BUCKET).remove(paths));
+  // Seitenweise, weil list() höchstens 1000 Einträge liefert; gelöschte rücken nach.
+  for (;;) {
+    const files = must(await supabase.storage.from(BUCKET).list(familyId, { limit: 1000 })) ?? [];
+    if (!files.length) return;
+    const removed = must(
+      await supabase.storage.from(BUCKET).remove(files.map((f: { name: string }) => `${familyId}/${f.name}`)),
+    );
+    // Nichts gelöscht (keine Berechtigung) oder letzte Seite: fertig – sonst liefe die Schleife ewig.
+    if (!removed?.length || files.length < 1000) return;
+  }
 }
 
 /** Zeitlich begrenzte Links, weil der Beleg-Speicher privat ist. */

@@ -8,7 +8,7 @@ create function auth.uid() returns uuid language sql stable as $$ select nullif(
 grant usage on schema auth, storage, extensions to authenticated, anon;
 grant execute on function auth.uid() to authenticated, anon;
 create table storage.buckets (id text primary key, name text, public boolean);
-create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text);
+create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner_id text);
 alter table storage.objects enable row level security;
 create function storage.foldername(name text) returns text[] language sql as $$ select string_to_array(name, '/') $$;
 create publication supabase_realtime;
