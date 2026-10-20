@@ -11,12 +11,17 @@ import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
 import { Reminders } from '@/components/Reminders';
 import { WidgetSync } from '@/components/WidgetSync';
+import { initCrashReporting, withCrashReporting } from '@/lib/crash';
 import { registerForPush, urlFromResponse } from '@/lib/push';
 import { refreshReminders } from '@/lib/reminders';
 import { StoreProvider, useStore } from '@/data/store';
 import { colors, spacing } from '@/theme';
 
-export default function RootLayout() {
+initCrashReporting();
+
+export default withCrashReporting(RootLayout);
+
+function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />
