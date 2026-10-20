@@ -1,49 +1,69 @@
-# Geld verdienen: „Wir zwei Plus“ einrichten
+# „Wir zwei Plus“ einrichten (In-App-Abo)
 
-Wir zwei finanziert sich über ein **Abo für beide Partner** (einer zahlt, beide haben Plus). Keine Werbung.
+Ein Abo gilt für **beide Partner** – einer zahlt, beide haben Plus. Keine Werbung.
 
 | Kostenlos | Plus |
 | --- | --- |
-| Alles wie bisher | Unbegrenzte Momente (kostenlos: 10, serverseitig erzwungen) |
-| Frage des Tages | + 3 Themen-Fragen täglich: Tiefgang 🌊, Zukunft 🏡, Prickelnd 🌶️ |
+| Zähler, Herzen, Zettel, Frage des Tages, Quiz, Erfolge, Widget, Jahresrückblick | **Zeichnungen fürs Widget** |
+| 10 Erinnerungen | **Unbegrenzte Erinnerungen** |
+| | **3 Themen-Fragen täglich** (Tiefgang 🌊, Zukunft 🏡, Prickelnd 🌶️) |
 
-Vorschlag für Preise (stellst du im App Store / Google Play ein, nicht im Code):
-**4,99 €/Monat**, **29,99 €/Jahr mit 7 Tagen gratis**, optional **59,99 € einmalig**.
+Preisvorschlag: **2,99 €/Monat** und **19,99 €/Jahr** (Jahresabo mit 7 Tagen gratis).
 
-## Ablauf
+**Ablauf:** App kauft über RevenueCat → ruft die Edge Function `plus` auf → die fragt RevenueCat und setzt
+`couples.plus_until` → beide Handys sehen Plus sofort. Verlängerungen/Kündigungen meldet RevenueCat an dieselbe
+Funktion (Webhook). Nutzer können `plus_until` selbst nicht ändern.
 
-App kauft über RevenueCat → ruft die Edge Function `plus-sync` auf → die prüft den Kauf direkt bei RevenueCat und setzt
-`couples.plus_until` → beide Handys sehen Plus sofort (Live-Update). Verlängerungen und Abläufe meldet RevenueCat an
-`revenuecat-webhook`. Nutzer können `plus_until` selbst nicht ändern.
+> Geheime Schlüssel (RevenueCat-Secret, Webhook-Passwort) gehören **nur** in die Supabase-Secrets –
+> nie in `.env`, nie in die App, nie in einen Chat.
 
-## Schritte
+## 1. App Store Connect: Abo anlegen (Vertrag für kostenpflichtige Apps muss „Aktiv“ sein)
 
-1. **Datenbank**: `supabase/schema.sql` erneut komplett im SQL Editor ausführen (fügt `plus_until`, Limit und
-   `pack_answers` hinzu).
-2. **Stores**: Apple Developer Account (99 $/Jahr) und Google Play Console (25 $ einmalig). Dort je ein
-   Abo-Produkt anlegen (monatlich, jährlich), plus Bank- und Steuerdaten (sonst kein Geld).
-3. **RevenueCat** (kostenlos bis 2.500 $ Monatsumsatz): Projekt anlegen, iOS- und Android-App verbinden, Produkte
-   importieren. *Entitlement* mit Identifier **`plus`** anlegen und alle Produkte zuordnen. *Offering* „default“
-   als *current* markieren mit Paketen *Monthly*, *Annual* (und optional *Lifetime*).
-4. **Keys in `.env`**: öffentliche App-Keys als `EXPO_PUBLIC_REVENUECAT_IOS_KEY` (`appl_…`) und
-   `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (`goog_…`). Außerdem `EXPO_PUBLIC_TERMS_URL` und `EXPO_PUBLIC_PRIVACY_URL`
-   (Apple lehnt Abos ohne diese Links ab).
-5. **Edge Functions** (Supabase CLI):
+1. App → **Monetarisierung → Abonnements** → **„+“ Abonnementgruppe**: Name `Wir zwei Plus`.
+2. In der Gruppe **„+“ Abonnement** – zweimal:
+   - Referenzname `Plus monatlich`, Produkt-ID `wirzwei_plus_monthly`, Dauer **1 Monat**
+   - Referenzname `Plus jährlich`, Produkt-ID `wirzwei_plus_yearly`, Dauer **1 Jahr**
+3. Für beide: **Preis** festlegen, **Lokalisierung Deutsch** (Anzeigename „Wir zwei Plus“, Beschreibung
+   „Zeichnungen, unbegrenzte Erinnerungen und Themen-Fragen für euch beide“), **Screenshot für die Prüfung**
+   (Bildschirmfoto der Plus-Seite aus der App).
+4. Jahresabo optional: **Einführungsangebot** → kostenloser Testzeitraum 1 Woche.
+5. **App-Store-Freigabe**: Die Abos werden zusammen mit dem nächsten App-Update eingereicht
+   (in der Version unter „In-App-Käufe und Abonnements“ hinzufügen).
 
-   ```bash
-   bunx supabase login
-   bunx supabase link --project-ref <projekt-ref>
-   bunx supabase secrets set REVENUECAT_SECRET_KEY=sk_... REVENUECAT_WEBHOOK_SECRET=<langes-zufallspasswort>
-   bunx supabase functions deploy plus-sync
-   bunx supabase functions deploy revenuecat-webhook --no-verify-jwt
-   ```
+## 2. RevenueCat (kostenlos bis 2.500 $ Monatsumsatz)
 
-   `REVENUECAT_SECRET_KEY` ist der **geheime** V1-Key aus RevenueCat – nie in `.env` oder die App.
-6. **Webhook**: RevenueCat → *Integrations* → *Webhooks* → URL
-   `https://<projekt-ref>.supabase.co/functions/v1/revenuecat-webhook`, Authorization-Header
-   `Bearer <REVENUECAT_WEBHOOK_SECRET>`.
-7. **Limit einschalten**: im SQL Editor `update public.app_settings set plus_enabled = true;` ausführen. Vorher gilt
-   kein 10-Momente-Limit (Version 1 ohne Abo).
-8. **Neuer Build nötig**: Käufe brauchen nativen Code, ein `eas update` reicht nicht.
-   `npx eas-cli@latest build --profile production`, danach `eas submit`. In Expo Go läuft RevenueCat nur im
-   Vorschaumodus (keine echten Käufe).
+1. https://app.revenuecat.com → Konto → **Projekt** `Wir zwei`.
+2. **App hinzufügen → App Store**: Bundle-ID `de.wirzwei.app`. Für die Verbindung braucht RevenueCat einen
+   **In-App-Purchase-Key** aus App Store Connect (Benutzer und Zugriff → Integrationen → In-App-Kauf → Schlüssel
+   erzeugen, .p8-Datei bei RevenueCat hochladen).
+3. **Products** → beide Produkt-IDs importieren.
+4. **Entitlements** → neues Entitlement mit Identifier **`plus`** → beide Produkte zuordnen.
+5. **Offerings** → `default` (als *current*) → Pakete **Monthly** (monatlich) und **Annual** (jährlich).
+6. **API Keys**: den öffentlichen App-Key (`appl_…`) in `.env` bei `EXPO_PUBLIC_REVENUECAT_IOS_KEY` eintragen
+   (der darf in die App). Den **Secret Key V1** (`sk_…`) nur in Schritt 3 bei Supabase eintragen.
+
+## 3. Supabase: Funktion `plus` anlegen (alles im Browser)
+
+1. Supabase → **Edge Functions** → **Deploy a new function** → **Via Editor**.
+2. Name: `plus`. Den gesamten Inhalt von `supabase/functions/plus/index.ts` einfügen → **Deploy**.
+3. In den Einstellungen der Funktion **„Verify JWT“ ausschalten** (die Funktion prüft selbst).
+4. **Edge Functions → Secrets** → zwei Einträge:
+   - `REVENUECAT_SECRET_KEY` = Secret Key V1 aus RevenueCat
+   - `REVENUECAT_WEBHOOK_SECRET` = ein langes Zufallspasswort (z. B. aus einem Passwortmanager)
+
+## 4. RevenueCat-Webhook
+
+RevenueCat → **Integrations → Webhooks** → URL
+`https://qzrnhlyvgiunzulsgpvb.supabase.co/functions/v1/plus`,
+Authorization-Header: `Bearer <dein REVENUECAT_WEBHOOK_SECRET>`.
+
+## 5. Limit einschalten (erst wenn Plus im Store kaufbar ist)
+
+Supabase SQL Editor: `update public.app_settings set plus_enabled = true;`
+Vorher gibt es kein 10-Erinnerungen-Limit.
+
+## 6. Neuer Build
+
+`.env` enthält jetzt den RevenueCat-Key → `git pull`, bauen, hochladen. Kaufen in TestFlight läuft über die
+**Sandbox** (kein echtes Geld). Zum Testen: App Store Connect → Benutzer und Zugriff → **Sandbox** → Testkonto
+anlegen und auf dem iPhone unter Einstellungen → App Store → Sandbox-Account anmelden.

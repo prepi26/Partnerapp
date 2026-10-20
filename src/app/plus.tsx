@@ -18,6 +18,11 @@ const BENEFITS: { icon: IconName; title: string; text: string }[] = [
     title: 'Unbegrenzte Momente',
     text: `Statt ${FREE_MEMORY_LIMIT} – haltet eure ganze Geschichte fest.`,
   },
+  {
+    icon: 'brush',
+    title: 'Zeichnungen fürs Widget',
+    text: 'Malt euch etwas – es erscheint beim anderen auf dem Home- und Sperrbildschirm.',
+  },
   { icon: 'chatbubbles', title: '3 Themen-Fragen täglich', text: 'Tiefgang 🌊, Zukunft 🏡 und Prickelnd 🌶️.' },
   { icon: 'heart', title: 'Unterstützt Wir zwei', text: 'Keine Werbung, keine verkauften Daten. Versprochen.' },
 ];

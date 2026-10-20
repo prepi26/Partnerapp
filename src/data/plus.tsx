@@ -34,7 +34,7 @@ function hasEntitlement(info: CustomerInfo) {
 
 /** Server informieren: er prüft den Kauf bei RevenueCat und schaltet Plus für beide frei. */
 async function syncWithServer() {
-  await supabase.functions.invoke('plus-sync').catch(() => {});
+  await supabase.functions.invoke('plus').catch(() => {});
 }
 
 export function PlusProvider({ children }: { children: ReactNode }) {
