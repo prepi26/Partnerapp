@@ -19,7 +19,8 @@ export default function TabLayout() {
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: colors.pink,
-          tabBarInactiveTintColor: colors.textMuted,
+          // Fester Farbwert: die Tab-Leiste rechnet mit Farbtexten, nicht mit hell/dunkel-Farben.
+          tabBarInactiveTintColor: '#9A8AAE',
           tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
           tabBarLabelStyle: { fontWeight: '600' },
           sceneStyle: { backgroundColor: colors.background },

@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...shadow,
   },
-  locked: { backgroundColor: '#F6F1F8' },
+  locked: { backgroundColor: colors.muted },
   emoji: { fontSize: 34 },
   title: { fontSize: 15, fontWeight: '800', color: colors.text, textAlign: 'center' },
   text: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 16 },
