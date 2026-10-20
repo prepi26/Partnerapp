@@ -11,10 +11,13 @@ Stress-test the user's plan by asking hard questions **one at a time** until the
 
 1. **Find the subject.** Use what the user named (e.g. "Plus-Abo", "Launch", "Version 1.3"). If nothing is named,
    pick the decision with the biggest consequence in the current conversation and say which one you picked.
-2. **Ask exactly one question per message.** Never batch questions. Number them ("Frage 3").
-3. **Every question gets your own recommended answer** right below it ("Meine Antwort an deiner Stelle: …"),
-   with a confidence tag ([Sicher] / [Wahrscheinlich] / [Vermutung]) and the reason in one or two sentences.
-   The user can simply agree, correct or reject it.
+2. **Ask exactly one question per message, as clickable answers.** Use the `AskUserQuestion` tool with one
+   question and 2–4 options. Put your recommended answer **first** and add „(Empfohlen)“ to its label; give every
+   option a one-line description of what it means or costs. The user can always type their own answer („Other“).
+   Number the questions in the header or question text ("Frage 3"). Never batch several questions.
+3. **Every question gets your own recommended answer**: the first option, plus one or two sentences in your
+   message before the tool call explaining why, with a confidence tag ([Sicher] / [Wahrscheinlich] / [Vermutung]).
+   If `AskUserQuestion` is not available, write the options as a numbered list instead.
 4. **Go for the weak spot first:** the assumption that, if wrong, breaks the plan (users, money, time, legal,
    App Store review, technical risk). Then work down to smaller details.
 5. **Follow the answer.** If an answer is vague ("mal schauen", "irgendwie"), ask the follow-up that makes it
