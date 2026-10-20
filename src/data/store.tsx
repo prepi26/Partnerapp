@@ -20,6 +20,7 @@ import {
   PackAnswer,
   PartnerKey,
   QuestionPack,
+  QuizAnswer,
   SpecialDate,
   Thought,
   Wish,
@@ -36,6 +37,7 @@ interface Data {
   pack_answers: PackAnswer[];
   date_ideas: DateIdea[];
   thoughts: Thought[];
+  quiz_answers: QuizAnswer[];
 }
 
 type Table = keyof Data;
@@ -49,6 +51,7 @@ const TABLES: Table[] = [
   'pack_answers',
   'date_ideas',
   'thoughts',
+  'quiz_answers',
 ];
 
 const emptyData: Data = {
@@ -61,6 +64,7 @@ const emptyData: Data = {
   pack_answers: [],
   date_ideas: [],
   thoughts: [],
+  quiz_answers: [],
 };
 
 async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
@@ -77,8 +81,8 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
     query = query.gte('day', toISO(since));
   }
   const result = await query;
-  // Ältere Datenbanken ohne Plus-Tabelle: Themen-Fragen fehlen nur, statt dass die ganze App nicht lädt.
-  if (table === 'pack_answers' && result.error) return [] as Data[T];
+  // Ältere Datenbanken ohne Plus-/Quiz-Tabelle: die Funktion fehlt nur, statt dass die ganze App nicht lädt.
+  if ((table === 'pack_answers' || table === 'quiz_answers') && result.error) return [] as Data[T];
   return must(result) as Data[T];
 }
 
@@ -148,6 +152,7 @@ interface Store extends Data {
   removeNote(id: string): Promise<void>;
   setMood(emoji: string): Promise<void>;
   answer(day: ISODate, text: string): Promise<void>;
+  answerQuiz(day: ISODate, items: { question_id: string; own: number; guess: number }[]): Promise<void>;
   answerPack(pack: QuestionPack, day: ISODate, text: string): Promise<void>;
   addIdea(idea: { title: string; emoji: string }): Promise<void>;
   toggleIdea(idea: DateIdea): Promise<void>;
@@ -311,6 +316,9 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
             .upsert({ day: toISO(today()), emoji, user_id: userId }, { onConflict: 'user_id,day' }),
         ),
       answer: async (day, text) => after('answers', await supabase.from('answers').insert({ day, answer: text })),
+      // Alle Fragen einer Runde in einem Rutsch – so gibt es genau eine Mitteilung für den Partner.
+      answerQuiz: async (day, items) =>
+        after('quiz_answers', await supabase.from('quiz_answers').insert(items.map((item) => ({ day, ...item })))),
       answerPack: async (pack, day, text) =>
         after('pack_answers', await supabase.from('pack_answers').insert({ pack, day, answer: text })),
       addIdea: async (idea) => after('date_ideas', await supabase.from('date_ideas').insert(idea)),

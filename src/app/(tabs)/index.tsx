@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { InviteCard } from '@/components/InviteCard';
 import { MoodCard } from '@/components/MoodCard';
+import { QuizTile } from '@/components/QuizTile';
 import { ShareCardButton } from '@/components/ShareCard';
 import { AchievementsTile, ThoughtLeaderboard, YearTile } from '@/components/ThoughtLeaderboard';
 import { ThinkingCard } from '@/components/Thoughts';
@@ -148,6 +149,8 @@ export default function Home() {
             </LinearGradient>
           )}
         </Pressable>
+
+        <QuizTile />
 
         <Text style={styles.section}>Nächste Meilensteine</Text>
         <Card style={{ gap: spacing.md }}>

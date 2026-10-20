@@ -98,3 +98,15 @@ export interface PackAnswer {
   answer: string;
   created_at: string;
 }
+
+export interface QuizAnswer {
+  couple_id: string;
+  user_id: string;
+  day: ISODate;
+  question_id: string;
+  /** Eigene Antwort (Index der Option). */
+  own: number;
+  /** Tipp für die Antwort des Partners. */
+  guess: number;
+  created_at: string;
+}

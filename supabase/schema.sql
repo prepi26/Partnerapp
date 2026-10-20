@@ -371,6 +371,42 @@ create policy photos_couple on storage.objects for all
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = public.my_couple_id()::text)
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = public.my_couple_id()::text);
 
+-- ───────────── Spiel „Wie gut kennst du mich?“ ─────────────
+-- Jeden Tag 3 Fragen. own = eigene Antwort, guess = Tipp für den Partner (Index 0–3).
+-- Die Zeilen des Partners werden erst sichtbar, wenn man dieselbe Frage selbst beantwortet hat.
+create table if not exists public.quiz_answers (
+  couple_id uuid not null default public.my_couple_id() references public.couples (id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  day date not null,
+  question_id text not null check (length(question_id) between 1 and 40),
+  own smallint not null check (own between 0 and 3),
+  guess smallint not null check (guess between 0 and 3),
+  created_at timestamptz not null default now(),
+  primary key (user_id, day, question_id)
+);
+create index if not exists quiz_answers_couple on public.quiz_answers (couple_id, day);
+
+create or replace function public.has_quiz_answer(p_day date, p_question text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.quiz_answers where user_id = auth.uid() and day = p_day and question_id = p_question
+  )
+$$;
+
+alter table public.quiz_answers enable row level security;
+drop policy if exists quiz_select on public.quiz_answers;
+create policy quiz_select on public.quiz_answers for select using (
+  user_id = auth.uid() or (couple_id = public.my_couple_id() and public.has_quiz_answer(day, question_id))
+);
+drop policy if exists quiz_insert on public.quiz_answers;
+create policy quiz_insert on public.quiz_answers for insert
+  with check (couple_id = public.my_couple_id() and user_id = auth.uid());
+
 -- ───────────── Push-Benachrichtigungen ─────────────
 -- Jedes Handy meldet sein Expo-Push-Token. Neue Herzen, Zettel, Antworten und Erinnerungen schicken
 -- über pg_net eine Mitteilung an das Handy des Partners (Expo Push Service, exp.host).
@@ -575,13 +611,50 @@ $$;
 revoke execute on function public.thought_stats() from public, anon;
 grant execute on function public.thought_stats() to authenticated;
 
+-- Quiz: eine Mitteilung pro gespielter Runde (nicht pro Frage) – daher ein Statement-Trigger.
+create or replace function public.push_on_quiz()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  r record;
+  v_name text;
+  v_partner_done boolean;
+begin
+  for r in select distinct n.couple_id, n.user_id, n.day from new_rows n loop
+    select case when partner_a = r.user_id then name_a else name_b end into v_name
+      from public.couples where id = r.couple_id;
+    v_name := coalesce(nullif(trim(v_name), ''), 'Dein Schatz');
+    select exists (
+      select 1 from public.quiz_answers q where q.couple_id = r.couple_id and q.day = r.day and q.user_id <> r.user_id
+    ) into v_partner_done;
+    perform public.notify_partner(
+      r.couple_id,
+      r.user_id,
+      '🎯 ' || v_name || ' hat das Quiz gespielt',
+      case when v_partner_done then 'Euer Ergebnis ist da – wer kennt wen besser?'
+           else 'Du bist dran: Wie gut kennst du ' || v_name || '?' end,
+      '/quiz'
+    );
+  end loop;
+  return null;
+end;
+$$;
+
+drop trigger if exists push_on_quiz on public.quiz_answers;
+create trigger push_on_quiz after insert on public.quiz_answers
+  referencing new table as new_rows
+  for each statement execute function public.push_on_quiz();
+
 -- ───────────── Live-Aktualisierung ─────────────
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'pack_answers', 'date_ideas', 'thoughts'] loop
+  foreach t in array array['couples', 'memories', 'wishes', 'special_dates', 'notes', 'moods', 'answers', 'pack_answers', 'date_ideas', 'thoughts', 'quiz_answers'] loop
     if not exists (
       select 1 from pg_publication_tables
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t

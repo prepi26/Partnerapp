@@ -10,6 +10,8 @@ export interface AchievementInput {
   ideasDone: number;
   heartsTotal: number | null;
   heartsBestDay: number | null;
+  quizRounds: number;
+  quizPerfect: number;
 }
 
 export interface Achievement {
@@ -96,6 +98,30 @@ const LIST: { id: string; emoji: string; title: string; text: string; metric: Me
     text: 'Zusammen 1.000 Herzen verschickt',
     metric: 'heartsTotal',
     goal: 1000,
+  },
+  {
+    id: 'quiz1',
+    emoji: '🎯',
+    title: 'Erste Quizrunde',
+    text: 'Das erste Mal zusammen gequizzt',
+    metric: 'quizRounds',
+    goal: 1,
+  },
+  {
+    id: 'quizPerfect',
+    emoji: '🔮',
+    title: 'Gedankenleser',
+    text: 'In einer Quizrunde alle Tipps richtig',
+    metric: 'quizPerfect',
+    goal: 1,
+  },
+  {
+    id: 'quiz20',
+    emoji: '🧠',
+    title: 'Quiz-Profis',
+    text: '20 Quizrunden zusammen gespielt',
+    metric: 'quizRounds',
+    goal: 20,
   },
   {
     id: 'note1',
