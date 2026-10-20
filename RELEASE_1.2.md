@@ -10,7 +10,7 @@
   beim Öffnen der App ist es aktuell).
 - **Quiz „Wie gut kennst du mich?“**: täglich 3 Fragen – erst über dich, dann Tipp für den Partner. Ergebnis, sobald
   beide gespielt haben; Mitteilung an den Partner.
-- **Herz-Rangliste** (Heute/Woche/Monat/Jahr) und **50 Paar-Erfolge** in 5 Gruppen (auch übertriebene wie 100.000 Herzen).
+- **Herz-Rangliste** (Heute/Woche/Monat/Jahr) und **50 Paar-Erfolge** in 5 Gruppen (auch übertriebene wie 100.000 Herzen) – geschaffte Erfolge lassen sich als Bild teilen.
 - **Jahresrückblick** („Euer Jahr 2026“) als Bild zum Teilen.
 - **Teilen-Karte** neu: Namen groß oben, Emojis optional, App-Store-Link wird mitgeschickt; Teilen hängt nicht mehr.
 - **Dunkelmodus** (folgt der iPhone-Einstellung).
@@ -66,5 +66,5 @@ Danach: `npx eas-cli@latest submit --platform ios --latest`
 - „Neuerungen in dieser Version“:
 
 ```
-Riesen-Update! Euer Zusammen-Zähler und eure Zeichnungen als Widget für Home- und Sperrbildschirm. Neu: das tägliche Quiz „Wie gut kennst du mich?“, die Herz-Rangliste, 50 Paar-Erfolge und euer Jahresrückblick zum Teilen. Außerdem: Dunkelmodus, schönere Teilen-Karte mit eigenem Foto und viele kleine Verbesserungen.
+Riesen-Update! Euer Zusammen-Zähler und eure Zeichnungen als Widget für Home- und Sperrbildschirm. Neu: das tägliche Quiz „Wie gut kennst du mich?“, die Herz-Rangliste, 50 Paar-Erfolge zum Teilen und euer Jahresrückblick. Außerdem: Dunkelmodus, schönere Teilen-Karte mit eigenem Foto und viele kleine Verbesserungen.
 ```
