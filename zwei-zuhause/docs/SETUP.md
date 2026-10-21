@@ -28,6 +28,9 @@ npx eas-cli@latest init          # legt die projectId in app.json an – nötig 
 ```
 
 Danach testen: `npx expo start` und mit der Kamera den QR-Code scannen.
+
+**Android-Push:** braucht zusätzlich ein Firebase-Projekt (`google-services.json`) und den FCM-Schlüssel in EAS
+(`npx eas-cli@latest credentials`). iOS-Push richtet EAS beim ersten Build automatisch ein.
 **Achtung:** Push, Käufe und Kamera laufen nur in einem *Development Build*, nicht in Expo Go:
 `npx eas-cli@latest build --profile development --platform ios`.
 

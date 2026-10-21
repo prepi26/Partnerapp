@@ -40,7 +40,14 @@
           "photosPermission": "Damit du Belege zu Ausgaben hinzufügen kannst.",
           "cameraPermission": "Damit du Kassenbons und Belege fotografieren kannst."
         }
-      ]
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2F8F83"
+        }
+      ],
+      "expo-font"
     ],
     "owner": "prepi26"
   }
