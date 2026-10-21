@@ -9,7 +9,8 @@ Expo SDK 57 · Expo Router · Supabase (EU) · RevenueCat. Eigenständiges Proje
 
 | Datei | Inhalt |
 |---|---|
-| `docs/SETUP.md` | **Hier anfangen**: Supabase, EAS, Abo, Pflichtseiten, App Store |
+| `docs/MORGEN.md` | **Hier anfangen**: Stand, offene Entscheidungen |
+| `docs/SETUP.md` | Supabase, EAS, Abo, Pflichtseiten, App Store |
 | `docs/RECHERCHE.md` | Probleme getrennter Eltern, Wettbewerb, Recht, Jugendamt – mit Quellen |
 | `docs/MARKE.md` | Namensvorschläge, Logo-Konzepte, Farben |
 | `docs/STORE.md` | Store-Texte, Keywords, Screenshot-Plan |
