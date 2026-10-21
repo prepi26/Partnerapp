@@ -18,9 +18,18 @@ if (Platform.OS !== 'web') {
 }
 
 let currentToken: string | null = null;
+let registration: Promise<void> | null = null;
 
-/** Fragt (einmalig) nach der Erlaubnis und meldet dieses Handy für Mitteilungen an. */
-export async function registerForPush() {
+/**
+ * Fragt (einmalig) nach der Erlaubnis und meldet dieses Handy für Mitteilungen an.
+ * Mehrfache Aufrufe teilen sich denselben Vorgang – wer danach Erinnerungen plant, wartet einfach darauf.
+ */
+export function registerForPush() {
+  registration ??= register();
+  return registration;
+}
+
+async function register() {
   if (Platform.OS === 'web' || !Device.isDevice) return;
   try {
     let { status } = await Notifications.getPermissionsAsync();
@@ -38,6 +47,7 @@ export async function registerForPush() {
 
 /** Beim Abmelden: dieses Handy soll keine Mitteilungen für das alte Konto mehr bekommen. */
 export async function unregisterForPush() {
+  registration = null;
   if (!currentToken) return;
   try {
     await supabase.rpc('unregister_push_token', { p_token: currentToken });

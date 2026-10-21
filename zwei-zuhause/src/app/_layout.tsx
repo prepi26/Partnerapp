@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AppLock } from '@/components/AppLock';
+import { HandoverReminders } from '@/components/HandoverReminders';
 import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
@@ -35,9 +37,11 @@ function Gate() {
   if (!session) return <RootStack signedIn={false} hasFamily={false} professional={false} />;
   return (
     // key: beim Kontowechsel wird aller Zustand verworfen.
-    <StoreProvider key={session.user.id} userId={session.user.id}>
-      <SignedIn />
-    </StoreProvider>
+    <AppLock>
+      <StoreProvider key={session.user.id} userId={session.user.id}>
+        <SignedIn />
+      </StoreProvider>
+    </AppLock>
   );
 }
 
@@ -57,6 +61,7 @@ function SignedIn() {
     <PlusProvider>
       <RootStack signedIn hasFamily={family !== null} professional={isProfessional} />
       {(family || isProfessional) && Platform.OS !== 'web' ? <PushSetup /> : null}
+      {family && Platform.OS !== 'web' ? <HandoverReminders /> : null}
     </PlusProvider>
   );
 }

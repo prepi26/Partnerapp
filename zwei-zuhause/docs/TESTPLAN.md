@@ -19,3 +19,7 @@ Datenbankregeln: `supabase/test-*.sql`.
 | 8 | Konto löschen bei A | B behält Kalender, Kosten, Nachrichten; A ist weg |
 | 9 | Hilfe → Notruf-Buttons | Telefon-App öffnet sich mit Nummer |
 | 10 | Kleines iPhone (SE) | Kalender und Formulare passen |
+| 11 | App-Sperre einschalten (Einstellungen) | Face ID/Code wird abgefragt; nach >30 s im Hintergrund erneut; in der App-Übersicht ist der Inhalt verdeckt |
+| 12 | App-Sperre ohne Gerätecode | Hinweis „Richte zuerst einen Code … ein“, Schalter bleibt aus |
+| 13 | Erinnerung: Plan mit Wechsel morgen | Heute 19 Uhr Mitteilung „Morgen ist Übergabe – Mia geht zu … · 17:00 Uhr · Kita“; Tippen öffnet Kalender |
+| 14 | Erinnerung ausschalten | keine Mitteilung mehr; nach Abmelden ebenfalls keine |

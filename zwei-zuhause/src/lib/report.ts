@@ -16,7 +16,7 @@ import { addDays, formatDate, formatTimestamp, MONTHS, parseISO, toISO } from '.
 import { decisionCategory } from './decisions';
 import { handoverLabel } from './handovers';
 import { balanceAB, categoryOf, formatMoney, needOf, shareOf } from './money';
-import { acceptedChanges, dayInfo, MODELS } from './schedule';
+import { acceptedChanges, dayInfo, handoverWhere, MODELS } from './schedule';
 
 export type ReportSection =
   | 'schedule'
@@ -208,7 +208,7 @@ export function buildReportHtml(input: ReportInput): string {
     parts.push(`<h2>Umgang</h2>
       <p>Vereinbartes Modell: <b>${esc(model?.title ?? '–')}</b>${
         family.schedule_model !== 'none' ? ` seit ${formatDate(family.schedule_start)}` : ''
-      }</p>
+      }${handoverWhere(family) ? `<br>Übergabe: ${esc(handoverWhere(family))}` : ''}</p>
       <table><tr><th>Monat</th><th>Tage bei ${name('a')}</th><th>Tage bei ${name('b')}</th><th>ohne Eintrag</th></tr>
       ${[...nights.entries()]
         .map(([month, n]) => `<tr><td>${month}</td><td>${n.a}</td><td>${n.b}</td><td>${n.none}</td></tr>`)

@@ -8,7 +8,7 @@ import { Card, GradientHeader, HeaderIcon, SecondaryButton, tap } from '@/compon
 import { attempt, useFamily } from '@/data/store';
 import { ISODate, ScheduleChange } from '@/data/types';
 import { formatTimestamp, formatWeekday, MONTHS, toISO, today, WEEKDAYS_SHORT } from '@/lib/dates';
-import { acceptedChanges, dayInfo, MODELS } from '@/lib/schedule';
+import { acceptedChanges, dayInfo, handoverWhere, MODELS } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Calendar() {
@@ -119,6 +119,9 @@ export default function Calendar() {
             <ParentTag parent="a" name={nameOf('a')} />
             <ParentTag parent="b" name={nameOf('b')} />
           </View>
+          {handoverWhere(family) ? (
+            <Text style={styles.where}>Übergabe: {handoverWhere(family)}</Text>
+          ) : null}
           <Text style={styles.hint}>
             Tipp auf einen Tag, um einen Tausch vorzuschlagen. Punkt = vereinbarte Ausnahme, Rahmen = offener Vorschlag.
           </Text>
@@ -204,6 +207,7 @@ const styles = StyleSheet.create({
   dayText: { fontSize: 15, fontWeight: '700' },
   marker: { position: 'absolute', bottom: 5, width: 5, height: 5, borderRadius: 3 },
   legend: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', marginTop: spacing.xs },
+  where: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
   hint: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 17 },
   section: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', marginTop: 8 },
   item: { gap: 4 },

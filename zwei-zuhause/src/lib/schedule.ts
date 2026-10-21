@@ -70,19 +70,47 @@ export function dayInfo(
   return { parent: change ? change.parent : plannedParent(family, day), change, proposal: proposals.get(iso) };
 }
 
+/** Die nächsten Wechsel ab morgen (innerhalb von `days` Tagen). */
+export function handoversAhead(
+  family: Family,
+  accepted: Map<ISODate, ScheduleChange>,
+  from: Date,
+  days = 60,
+): { day: Date; from: ParentKey; to: ParentKey }[] {
+  const none = new Map<ISODate, ScheduleChange>();
+  const list: { day: Date; from: ParentKey; to: ParentKey }[] = [];
+  let current = dayInfo(family, accepted, none, from).parent;
+  for (let i = 1; i <= days; i++) {
+    const day = addDays(from, i);
+    const parent = dayInfo(family, accepted, none, day).parent;
+    if (parent && current && parent !== current) list.push({ day, from: current, to: parent });
+    if (parent) current = parent;
+  }
+  return list;
+}
+
 /** Nächster Tag, an dem das Kind wechselt (innerhalb von 60 Tagen). */
 export function nextHandover(
   family: Family,
   accepted: Map<ISODate, ScheduleChange>,
   from: Date,
 ): { day: Date; to: ParentKey } | null {
-  const proposals = new Map<ISODate, ScheduleChange>();
-  let current = dayInfo(family, accepted, proposals, from).parent;
-  for (let i = 1; i <= 60; i++) {
-    const day = addDays(from, i);
-    const parent = dayInfo(family, accepted, proposals, day).parent;
-    if (parent && current && parent !== current) return { day, to: parent };
-    if (parent) current = parent;
-  }
-  return null;
+  return handoversAhead(family, accepted, from)[0] ?? null;
+}
+
+/** „17:00 · Kita Sonnenschein“ – leer, wenn nichts festgelegt ist. */
+export function handoverWhere(family: Pick<Family, 'handover_time' | 'handover_place'>): string {
+  return [family.handover_time && `${family.handover_time} Uhr`, family.handover_place.trim()].filter(Boolean).join(' · ');
+}
+
+/** Gültige Uhrzeit „HH:MM“ (oder leer). Akzeptiert auch „17“ und „17.30“. */
+export function normalizeTime(text: string): string | null {
+  const t = text.trim();
+  if (!t) return '';
+  const m = t.match(/^(\d{1,2})(?:[:.](\d{2}))?$/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2] ?? '0');
+  if (h > 23 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
 }

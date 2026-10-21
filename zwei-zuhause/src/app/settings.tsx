@@ -1,19 +1,48 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { InviteCard } from '@/components/InviteCard';
-import { Card, Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton } from '@/components/ui';
+import { Card, Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { attempt, useFamily } from '@/data/store';
+import { loadAppLock, lockAvailable, saveAppLock, unlock } from '@/lib/appLock';
 import { close } from '@/lib/nav';
+import { loadHandoverReminder, refreshHandoverReminders, saveHandoverReminder } from '@/lib/reminders';
 import { colors, spacing } from '@/theme';
 
 const SHARES = [50, 60, 70, 80, 100, 40, 30, 20, 0];
 
 export default function Settings() {
-  const { family, me, otherJoined, otherName, updateFamily, signOut, deleteAccount } = useFamily();
+  const { family, me, otherJoined, otherName, nameOf, schedule_changes, updateFamily, signOut, deleteAccount } =
+    useFamily();
+  const [lockOn, setLockOn] = useState(false);
+  const [reminderOn, setReminderOn] = useState(true);
+
+  useEffect(() => {
+    loadAppLock().then(setLockOn);
+    loadHandoverReminder().then(setReminderOn);
+  }, []);
+
+  const toggleLock = async (on: boolean) => {
+    if (on) {
+      if (!(await lockAvailable())) {
+        showError('Keine Gerätesperre', 'Richte zuerst einen Code, Face ID oder Fingerabdruck auf deinem Handy ein.');
+        return;
+      }
+      // Einmal bestätigen – so ist sicher, dass das Entsperren klappt.
+      if (!(await unlock())) return;
+    }
+    setLockOn(on);
+    await saveAppLock(on);
+  };
+
+  const toggleReminder = async (on: boolean) => {
+    setReminderOn(on);
+    await saveHandoverReminder(on);
+    await refreshHandoverReminders({ family, changes: schedule_changes, me, nameOf });
+  };
   const [nameA, setNameA] = useState(family.name_a);
   const [nameB, setNameB] = useState(family.name_b);
   const [kids, setKids] = useState(family.children);
@@ -85,6 +114,23 @@ export default function Settings() {
 
         <SecondaryButton title="Umgangsplan ändern" icon="calendar-outline" onPress={() => router.push('/schedule')} />
 
+        {Platform.OS !== 'web' ? (
+          <Card style={styles.card}>
+            <ToggleRow
+              title="App-Sperre"
+              text="Face ID, Fingerabdruck oder Gerätecode beim Öffnen – damit niemand sonst Nachrichten oder Tagebuch sieht."
+              value={lockOn}
+              onChange={toggleLock}
+            />
+            <ToggleRow
+              title="Erinnerung vor der Übergabe"
+              text="Am Vorabend um 19 Uhr: wer das Kind bekommt, wann und wo."
+              value={reminderOn}
+              onChange={toggleReminder}
+            />
+          </Card>
+        ) : null}
+
         <PrimaryButton
           title={saving ? 'Speichere…' : 'Speichern'}
           icon="checkmark"
@@ -115,7 +161,32 @@ export default function Settings() {
   );
 }
 
+function ToggleRow({
+  title,
+  text,
+  value,
+  onChange,
+}: {
+  title: string;
+  text: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <View style={styles.toggleRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.toggleTitle}>{title}</Text>
+        <Text style={styles.toggleText}>{text}</Text>
+      </View>
+      <Switch value={value} onValueChange={onChange} trackColor={{ true: colors.primary }} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  toggleTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  toggleText: { fontSize: 13, color: colors.textMuted, lineHeight: 18, marginTop: 2 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: 60 },
   card: { gap: spacing.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

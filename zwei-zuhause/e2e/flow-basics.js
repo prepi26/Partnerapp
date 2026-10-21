@@ -44,8 +44,12 @@ async function signup(page, email) {
   await a.reload(); await a.getByText('Hallo Sandra').waitFor();
   await a.getByText('Umgangsplan festlegen →').click();
   await a.getByText('Wechselmodell 7/7').click();
+  await a.getByText('17:00', { exact: true }).click();
+  await a.getByPlaceholder(/Kita Sonnenschein/).fill('Kita Sonnenschein');
   await a.getByText('Plan speichern').click();
   await a.getByText('Hallo Sandra').waitFor();
+  await a.getByText(/17:00 Uhr · Kita Sonnenschein/).first().waitFor({ timeout: 10000 });
+  console.log('handover time and place shown on home');
   await shot(a, '04-home-plan');
   await a.getByRole('tab', { name: /Kalender/ }).click();
   await a.waitForTimeout(800);

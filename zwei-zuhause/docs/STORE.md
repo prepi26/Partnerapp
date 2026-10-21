@@ -15,7 +15,8 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 **UMGANGSKALENDER**
 • Wechselmodell 7/7, 2-2-5-5, 2-2-3 oder Residenzmodell – einmal einstellen, fertig
 • Tausch oder Ferien vorschlagen, der andere stimmt zu oder lehnt ab
-• Auf einen Blick: Bei wem ist das Kind heute, wann ist die nächste Übergabe?
+• Auf einen Blick: Bei wem ist das Kind heute, wann und wo ist die nächste Übergabe?
+• Erinnerung am Vorabend jeder Übergabe
 
 **KOSTEN FAIR TEILEN**
 • Ausgaben fürs Kind mit Anteil (50/50 oder eigener Schlüssel)
@@ -40,6 +41,7 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 
 **NUR FÜR DICH**
 • Privates Tagebuch – der andere Elternteil sieht es nie
+• App-Sperre mit Face ID, Fingerabdruck oder Code
 
 **DATENSCHUTZ**
 Server in Frankfurt (EU). Keine Werbung, kein Tracking, keine verkauften Daten. Konto löschen mit einem Tipp.

@@ -25,6 +25,10 @@ und keinen Verkauf von Daten**.
 | Tagebuch | eigene Dokumentation | **nur du** |
 | Push-Token des Geräts | Mitteilungen | technisch: Expo, Apple/Google |
 | Kaufstatus „Plus“ | Freischaltung | RevenueCat, Apple/Google |
+| Einstellungen App-Sperre und Erinnerungen | Komfort | nur auf deinem Gerät |
+
+**Face ID / Fingerabdruck:** Die App-Sperre nutzt die Funktion deines Betriebssystems. Biometrische Daten verlassen
+dein Gerät nie und werden von uns weder gesehen noch gespeichert. Erinnerungen an Übergaben plant dein Handy selbst.
 
 **Gesundheitsangaben** (z. B. Allergien, Medikamente) sind besonders geschützte Daten (Art. 9 DSGVO). Sie werden nur
 gespeichert, wenn ihr sie selbst eintragt. Mit dem Eintragen willigst du ausdrücklich in die Verarbeitung ein

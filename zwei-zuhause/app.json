@@ -47,7 +47,13 @@
           "color": "#2F8F83"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Damit nur du Zwei Zuhause öffnen kannst."
+        }
+      ]
     ],
     "owner": "prepi26"
   }

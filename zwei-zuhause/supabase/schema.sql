@@ -28,6 +28,15 @@ alter table public.families drop constraint if exists families_schedule_model_ch
 alter table public.families add constraint families_schedule_model_check
   check (schedule_model in ('none', 'wechsel_7_7', 'wechsel_2_2_5_5', 'wechsel_2_2_3', 'residenz_we'));
 
+-- Wann und wo üblicherweise übergeben wird (z. B. „17:00“, „Kita Sonnenschein“).
+alter table public.families add column if not exists handover_time text not null default '';
+alter table public.families add column if not exists handover_place text not null default '';
+alter table public.families drop constraint if exists families_handover_time_check;
+alter table public.families add constraint families_handover_time_check
+  check (handover_time = '' or handover_time ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$');
+alter table public.families drop constraint if exists families_handover_place_check;
+alter table public.families add constraint families_handover_place_check check (length(handover_place) <= 200);
+
 create unique index if not exists families_parent_a_key on public.families (parent_a);
 create unique index if not exists families_parent_b_key on public.families (parent_b);
 
@@ -189,7 +198,7 @@ create policy families_update on public.families
 -- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
 revoke select on public.families from authenticated;
 grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
-              default_share_a, created_at) on public.families to authenticated;
+              default_share_a, handover_time, handover_place, created_at) on public.families to authenticated;
 
 create or replace function public.my_invite_code()
 returns text
@@ -203,7 +212,8 @@ $$;
 
 -- Wer zur Familie gehört und der Code sind tabu; Namen, Kinder und Umgangsplan dürfen beide ändern.
 revoke update on public.families from authenticated;
-grant update (name_a, name_b, children, schedule_model, schedule_start, schedule_first, default_share_a)
+grant update (name_a, name_b, children, schedule_model, schedule_start, schedule_first, default_share_a,
+              handover_time, handover_place)
   on public.families to authenticated;
 
 -- ───────────── Umgang: Ausnahmen und Tausch ─────────────

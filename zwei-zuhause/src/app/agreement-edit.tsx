@@ -5,7 +5,7 @@ import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { AgreementContent } from '@/data/types';
 import { AGREEMENT_SECTIONS } from '@/lib/agreement';
-import { MODELS } from '@/lib/schedule';
+import { handoverWhere, MODELS } from '@/lib/schedule';
 import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
@@ -16,7 +16,10 @@ export default function AgreementEdit() {
     if (latest) return { ...latest.content };
     // Erster Entwurf: das gewählte Umgangsmodell schon eintragen.
     const model = MODELS.find((m) => m.key === family.schedule_model);
-    return family.schedule_model !== 'none' && model ? { betreuung: `${model.title}. ${model.text}` } : {};
+    const draft: AgreementContent = {};
+    if (family.schedule_model !== 'none' && model) draft.betreuung = `${model.title}. ${model.text}`;
+    if (handoverWhere(family)) draft.uebergabe = `Übergabe: ${handoverWhere(family)}.`;
+    return draft;
   });
   const [busy, setBusy] = useState(false);
 

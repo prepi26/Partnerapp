@@ -18,6 +18,9 @@ export interface Family {
   schedule_start: ISODate;
   schedule_first: ParentKey;
   default_share_a: number;
+  /** „HH:MM“ oder leer. */
+  handover_time: string;
+  handover_place: string;
   created_at: string;
 }
 

@@ -9,7 +9,7 @@ import { Card, GradientHeader, HeaderIcon, IconName } from '@/components/ui';
 import { useFamily } from '@/data/store';
 import { addDays, countdownLabel, daysBetween, formatWeekday, today } from '@/lib/dates';
 import { balanceAB, formatMoney } from '@/lib/money';
-import { acceptedChanges, dayInfo, nextHandover } from '@/lib/schedule';
+import { acceptedChanges, dayInfo, handoverWhere, nextHandover } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Home() {
@@ -20,6 +20,7 @@ export default function Home() {
   const now = today();
   const todayInfo = dayInfo(family, accepted, new Map(), now);
   const handover = nextHandover(family, accepted, now);
+  const where = handoverWhere(family);
 
   const openChanges = schedule_changes.filter((c) => c.status === 'proposed' && c.created_by !== userId);
   const openExpenses = expenses.filter((e) => e.status === 'open' && e.created_by !== userId);
@@ -60,8 +61,8 @@ export default function Home() {
           )}
           {handover ? (
             <Text style={styles.todaySub}>
-              Nächste Übergabe {countdownLabel(daysBetween(now, handover.day))} ({formatWeekday(handover.day)}) an{' '}
-              {handover.to === me ? 'dich' : nameOf(handover.to)}
+              Nächste Übergabe {countdownLabel(daysBetween(now, handover.day))} ({formatWeekday(handover.day)}
+              {where ? `, ${where}` : ''}) an {handover.to === me ? 'dich' : nameOf(handover.to)}
             </Text>
           ) : null}
           {family.schedule_model === 'none' ? (

@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 
 import { showError } from '@/components/ui';
 import { unregisterForPush } from '@/lib/push';
+import { cancelHandoverReminders } from '@/lib/reminders';
 import { must, supabase } from '@/lib/supabase';
 
 import { FAMILY_COLUMNS } from './columns';
@@ -147,7 +148,15 @@ export interface NewExpense {
 type FamilyPatch = Partial<
   Pick<
     Family,
-    'name_a' | 'name_b' | 'children' | 'schedule_model' | 'schedule_start' | 'schedule_first' | 'default_share_a'
+    | 'name_a'
+    | 'name_b'
+    | 'children'
+    | 'schedule_model'
+    | 'schedule_start'
+    | 'schedule_first'
+    | 'default_share_a'
+    | 'handover_time'
+    | 'handover_place'
   >
 >;
 
@@ -296,6 +305,7 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     };
 
     const cleanUp = async () => {
+      await cancelHandoverReminders();
       await unregisterForPush();
       await supabase.auth.signOut();
     };
