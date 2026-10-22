@@ -47,6 +47,12 @@ function deviceLang(): Lang {
 let current: Dict = de;
 let currentLang: Lang = 'de';
 
+/** Merkt sich die aktive Sprache für Code außerhalb von React – muss vor dem Rendern der Kinder passieren. */
+function remember(t: Dict, lang: Lang) {
+  current = t;
+  currentLang = lang;
+}
+
 export function currentT(): Dict {
   return current;
 }
@@ -97,8 +103,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const value = useMemo<LanguageState>(() => {
     const active = lang ?? 'de';
     const t = DICTS[active] ?? de;
-    current = t;
-    currentLang = active;
+    remember(t, active);
     return {
       lang: active,
       t,

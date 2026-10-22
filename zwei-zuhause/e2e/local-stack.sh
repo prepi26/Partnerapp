@@ -9,7 +9,11 @@ node keys.js > keys.env && . ./keys.env
 docker network create zz 2>/dev/null || true
 docker rm -f zzdb zzauth zzrest zzstorage >/dev/null 2>&1 || true
 docker run -d --name zzdb --network zz -e POSTGRES_PASSWORD=pw -e JWT_SECRET=$S -p 55432:5432 supabase/postgres:15.8.1.085 >/dev/null
-sleep 25
+# Warten, bis Postgres im Container Verbindungen annimmt.
+for i in $(seq 1 60); do
+  docker exec -e PGPASSWORD=pw zzdb psql -h localhost -U supabase_admin -d postgres -tAc 'select 1' >/dev/null 2>&1 && break
+  sleep 2
+done
 echo "alter role authenticator with password 'pw'; alter role supabase_auth_admin with password 'pw'; alter role supabase_storage_admin with password 'pw';" |
   docker exec -i -e PGPASSWORD=pw zzdb psql -h localhost -U supabase_admin -d postgres -q
 docker run -d --name zzauth --network zz -e GOTRUE_API_HOST=0.0.0.0 -e PORT=9999 -e API_EXTERNAL_URL=http://localhost:54321 \
