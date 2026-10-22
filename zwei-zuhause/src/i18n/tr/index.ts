@@ -38,6 +38,7 @@ export const tr: Dict = {
       is_parent: 'Bu hesap bir aileye ait. Uzman erişimi için ayrı bir hesaba ihtiyacınız var.',
       network: 'Sunucuya bağlanılamıyor. İnternete bağlı mısınız?',
       already_redeemed: 'Aileniz zaten bir kupon kodu kullandı.',
+      too_many_families: 'Bir hesaba 5’ten fazla aile eklenemez.',
     },
     subscription: {
       required: 'Ücretsiz deneme süresi sona erdi. Abonelikle ikiniz de yeniden her şeyi ekleyebilirsiniz.',
@@ -414,6 +415,20 @@ export const tr: Dict = {
       calendarSync: 'Telefon takviminde',
       calendarSyncText: 'iPhone, Google veya Outlook takviminde bakım planı',
     },
+    families: {
+      label: '{children} · {name} ile',
+      switchTitle: 'Aileyi değiştir',
+      add: 'Aile ekle',
+      addText: 'Başka bir ebeveynle olan çocuklar',
+      addIntro:
+        'Başka bir ebeveynle olan çocuklarınız için ayrı bir aile oluşturursunuz. Aileler kesin olarak ayrıdır: Kimse başka bir aileden bir şey görmez – hepsini yalnızca siz görürsünüz.',
+      overviewTitle: 'Bugün tüm çocuklar',
+      at: '{name} ile',
+      atYou: 'sizde',
+      noPlan: 'plan yok',
+      open: '{n} açık',
+      locked: 'yalnızca okuma',
+    },
     invite: {
       shareMessage:
         'Görüşme düzeni, masraflar ve anlaşmalar için „Zwei Zuhause“ uygulamasını kullanıyorum. Uygulamayı indirin, bir hesap oluşturun ve şu kodu girin: {code}',
@@ -650,6 +665,9 @@ export const tr: Dict = {
       fromPhotos: 'Fotoğraflardan',
       confirmHint: '{name} kaydı onaylayabilir veya reddedebilir. Onaylanan kayıtlar artık silinemez.',
       notJoinedHint: '{name} bağlandığında kayıtlarınızı onaylayabilir.',
+      splitTitle: 'Diğer ailelerinizdeki çocuklar için de mi?',
+      splitHint: '{amount}, {n} aileye bölünür – her birine {part}. Her aile yalnızca kendi payını görür.',
+      splitSuffix: 'birden fazla çocuk için bir harcamanın payı',
     },
     plus: {
       benefits: {
@@ -692,6 +710,13 @@ export const tr: Dict = {
       trialOver:
         'Ücretsiz deneme süresi sona erdi. Abonelik olmadan her şeyi okuyabilirsiniz, ancak yeni bir şey ekleyemezsiniz.',
       unavailable: 'Satın alma yalnızca iOS ve Android uygulamasında mümkündür.',
+      tierSingle: '1 aile için',
+      tierMulti: 'Plus Çoklu Aile – en fazla 3 aile için',
+      multiHint:
+        'Farklı ebeveynlerden çocuklarınız mı var? Plus Çoklu Aile en fazla 3 ailenizde geçerlidir – yalnızca bir kez ödersiniz.',
+      coveredElsewhere:
+        'Aboneliğiniz {name} ile olan aile için geçerli. Birden fazla aile için Plus Çoklu Aile gerekir.',
+      moveHere: 'Aboneliği bunun yerine bu aile için kullan',
       busy: 'Bir saniye…',
       unlock: 'Abone olun',
       terms:
@@ -1104,6 +1129,7 @@ export const tr: Dict = {
       packing: 'Eşya listesi',
       holidays: 'Okul tatilleri',
       calendarSync: 'Telefon takviminde',
+      familyNew: 'Aile ekle',
     },
     root: {
       offlineTitle: 'Bağlantı yok',

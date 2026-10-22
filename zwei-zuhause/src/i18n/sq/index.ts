@@ -52,6 +52,7 @@ export const sq: Dict = {
       is_parent: 'Kjo llogari i përket një familjeje. Për qasjen profesionale të duhet një llogari më vete.',
       network: 'Nuk ka lidhje me serverin. A je në internet?',
       already_redeemed: 'Familja juaj ka përdorur tashmë një kod kuponi.',
+      too_many_families: 'Një llogari nuk mund të ketë më shumë se 5 familje.',
     },
     subscription: {
       required: 'Prova falas mbaroi. Me një abonim të dy mund të shtoni përsëri gjithçka.',
@@ -431,6 +432,20 @@ export const sq: Dict = {
       calendarSync: 'Në kalendarin e telefonit',
       calendarSyncText: 'Plani i kujdesit në kalendarin e iPhone, Google ose Outlook',
     },
+    families: {
+      label: '{children} · me {name}',
+      switchTitle: 'Ndrysho familjen',
+      add: 'Shto familje',
+      addText: 'Fëmijë me një prind tjetër',
+      addIntro:
+        'Për fëmijët me një prind tjetër krijon një familje më vete. Familjet janë rreptësisht të ndara: askush nuk sheh asgjë nga një familje tjetër – vetëm ti i sheh të gjitha.',
+      overviewTitle: 'Të gjithë fëmijët sot',
+      at: 'te {name}',
+      atYou: 'te ti',
+      noPlan: 'pa plan',
+      open: 'të hapura: {n}',
+      locked: 'vetëm lexim',
+    },
     invite: {
       shareMessage:
         'Përdor „Zwei Zuhause“ për kujdesin, shpenzimet dhe marrëveshjet. Shkarko aplikacionin, krijo një llogari dhe shkruaj këtë kod: {code}',
@@ -667,6 +682,9 @@ export const sq: Dict = {
       fromPhotos: 'Nga fotot',
       confirmHint: '{name} mund ta konfirmojë ose refuzojë shënimin. Shënimet e konfirmuara nuk mund të fshihen më.',
       notJoinedHint: 'Sapo {name} të lidhet, mund t’i konfirmojë shënimet e tua.',
+      splitTitle: 'Edhe për fëmijët nga familjet e tua të tjera?',
+      splitHint: '{amount} ndahet në {n} familje – nga {part} secila. Çdo familje sheh vetëm pjesën e vet.',
+      splitSuffix: 'pjesë e një shpenzimi për disa fëmijë',
     },
     plus: {
       benefits: {
@@ -708,6 +726,12 @@ export const sq: Dict = {
       trialSolo: '14 ditët e provës fillojnë kur {name} të bashkohet. Vetëm, aplikacioni është falas edhe {n} ditë.',
       trialOver: 'Prova falas mbaroi. Pa abonim mund të lexoni gjithçka, por nuk mund të shtoni asgjë të re.',
       unavailable: 'Blerjet janë të mundura vetëm në aplikacionin për iOS dhe Android.',
+      tierSingle: 'Për 1 familje',
+      tierMulti: 'Plus Shumëfamiljar – për deri në 3 familje',
+      multiHint:
+        'Fëmijë me prindër të ndryshëm? Plus Shumëfamiljar vlen për deri në 3 nga familjet e tua – paguan vetëm një herë.',
+      coveredElsewhere: 'Abonimi yt vlen për familjen me {name}. Për disa familje të duhet Plus Shumëfamiljar.',
+      moveHere: 'Përdore abonimin për këtë familje',
       busy: 'Një moment…',
       unlock: 'Bëj abonimin',
       terms:
@@ -1120,6 +1144,7 @@ export const sq: Dict = {
       packing: 'Lista e sendeve',
       holidays: 'Pushimet shkollore',
       calendarSync: 'Në kalendarin e telefonit',
+      familyNew: 'Shto familje',
     },
     root: {
       offlineTitle: 'Nuk ka lidhje',

@@ -52,6 +52,7 @@ export const fr: Dict = {
       is_parent: 'Ce compte appartient à une famille. Pour l’accès professionnel, vous avez besoin d’un compte distinct.',
       network: 'Pas de connexion au serveur. Êtes-vous en ligne ?',
       already_redeemed: 'Votre famille a déjà utilisé un code promo.',
+      too_many_families: 'Un compte ne peut pas contenir plus de 5 familles.',
     },
     subscription: {
       required: 'L’essai gratuit est terminé. Avec un abonnement, vous pourrez de nouveau tout saisir tous les deux.',
@@ -479,6 +480,20 @@ export const fr: Dict = {
       calendarSync: 'Dans le calendrier du téléphone',
       calendarSyncText: 'Planning de garde dans le calendrier iPhone, Google ou Outlook',
     },
+    families: {
+      label: '{children} · avec {name}',
+      switchTitle: 'Changer de famille',
+      add: 'Ajouter une famille',
+      addText: 'Enfants avec un autre parent',
+      addIntro:
+        'Pour des enfants avec un autre parent, vous créez une famille à part. Les familles sont strictement séparées : personne ne voit rien d’une autre famille – vous seul(e) les voyez toutes.',
+      overviewTitle: 'Tous les enfants aujourd’hui',
+      at: 'chez {name}',
+      atYou: 'chez vous',
+      noPlan: 'pas de planning',
+      open: 'en attente : {n}',
+      locked: 'lecture seule',
+    },
     invite: {
       shareMessage:
         'J’utilise « Zwei Zuhause » pour la garde, les frais et nos accords. Téléchargez l’application, créez un compte et saisissez ce code : {code}',
@@ -722,6 +737,9 @@ export const fr: Dict = {
       confirmHint:
         '{name} peut confirmer ou refuser la saisie. Les saisies confirmées ne peuvent plus être supprimées.',
       notJoinedHint: 'Dès que {name} sera relié(e), il ou elle pourra confirmer vos saisies.',
+      splitTitle: 'Aussi pour des enfants de vos autres familles ?',
+      splitHint: '{amount} est réparti entre {n} familles – {part} chacune. Chaque famille ne voit que sa part.',
+      splitSuffix: 'part d’une dépense pour plusieurs enfants',
     },
     plus: {
       benefits: {
@@ -766,6 +784,13 @@ export const fr: Dict = {
       trialOver:
         'L’essai gratuit est terminé. Sans abonnement, vous pouvez tout lire, mais plus rien saisir de nouveau.',
       unavailable: 'Les achats ne sont possibles que dans l’application iOS ou Android.',
+      tierSingle: 'Pour 1 famille',
+      tierMulti: 'Plus Multi-familles – jusqu’à 3 familles',
+      multiHint:
+        'Des enfants avec différents parents ? Plus Multi-familles couvre jusqu’à 3 de vos familles – vous ne payez qu’une fois.',
+      coveredElsewhere:
+        'Votre abonnement s’applique à la famille avec {name}. Pour plusieurs familles, il vous faut Plus Multi-familles.',
+      moveHere: 'Utiliser plutôt l’abonnement pour cette famille',
       busy: 'Un instant…',
       unlock: 'S’abonner',
       terms:
@@ -1182,6 +1207,7 @@ export const fr: Dict = {
       packing: 'Liste d’affaires',
       holidays: 'Vacances scolaires',
       calendarSync: 'Calendrier du téléphone',
+      familyNew: 'Ajouter une famille',
     },
     root: {
       offlineTitle: 'Pas de connexion',

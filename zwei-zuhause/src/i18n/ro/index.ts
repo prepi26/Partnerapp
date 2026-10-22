@@ -52,6 +52,7 @@ export const ro: Dict = {
       is_parent: 'Acest cont aparține unei familii. Pentru accesul de specialist ai nevoie de un cont separat.',
       network: 'Nu există conexiune la server. Ești online?',
       already_redeemed: 'Familia voastră a folosit deja un cod de voucher.',
+      too_many_families: 'Un cont nu poate avea mai mult de 5 familii.',
     },
     subscription: {
       required: 'Perioada de testare gratuită s-a încheiat. Cu un abonament puteți din nou adăuga totul amândoi.',
@@ -431,6 +432,20 @@ export const ro: Dict = {
       calendarSync: 'În calendarul telefonului',
       calendarSyncText: 'Planul de îngrijire în calendarul iPhone, Google sau Outlook',
     },
+    families: {
+      label: '{children} · cu {name}',
+      switchTitle: 'Schimbă familia',
+      add: 'Adaugă familie',
+      addText: 'Copii cu alt părinte',
+      addIntro:
+        'Pentru copiii cu alt părinte creezi o familie separată. Familiile sunt strict separate: nimeni nu vede nimic dintr-o altă familie – doar tu le vezi pe toate.',
+      overviewTitle: 'Toți copiii azi',
+      at: 'la {name}',
+      atYou: 'la tine',
+      noPlan: 'fără plan',
+      open: 'deschise: {n}',
+      locked: 'doar citire',
+    },
     invite: {
       shareMessage:
         'Folosesc „Zwei Zuhause” pentru programul copilului, costuri și înțelegeri. Descarcă aplicația, creează un cont și introdu acest cod: {code}',
@@ -667,6 +682,9 @@ export const ro: Dict = {
       fromPhotos: 'Din fotografii',
       confirmHint: '{name} poate confirma sau respinge înregistrarea. Înregistrările confirmate nu mai pot fi șterse.',
       notJoinedHint: 'Imediat ce {name} se conectează, îți va putea confirma înregistrările.',
+      splitTitle: 'Și pentru copiii din celelalte familii ale tale?',
+      splitHint: '{amount} se împarte între familii (număr: {n}) – câte {part}. Fiecare familie vede doar partea ei.',
+      splitSuffix: 'parte dintr-o cheltuială pentru mai mulți copii',
     },
     plus: {
       benefits: {
@@ -711,6 +729,13 @@ export const ro: Dict = {
       trialOver:
         'Perioada de testare gratuită s-a încheiat. Fără abonament puteți citi tot, dar nu puteți adăuga nimic nou.',
       unavailable: 'Cumpărăturile sunt posibile doar în aplicația pentru iOS și Android.',
+      tierSingle: 'Pentru 1 familie',
+      tierMulti: 'Plus Multifamilie – pentru până la 3 familii',
+      multiHint:
+        'Copii cu părinți diferiți? Plus Multifamilie se aplică pentru până la 3 dintre familiile tale – plătești o singură dată.',
+      coveredElsewhere:
+        'Abonamentul tău se aplică familiei cu {name}. Pentru mai multe familii ai nevoie de Plus Multifamilie.',
+      moveHere: 'Folosește abonamentul pentru această familie',
       busy: 'Un moment…',
       unlock: 'Abonează-te',
       terms:
@@ -1122,6 +1147,7 @@ export const ro: Dict = {
       packing: 'Listă de bagaje',
       holidays: 'Vacanțe școlare',
       calendarSync: 'În calendarul telefonului',
+      familyNew: 'Adaugă familie',
     },
     root: {
       offlineTitle: 'Fără conexiune',

@@ -52,6 +52,7 @@ export const sr: Dict = {
       is_parent: 'Ovaj nalog pripada porodici. Za pristup stručnog lica potreban vam je poseban nalog.',
       network: 'Nema veze sa serverom. Da li ste na mreži?',
       already_redeemed: 'Vaša porodica je već iskoristila vaučer kod.',
+      too_many_families: 'Jedan nalog ne može da ima više od 5 porodica.',
     },
     subscription: {
       required: 'Besplatna proba je završena. Uz pretplatu oboje ponovo možete sve da unosite.',
@@ -446,6 +447,20 @@ export const sr: Dict = {
       calendarSync: 'U kalendaru telefona',
       calendarSyncText: 'Plan viđanja u iPhone, Google ili Outlook kalendaru',
     },
+    families: {
+      label: '{children} · sa: {name}',
+      switchTitle: 'Promeni porodicu',
+      add: 'Dodaj porodicu',
+      addText: 'Deca sa drugim roditeljem',
+      addIntro:
+        'Za decu sa drugim roditeljem pravite posebnu porodicu. Porodice su strogo odvojene: niko ne vidi ništa iz druge porodice – sve vidite samo vi.',
+      overviewTitle: 'Sva deca danas',
+      at: 'kod: {name}',
+      atYou: 'kod vas',
+      noPlan: 'nema plana',
+      open: 'otvoreno: {n}',
+      locked: 'samo čitanje',
+    },
     invite: {
       shareMessage:
         'Koristim „Zwei Zuhause“ za viđanje, troškove i dogovore. Preuzmi aplikaciju, napravi nalog i unesi ovaj kod: {code}',
@@ -684,6 +699,9 @@ export const sr: Dict = {
       fromPhotos: 'Iz fotografija',
       confirmHint: '{name} može da potvrdi ili odbije unos. Potvrđeni unosi više ne mogu da se obrišu.',
       notJoinedHint: 'Čim se {name} poveže, moći će da potvrdi vaše unose.',
+      splitTitle: 'I za decu iz vaših drugih porodica?',
+      splitHint: '{amount} se deli na porodice (broj: {n}) – po {part}. Svaka porodica vidi samo svoj deo.',
+      splitSuffix: 'deo troška za više dece',
     },
     plus: {
       benefits: {
@@ -727,6 +745,12 @@ export const sr: Dict = {
       trialOver:
         'Besplatna proba je završena. Bez pretplate možete sve da čitate, ali ne možete da unosite ništa novo.',
       unavailable: 'Kupovina je moguća samo u iOS i Android aplikaciji.',
+      tierSingle: 'Za 1 porodicu',
+      tierMulti: 'Plus Više porodica – najviše 3 porodice',
+      multiHint:
+        'Deca sa različitim roditeljima? Plus Više porodica važi za najviše 3 vaše porodice – plaćate samo jednom.',
+      coveredElsewhere: 'Vaša pretplata važi za porodicu sa: {name}. Za više porodica vam treba Plus Više porodica.',
+      moveHere: 'Koristi pretplatu za ovu porodicu',
       busy: 'Trenutak…',
       unlock: 'Pretplati se',
       terms:
@@ -1139,6 +1163,7 @@ export const sr: Dict = {
       packing: 'Lista stvari',
       holidays: 'Školski raspusti',
       calendarSync: 'U kalendaru telefona',
+      familyNew: 'Dodaj porodicu',
     },
     root: {
       offlineTitle: 'Nema veze',

@@ -51,6 +51,7 @@ export const pl: Dict = {
       is_parent: 'To konto należy do rodziny. Do dostępu dla specjalisty potrzebujesz osobnego konta.',
       network: 'Brak połączenia z serwerem. Czy masz internet?',
       already_redeemed: 'Wasza rodzina zrealizowała już kod promocyjny.',
+      too_many_families: 'Konto może obejmować najwyżej 5 rodzin.',
     },
     subscription: {
       required: 'Bezpłatny okres próbny się skończył. Z subskrypcją oboje znów możecie wszystko dodawać.',
@@ -429,6 +430,20 @@ export const pl: Dict = {
       calendarSync: 'W kalendarzu telefonu',
       calendarSyncText: 'Plan opieki w kalendarzu iPhone, Google lub Outlook',
     },
+    families: {
+      label: '{children} · z: {name}',
+      switchTitle: 'Zmień rodzinę',
+      add: 'Dodaj rodzinę',
+      addText: 'Dzieci z innym rodzicem',
+      addIntro:
+        'Dla dzieci z innym rodzicem zakładasz osobną rodzinę. Rodziny są ściśle oddzielone: nikt nie widzi niczego z innej rodziny – wszystkie widzisz tylko ty.',
+      overviewTitle: 'Wszystkie dzieci dziś',
+      at: 'u: {name}',
+      atYou: 'u ciebie',
+      noPlan: 'brak planu',
+      open: 'otwarte: {n}',
+      locked: 'tylko odczyt',
+    },
     invite: {
       shareMessage:
         'Używam „Zwei Zuhause” do planu opieki, kosztów i ustaleń. Pobierz aplikację, utwórz konto i wpisz ten kod: {code}',
@@ -665,6 +680,10 @@ export const pl: Dict = {
       fromPhotos: 'Ze zdjęć',
       confirmHint: '{name} może potwierdzić lub odrzucić wpis. Potwierdzonych wpisów nie można już usunąć.',
       notJoinedHint: 'Gdy tylko {name} się połączy, będzie mógł/mogła potwierdzać twoje wpisy.',
+      splitTitle: 'Także dla dzieci z twoich innych rodzin?',
+      splitHint:
+        '{amount} zostanie podzielone między rodziny (liczba: {n}) – po {part}. Każda rodzina widzi tylko swój udział.',
+      splitSuffix: 'udział w wydatku na kilkoro dzieci',
     },
     plus: {
       benefits: {
@@ -708,6 +727,12 @@ export const pl: Dict = {
       trialOver:
         'Bezpłatny okres próbny się skończył. Bez subskrypcji możecie wszystko czytać, ale nie możecie dodawać nic nowego.',
       unavailable: 'Zakupy są możliwe tylko w aplikacji na iOS i Androida.',
+      tierSingle: 'Dla 1 rodziny',
+      tierMulti: 'Plus Wielorodzinny – do 3 rodzin',
+      multiHint: 'Dzieci z różnymi rodzicami? Plus Wielorodzinny obejmuje do 3 twoich rodzin – płacisz tylko raz.',
+      coveredElsewhere:
+        'Twoja subskrypcja obejmuje rodzinę z: {name}. Dla kilku rodzin potrzebujesz Plus Wielorodzinny.',
+      moveHere: 'Użyj subskrypcji dla tej rodziny',
       busy: 'Chwileczkę…',
       unlock: 'Wykup subskrypcję',
       terms:
@@ -1120,6 +1145,7 @@ export const pl: Dict = {
       packing: 'Lista rzeczy',
       holidays: 'Ferie szkolne',
       calendarSync: 'W kalendarzu telefonu',
+      familyNew: 'Dodaj rodzinę',
     },
     root: {
       offlineTitle: 'Brak połączenia',

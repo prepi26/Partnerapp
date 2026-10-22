@@ -52,6 +52,7 @@ export const en: Dict = {
       is_parent: 'This account belongs to a family. For professional access you need a separate account.',
       network: 'No connection to the server. Are you online?',
       already_redeemed: 'Your family has already redeemed a voucher code.',
+      too_many_families: 'An account can’t hold more than 5 families.',
     },
     subscription: {
       required: 'The free trial has ended. With a subscription you can both add everything again.',
@@ -428,6 +429,20 @@ export const en: Dict = {
       calendarSync: 'In your phone calendar',
       calendarSyncText: 'Contact schedule in iPhone, Google or Outlook calendar',
     },
+    families: {
+      label: '{children} · with {name}',
+      switchTitle: 'Switch family',
+      add: 'Add family',
+      addText: 'Children with another parent',
+      addIntro:
+        'For children with another parent, you create a separate family. Families are kept strictly apart: nobody sees anything from another family – only you see them all.',
+      overviewTitle: 'All children today',
+      at: 'with {name}',
+      atYou: 'with you',
+      noPlan: 'no plan',
+      open: '{n} open',
+      locked: 'read only',
+    },
     invite: {
       shareMessage:
         'I use “Zwei Zuhause” for contact, costs and arrangements. Download the app, create an account and enter this code: {code}',
@@ -664,6 +679,9 @@ export const en: Dict = {
       fromPhotos: 'From photos',
       confirmHint: '{name} can confirm or reject the entry. Confirmed entries can no longer be deleted.',
       notJoinedHint: 'As soon as {name} is connected, they can confirm your entries.',
+      splitTitle: 'Also for children from your other families?',
+      splitHint: '{amount} is split across {n} families – {part} each. Each family only sees its own share.',
+      splitSuffix: 'share of an expense for several children',
     },
     plus: {
       benefits: {
@@ -706,6 +724,13 @@ export const en: Dict = {
       trialOver:
         'The free trial has ended. Without a subscription you can read everything, but you cannot add anything new.',
       unavailable: 'Purchases are only possible in the iOS and Android app.',
+      tierSingle: 'For 1 family',
+      tierMulti: 'Plus Multi-Family – for up to 3 families',
+      multiHint:
+        'Children with different parents? Plus Multi-Family covers up to 3 of your families – you only pay once.',
+      coveredElsewhere:
+        'Your subscription applies to the family with {name}. For several families you need Plus Multi-Family.',
+      moveHere: 'Use the subscription for this family instead',
       busy: 'One moment…',
       unlock: 'Subscribe',
       terms:
@@ -1117,6 +1142,7 @@ export const en: Dict = {
       packing: 'Packing list',
       holidays: 'School holidays',
       calendarSync: 'In your phone calendar',
+      familyNew: 'Add family',
     },
     root: {
       offlineTitle: 'No connection',
