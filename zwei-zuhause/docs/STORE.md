@@ -32,7 +32,8 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 • Schule, Operation, Auslandsreise: Frage stellen, Antwort festhalten
 • Elternvereinbarung mit 17 Leitfragen – von beiden angenommen, jede Fassung bleibt erhalten
 • Übergaben protokollieren: pünktlich, verspätet, ausgefallen – der andere kann widersprechen
-• Infos zum Kind: Ärzte, Schule, Größen, Dokumente
+• Infos zum Kind: Ärzte, Schule, Größen
+• Dokumente teilen: Zeugnisse, Arztbriefe, Bescheide – als Foto oder PDF
 
 **FÜR JUGENDAMT & BERATUNG**
 • Kostenloser Lesezugang für Fachkräfte – nur mit Zustimmung beider Eltern, jederzeit widerrufbar
@@ -44,7 +45,8 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 • App-Sperre mit Face ID, Fingerabdruck oder Code
 
 **DATENSCHUTZ**
-Server in Frankfurt (EU). Keine Werbung, kein Tracking, keine verkauften Daten. Konto löschen mit einem Tipp.
+Server in Frankfurt (EU). Keine Werbung, kein Tracking, keine verkauften Daten. Eigene Daten jederzeit exportieren,
+Konto löschen mit einem Tipp.
 
 **KOSTENLOS NUTZBAR** – Zwei Zuhause Plus (Abo pro Elternteil) schaltet PDF-Berichte und Belegfotos frei.
 

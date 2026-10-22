@@ -2,7 +2,7 @@
 
 **Bereits automatisch getestet** (lokales Supabase + Browser, siehe `e2e/`): Registrierung, Familie anlegen, Beitritt per
 Code, Umgangsplan, Nachricht, Ausgabe + Bestätigung, Entscheidung + Antwort, Übergabe + Widerspruch, Kind-Info,
-Elternvereinbarung + Zustimmung, Fachkraft einladen → zustimmen → Fachkraft liest → Kurzbericht, Tagebuch, Hilfe.
+Elternvereinbarung + Zustimmung, Einführung, Dokumente (PDF, Gesundheit nur mit Einwilligung), Datenexport, Fachkraft einladen → zustimmen → Fachkraft liest → Kurzbericht, Tagebuch, Hilfe.
 Datenbankregeln: `supabase/test-*.sql`.
 
 **Nur auf echten Geräten prüfbar** – bitte einmal durchgehen:
@@ -23,3 +23,6 @@ Datenbankregeln: `supabase/test-*.sql`.
 | 12 | App-Sperre ohne Gerätecode | Hinweis „Richte zuerst einen Code … ein“, Schalter bleibt aus |
 | 13 | Erinnerung: Plan mit Wechsel morgen | Heute 19 Uhr Mitteilung „Morgen ist Übergabe – Mia geht zu … · 17:00 Uhr · Kita“; Tippen öffnet Kalender |
 | 14 | Erinnerung ausschalten | keine Mitteilung mehr; nach Abmelden ebenfalls keine |
+| 15 | Dokument fotografieren und als PDF hochladen | erscheint bei beiden; Antippen öffnet Foto/PDF |
+| 16 | Daten exportieren | Teilen-Dialog mit JSON-Datei |
+| 17 | E-Mail ändern | Bestätigungs-Mail an neue Adresse (in Supabase *Secure email change* prüfen) |

@@ -22,6 +22,7 @@ und keinen Verkauf von Daten**.
 | Nachrichten inkl. Zeitstempel, Lesebestätigung, Prüfsumme | Kommunikation, Nachvollziehbarkeit | beide Elternteile |
 | Entscheidungen, Elternvereinbarung | gemeinsame Absprachen | beide Elternteile |
 | Infos zum Kind (z. B. Ärzte, Schule, Allergien) | gemeinsamer Informationsstand | beide Elternteile |
+| Dokumente (z. B. Zeugnis, Arztbrief, Bescheid) als Foto oder PDF | gemeinsamer Zugriff | beide Elternteile |
 | Tagebuch | eigene Dokumentation | **nur du** |
 | Push-Token des Geräts | Mitteilungen | technisch: Expo, Apple/Google |
 | Kaufstatus „Plus“ | Freischaltung | RevenueCat, Apple/Google |
@@ -32,7 +33,9 @@ dein Gerät nie und werden von uns weder gesehen noch gespeichert. Erinnerungen 
 
 **Gesundheitsangaben** (z. B. Allergien, Medikamente) sind besonders geschützte Daten (Art. 9 DSGVO). Sie werden nur
 gespeichert, wenn ihr sie selbst eintragt. Mit dem Eintragen willigst du ausdrücklich in die Verarbeitung ein
-(Art. 9 Abs. 2 lit. a DSGVO); du kannst sie jederzeit löschen.
+(Art. 9 Abs. 2 lit. a DSGVO); du kannst sie jederzeit löschen. **Gesundheitsdokumente** (z. B. Arztbrief, Impfpass)
+lassen sich nur hochladen, nachdem du ausdrücklich eingewilligt hast; der Zeitpunkt der Einwilligung wird gespeichert.
+Dokumente liegen in einem privaten Speicher und sind nur über kurzlebige Links abrufbar (höchstens 10 MB, PDF und Bilder).
 
 **Fachkräfte** (z. B. Jugendamt, Beratungsstelle, Verfahrensbeistand) erhalten nur Lesezugriff, wenn ein Elternteil
 sie einlädt **und** der andere Elternteil zustimmt. Sie sehen Kalender, Übergaben, Kosten, Entscheidungen, Vereinbarung,
@@ -65,7 +68,8 @@ Nachrichten und Übergabe-Einträge sind bewusst nicht einzeln lösch- oder änd
 
 ## 6. Deine Rechte
 
-Auskunft (Art. 15), Berichtigung (16), Löschung (17), Einschränkung (18), Datenübertragbarkeit (20), Widerspruch (21),
+Eine Kopie deiner Daten erhältst du jederzeit selbst unter **Mehr → Einstellungen → Konto & Daten → Daten
+exportieren** (Datei im JSON-Format). Außerdem: Auskunft (Art. 15), Berichtigung (16), Löschung (17), Einschränkung (18), Datenübertragbarkeit (20), Widerspruch (21),
 Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft (7 Abs. 3) und Beschwerde bei einer Aufsichtsbehörde,
 z. B. der Landesbeauftragten für Datenschutz NRW. Schreib dazu an prepitoys@gmail.com.
 

@@ -12,6 +12,8 @@ async function newParent(browser, label) {
 const shot = (page, name) => page.screenshot({ path: `${process.env.SHOTS || '/tmp/zz-shots'}/${name}.png` });
 async function signup(page, email) {
   await page.goto(URL);
+  // Einführung beim ersten Start überspringen.
+  await page.getByText('Überspringen', { exact: true }).click();
   await page.getByPlaceholder('name@beispiel.de').fill(email);
   await page.getByPlaceholder('••••••••').fill('geheim123');
   await page.getByText('Konto erstellen', { exact: true }).click();

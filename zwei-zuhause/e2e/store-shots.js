@@ -5,6 +5,7 @@ const URL = 'http://localhost:8081';
   const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 3 });
   const p = await ctx.newPage();
   await p.goto(URL);
+  await p.getByText('Überspringen', { exact: true }).click();
   await p.getByText('Ich habe ein Konto', { exact: true }).click();
   await p.getByPlaceholder('name@beispiel.de').fill('sandra@demo.de');
   await p.getByPlaceholder('••••••••').fill('geheim123');

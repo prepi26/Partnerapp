@@ -153,6 +153,8 @@ export default function Settings() {
               Nutzungsbedingungen & Impressum
             </Text>
           ) : null}
+          <SecondaryButton title="Konto & Daten" icon="person-circle-outline" onPress={() => router.push('/account')} />
+          <SecondaryButton title="Einführung ansehen" icon="play-circle-outline" onPress={() => router.push('/intro')} />
           <SecondaryButton title="Abmelden" icon="log-out-outline" onPress={logout} />
           <SecondaryButton title="Konto löschen" icon="trash-outline" danger onPress={removeAccount} />
         </View>

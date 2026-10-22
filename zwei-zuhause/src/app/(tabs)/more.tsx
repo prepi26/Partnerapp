@@ -27,7 +27,8 @@ export default function More() {
       items: [
         { icon: 'git-pull-request', title: 'Entscheidungen', text: 'Schule, Gesundheit, Reisen – gemeinsam klären', href: '/decisions', badge: openDecisions },
         { icon: 'car', title: 'Übergaben', text: 'Wie lief es? Kurz festhalten', href: '/handovers', badge: openHandovers },
-        { icon: 'information-circle', title: 'Infos zum Kind', text: 'Ärzte, Schule, Größen, Dokumente', href: '/child-info' },
+        { icon: 'information-circle', title: 'Infos zum Kind', text: 'Ärzte, Schule, Größen', href: '/child-info' },
+        { icon: 'folder-open', title: 'Dokumente', text: 'Zeugnisse, Arztbriefe, Bescheide', href: '/documents' },
         { icon: 'document-text', title: 'Elternvereinbarung', text: 'Eure Absprachen, von beiden angenommen', href: '/agreement', badge: agreementOpen },
       ],
     },

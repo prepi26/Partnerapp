@@ -4,7 +4,17 @@ import { must, supabase } from '@/lib/supabase';
 
 import { FAMILY_COLUMNS } from './columns';
 import { signedReceiptUrls } from './receipts';
-import { Agreement, ChildInfo, Decision, Expense, Family, Handover, Message, ScheduleChange } from './types';
+import {
+  Agreement,
+  ChildInfo,
+  Decision,
+  Expense,
+  Family,
+  FamilyDocument,
+  Handover,
+  Message,
+  ScheduleChange,
+} from './types';
 
 /** Alles, was eine Fachkraft von einer Familie lesen darf (nie das Tagebuch). */
 export interface CaseData {
@@ -16,6 +26,7 @@ export interface CaseData {
   decisions: Decision[];
   handovers: Handover[];
   agreements: Agreement[];
+  documents: FamilyDocument[];
   receiptUrls: Record<string, string>;
 }
 
@@ -27,7 +38,7 @@ async function load(familyId: string): Promise<CaseData | null> {
   if (!rows[0]) return null;
   const family: Family = { ...rows[0], invite_code: '' };
   const q = (table: string) => supabase.from(table).select('*').eq('family_id', familyId);
-  const [schedule_changes, expenses, messages, child_info, decisions, handovers, agreements] = await Promise.all([
+  const [schedule_changes, expenses, messages, child_info, decisions, handovers, agreements, documents] = await Promise.all([
     q('schedule_changes').order('day'),
     q('expenses').order('day', { ascending: false }),
     q('messages').order('seq'),
@@ -35,6 +46,7 @@ async function load(familyId: string): Promise<CaseData | null> {
     q('decisions').order('created_at', { ascending: false }),
     q('handovers').order('day', { ascending: false }),
     q('agreements').order('version', { ascending: false }),
+    q('documents').order('created_at', { ascending: false }),
   ]);
   const expenseRows = must(expenses) as Expense[];
   const receiptUrls = await signedReceiptUrls(
@@ -49,6 +61,7 @@ async function load(familyId: string): Promise<CaseData | null> {
     decisions: must(decisions) as Decision[],
     handovers: must(handovers) as Handover[],
     agreements: must(agreements) as Agreement[],
+    documents: must(documents) as FamilyDocument[],
     receiptUrls,
   };
 }

@@ -17,6 +17,7 @@ const SECTIONS: { key: ReportSection; title: string; text: string }[] = [
   { key: 'agreement', title: 'Elternvereinbarung', text: 'Aktuelle Fassung mit Zustimmungen' },
   { key: 'expenses', title: 'Kosten', text: 'Ausgaben, Anteile, Saldo' },
   { key: 'messages', title: 'Nachrichten', text: 'Vollständiger Verlauf mit Prüfsummen' },
+  { key: 'documents', title: 'Dokumente', text: 'Liste der geteilten Dokumente' },
   { key: 'journal', title: 'Mein Tagebuch', text: 'Nur deine eigenen Notizen' },
 ];
 
@@ -32,6 +33,7 @@ export default function Report() {
     agreement: true,
     expenses: true,
     messages: true,
+    documents: true,
     journal: false,
   });
   const [busy, setBusy] = useState(false);
@@ -61,6 +63,7 @@ export default function Report() {
         decisions: store.decisions,
         handovers: store.handovers,
         agreements: store.agreements,
+        documents: store.documents,
         journal: store.journal,
       });
     } catch (e) {

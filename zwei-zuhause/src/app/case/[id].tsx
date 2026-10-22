@@ -10,8 +10,10 @@ import { ParentKey } from '@/data/types';
 import { AGREEMENT_SECTIONS } from '@/lib/agreement';
 import { addDays, formatDate, formatTimestamp, formatWeekday, toISO, today } from '@/lib/dates';
 import { decisionCategory } from '@/lib/decisions';
+import { documentCategory } from '@/lib/documentCategories';
 import { handoverLabel } from '@/lib/handovers';
 import { balanceAB, formatMoney } from '@/lib/money';
+import { openDocument } from '@/lib/openDocument';
 import { acceptedChanges, dayInfo, MODELS } from '@/lib/schedule';
 import { RANGES, shareReport } from '@/lib/shareReport';
 import { colors, spacing } from '@/theme';
@@ -54,13 +56,22 @@ export default function CaseView() {
         from: toISO(addDays(now, -(RANGES.find((r) => r.key === range)?.days ?? 90) + 1)),
         to: toISO(now),
         mode,
-        sections: { schedule: true, handovers: true, decisions: true, agreement: true, expenses: true, messages: true },
+        sections: {
+          schedule: true,
+          handovers: true,
+          decisions: true,
+          agreement: true,
+          expenses: true,
+          messages: true,
+          documents: true,
+        },
         changes: data.schedule_changes,
         expenses: data.expenses,
         messages: data.messages,
         decisions: data.decisions,
         handovers: data.handovers,
         agreements: data.agreements,
+        documents: data.documents,
         journal: [],
       });
     } catch (e) {
@@ -165,6 +176,20 @@ export default function CaseView() {
         ) : null}
       </Card>
 
+      {data.documents.length ? (
+        <>
+          <Text style={styles.section}>Dokumente</Text>
+          <Card style={{ gap: 6 }}>
+            {data.documents.map((d) => (
+              <Text key={d.id} style={[styles.text, styles.link]} onPress={() => openDocument(d)}>
+                {documentCategory(d.category).emoji} {d.title}
+                {d.doc_date ? ` (${formatDate(d.doc_date)})` : ''}
+              </Text>
+            ))}
+          </Card>
+        </>
+      ) : null}
+
       {data.child_info.length ? (
         <>
           <Text style={styles.section}>Infos zum Kind</Text>
@@ -199,4 +224,5 @@ const styles = StyleSheet.create({
   buttons: { flexDirection: 'row', gap: spacing.sm },
   text: { fontSize: 14, color: colors.text, lineHeight: 20 },
   meta: { fontSize: 12, color: colors.textMuted },
+  link: { color: colors.primary, fontWeight: '600' },
 });

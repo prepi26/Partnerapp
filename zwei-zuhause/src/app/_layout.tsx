@@ -7,6 +7,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppLock } from '@/components/AppLock';
 import { HandoverReminders } from '@/components/HandoverReminders';
+import { IntroGate } from '@/components/Intro';
 import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { AuthProvider, useAuth } from '@/data/auth';
@@ -20,9 +21,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StatusBar style="light" />
       {isConfigured ? (
-        <AuthProvider>
-          <Gate />
-        </AuthProvider>
+        <IntroGate>
+          <AuthProvider>
+            <Gate />
+          </AuthProvider>
+        </IntroGate>
       ) : (
         <NotConfigured />
       )}
@@ -138,6 +141,10 @@ function RootStack({
         <Stack.Screen name="agreement-edit" options={modal('Vereinbarung bearbeiten')} />
         <Stack.Screen name="professionals" options={{ headerShown: true, title: 'Fachkräfte' }} />
         <Stack.Screen name="help" options={{ headerShown: true, title: 'Hilfe & Beratung' }} />
+        <Stack.Screen name="intro" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="account" options={{ headerShown: true, title: 'Konto & Daten' }} />
+        <Stack.Screen name="documents" options={{ headerShown: true, title: 'Dokumente' }} />
+        <Stack.Screen name="document-new" options={modal('Dokument teilen')} />
         <Stack.Screen name="settings" options={modal('Einstellungen')} />
         <Stack.Screen name="plus" options={modal('Zwei Zuhause Plus')} />
       </Stack.Protected>

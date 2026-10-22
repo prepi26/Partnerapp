@@ -7,15 +7,18 @@ import { cancelHandoverReminders } from '@/lib/reminders';
 import { must, supabase } from '@/lib/supabase';
 
 import { FAMILY_COLUMNS } from './columns';
+import { deleteAllDocumentFiles, deleteDocumentFile, PickedFile, uploadDocument } from './documents';
 import { deleteAllReceipts, deleteReceipt, signedReceiptUrls, uploadReceipt } from './receipts';
 import {
   Agreement,
   AgreementContent,
   ChildInfo,
   Decision,
+  DocumentCategory,
   Expense,
   ExpenseKind,
   Family,
+  FamilyDocument,
   Handover,
   HandoverStatus,
   ISODate,
@@ -37,6 +40,7 @@ interface Data {
   handovers: Handover[];
   agreements: Agreement[];
   professional_access: ProfessionalAccess[];
+  documents: FamilyDocument[];
 }
 
 type Table = keyof Data;
@@ -50,6 +54,7 @@ const TABLES: Table[] = [
   'handovers',
   'agreements',
   'professional_access',
+  'documents',
 ];
 /** Diese Tabellen teilen beide Elternteile – Live-Updates. Das Tagebuch ist privat. */
 const SHARED: Table[] = [
@@ -61,6 +66,7 @@ const SHARED: Table[] = [
   'handovers',
   'agreements',
   'professional_access',
+  'documents',
 ];
 
 const emptyData: Data = {
@@ -73,6 +79,7 @@ const emptyData: Data = {
   handovers: [],
   agreements: [],
   professional_access: [],
+  documents: [],
 };
 
 async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
@@ -85,6 +92,7 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   if (table === 'decisions' || table === 'professional_access') query = query.order('created_at', { ascending: false });
   if (table === 'handovers') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
   if (table === 'agreements') query = query.order('version', { ascending: false });
+  if (table === 'documents') query = query.order('created_at', { ascending: false });
   return must(await query) as Data[T];
 }
 
@@ -198,6 +206,14 @@ interface Store extends Data {
   replyHandover(id: string, confirm: boolean, note: string): Promise<void>;
   saveAgreement(content: AgreementContent): Promise<void>;
   acceptAgreement(id: string): Promise<void>;
+  addDocument(doc: {
+    file: PickedFile;
+    title: string;
+    category: DocumentCategory;
+    doc_date: ISODate | null;
+    healthConsent: boolean;
+  }): Promise<void>;
+  removeDocument(doc: FamilyDocument): Promise<void>;
   inviteProfessional(label: string, days: number): Promise<string>;
   approveProfessional(id: string): Promise<void>;
   revokeProfessional(id: string): Promise<void>;
@@ -392,6 +408,26 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         after('handovers', await supabase.rpc('reply_handover', { p_id: id, p_confirm: confirm, p_note: note })),
       saveAgreement: async (content) => after('agreements', await supabase.from('agreements').insert({ content })),
       acceptAgreement: async (id) => after('agreements', await supabase.rpc('accept_agreement', { p_id: id })),
+      addDocument: async ({ file, title, category, doc_date, healthConsent }) => {
+        if (!family) return;
+        const file_path = await uploadDocument(family.id, file);
+        const result = await supabase.from('documents').insert({
+          title,
+          category,
+          doc_date,
+          file_path,
+          mime_type: file.mimeType,
+          size_bytes: file.size,
+          // Der Server setzt den genauen Zeitpunkt; hier nur „ja, eingewilligt“.
+          health_consent_at: healthConsent ? new Date().toISOString() : null,
+        });
+        if (result.error) await deleteDocumentFile(file_path);
+        await after('documents', result);
+      },
+      removeDocument: async (doc) => {
+        await after('documents', await supabase.from('documents').delete().eq('id', doc.id));
+        await deleteDocumentFile(doc.file_path);
+      },
       inviteProfessional: async (label, days) => {
         const code = must(await supabase.rpc('create_professional_invite', { p_label: label, p_days: days })) as string;
         await reload('professional_access');
@@ -408,7 +444,10 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       },
       deleteAccount: async () => {
         // Bin ich der letzte in der Familie, verschwinden mit ihr auch die Belege.
-        if (family && !otherJoined) await deleteAllReceipts(family.id);
+        if (family && !otherJoined) {
+          await deleteAllReceipts(family.id);
+          await deleteAllDocumentFiles(family.id);
+        }
         must(await supabase.rpc('delete_my_account'));
         await cleanUp();
       },

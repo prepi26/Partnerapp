@@ -3,6 +3,7 @@ import {
   Decision,
   Expense,
   Family,
+  FamilyDocument,
   Handover,
   ISODate,
   JournalEntry,
@@ -14,6 +15,7 @@ import {
 import { AGREEMENT_NOTE, AGREEMENT_SECTIONS } from './agreement';
 import { addDays, formatDate, formatTimestamp, MONTHS, parseISO, toISO } from './dates';
 import { decisionCategory } from './decisions';
+import { documentCategory } from './documentCategories';
 import { handoverLabel } from './handovers';
 import { balanceAB, categoryOf, formatMoney, needOf, shareOf } from './money';
 import { acceptedChanges, dayInfo, handoverWhere, MODELS } from './schedule';
@@ -25,6 +27,7 @@ export type ReportSection =
   | 'agreement'
   | 'expenses'
   | 'messages'
+  | 'documents'
   | 'journal';
 
 export interface ReportInput {
@@ -43,6 +46,7 @@ export interface ReportInput {
   decisions: Decision[];
   handovers: Handover[];
   agreements: Agreement[];
+  documents?: FamilyDocument[];
   journal: JournalEntry[];
 }
 
@@ -318,6 +322,23 @@ export function buildReportHtml(input: ReportInput): string {
         nachträgliche Änderung in der Datenbank würde die Kette brechen. Das Protokoll belegt Zeitpunkt und Inhalt, nicht den
         Wahrheitsgehalt.</p>`
           : '<p>Keine im Zeitraum.</p>'
+      }`);
+  }
+
+  if (input.mode === 'voll' && on('documents')) {
+    const list = (input.documents ?? []).filter((d) => tsInRange(d.created_at));
+    parts.push(`<h2>Dokumente</h2>
+      ${
+        list.length
+          ? `<table><tr><th>Geteilt</th><th>Titel</th><th>Bereich</th><th>Datum des Dokuments</th><th>Von</th></tr>
+        ${list
+          .map(
+            (d) =>
+              `<tr><td class="nowrap">${formatTimestamp(d.created_at)}</td><td>${esc(d.title)}</td><td>${documentCategory(d.category).label}</td><td>${d.doc_date ? formatDate(d.doc_date) : '–'}</td><td>${by(d.created_by)}</td></tr>`,
+          )
+          .join('')}</table>
+        <p class="note">Nur die Liste – die Dokumente selbst liegen in der App.</p>`
+          : '<p>Keine im Zeitraum geteilt.</p>'
       }`);
   }
 

@@ -152,3 +152,19 @@ export interface ProfessionalAccess {
   revoked_at: string | null;
   created_at: string;
 }
+
+export type DocumentCategory = 'gesundheit' | 'schule' | 'behoerde' | 'sonstiges';
+
+export interface FamilyDocument {
+  id: string;
+  family_id: string;
+  title: string;
+  category: DocumentCategory;
+  doc_date: ISODate | null;
+  file_path: string;
+  mime_type: string;
+  size_bytes: number;
+  health_consent_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}

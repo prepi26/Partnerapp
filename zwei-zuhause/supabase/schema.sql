@@ -818,6 +818,68 @@ drop policy if exists families_professional on public.families;
 create policy families_professional on public.families
   for select using (id in (select public.my_case_ids()));
 
+create or replace function public.storage_folder(p_path text)
+returns text
+language sql
+immutable
+as $$
+  select split_part(p_path, '/', 1)
+$$;
+
+-- ───────────── Dokumente ─────────────
+-- Zeugnisse, Arztbriefe, Bescheide … für beide sichtbar. Gesundheitsdokumente (Art. 9 DSGVO) nur mit
+-- ausdrücklicher Einwilligung des Hochladenden (health_consent_at). Löschen darf, wer hochgeladen hat.
+
+create table if not exists public.documents (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  title text not null check (length(title) between 1 and 200),
+  category text not null default 'sonstiges' check (category in ('gesundheit', 'schule', 'behoerde', 'sonstiges')),
+  doc_date date,
+  file_path text not null,
+  mime_type text not null default 'application/octet-stream',
+  size_bytes int not null default 0 check (size_bytes between 0 and 10485760),
+  health_consent_at timestamptz,
+  created_by uuid default auth.uid() references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  constraint documents_health_consent check (category <> 'gesundheit' or health_consent_at is not null)
+);
+
+alter table public.documents enable row level security;
+drop policy if exists documents_select on public.documents;
+create policy documents_select on public.documents for select using (family_id = public.my_family_id());
+drop policy if exists documents_insert on public.documents;
+create policy documents_insert on public.documents
+  for insert with check (
+    family_id = public.my_family_id()
+    and created_by = auth.uid()
+    and public.storage_folder(file_path) = public.my_family_id()::text
+  );
+drop policy if exists documents_delete on public.documents;
+create policy documents_delete on public.documents for delete using (created_by = auth.uid());
+drop policy if exists documents_professional on public.documents;
+create policy documents_professional on public.documents
+  for select using (family_id in (select public.my_case_ids()));
+
+-- Verfasser und Zeitpunkt (auch der Einwilligung) setzt der Server.
+create or replace function public.documents_before_insert()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.created_by := auth.uid();
+  new.created_at := now();
+  if new.health_consent_at is not null then
+    new.health_consent_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists documents_before_insert on public.documents;
+create trigger documents_before_insert before insert on public.documents
+  for each row execute function public.documents_before_insert();
+
 -- ───────────── Belege (Fotos) ─────────────
 
 insert into storage.buckets (id, name, public)
@@ -845,6 +907,32 @@ create policy receipts_delete on storage.objects for delete
     )
   );
 
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
+-- Höchstens 10 MB pro Datei, nur PDF und Bilder.
+update storage.buckets
+   set file_size_limit = 10485760,
+       allowed_mime_types = array['application/pdf', 'image/jpeg', 'image/png', 'image/heic', 'image/webp']
+ where id = 'documents';
+
+drop policy if exists documents_files_select on storage.objects;
+create policy documents_files_select on storage.objects for select
+  using (bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text);
+drop policy if exists documents_files_insert on storage.objects;
+create policy documents_files_insert on storage.objects for insert
+  with check (bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text);
+drop policy if exists documents_files_delete on storage.objects;
+create policy documents_files_delete on storage.objects for delete
+  using (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = public.my_family_id()::text
+    and (owner_id = auth.uid()::text or not public.other_parent_present())
+  );
+drop policy if exists documents_files_professional on storage.objects;
+create policy documents_files_professional on storage.objects for select
+  using (bucket_id = 'documents' and (storage.foldername(name))[1] in (select public.my_case_ids()::text));
+
 drop policy if exists receipts_professional on storage.objects;
 create policy receipts_professional on storage.objects for select
   using (bucket_id = 'receipts' and (storage.foldername(name))[1] in (select public.my_case_ids()::text));
@@ -855,7 +943,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['families', 'schedule_changes', 'expenses', 'messages', 'child_info', 'decisions', 'handovers', 'agreements', 'professional_access'] loop
+  foreach t in array array['families', 'schedule_changes', 'expenses', 'messages', 'child_info', 'decisions', 'handovers', 'agreements', 'professional_access', 'documents'] loop
     if not exists (
       select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
     ) then
@@ -1062,6 +1150,10 @@ begin
     else
       v_title := '📝 ' || v_name || ' hat der Elternvereinbarung zugestimmt';
     end if;
+  elsif tg_table_name = 'documents' then
+    v_url := '/documents';
+    v_title := '📄 ' || v_name || ' hat ein Dokument geteilt';
+    v_body := new.title;
   elsif tg_table_name = 'professional_access' then
     v_url := '/professionals';
     v_title := '🔐 ' || v_name || ' möchte eine Fachkraft einladen';
@@ -1079,7 +1171,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['messages', 'schedule_changes', 'expenses', 'decisions', 'handovers', 'agreements', 'professional_access'] loop
+  foreach t in array array['messages', 'schedule_changes', 'expenses', 'decisions', 'handovers', 'agreements', 'professional_access', 'documents'] loop
     execute format('drop trigger if exists push_on_insert on public.%I', t);
     execute format(
       'create trigger push_on_insert after insert on public.%I for each row execute function public.push_on_change()', t
