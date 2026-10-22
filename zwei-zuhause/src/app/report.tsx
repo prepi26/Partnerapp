@@ -17,6 +17,7 @@ const SECTIONS: ReportSection[] = [
   'decisions',
   'agreement',
   'expenses',
+  'maintenance',
   'messages',
   'documents',
   'journal',
@@ -35,6 +36,7 @@ export default function Report() {
     decisions: true,
     agreement: true,
     expenses: true,
+    maintenance: true,
     messages: true,
     documents: true,
     journal: false,
@@ -67,6 +69,8 @@ export default function Report() {
         handovers: store.handovers,
         agreements: store.agreements,
         documents: store.documents,
+        maintenanceTerms: store.maintenance_terms,
+        maintenancePayments: store.maintenance_payments,
         journal: store.journal,
       });
     } catch (e) {

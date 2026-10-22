@@ -44,6 +44,16 @@ alter table public.families add column if not exists read_receipts_b boolean not
 -- Abo „Zwei Zuhause Plus“ gilt für die ganze Familie. plus_until setzt nur die Edge Function (service_role).
 alter table public.families add column if not exists plus_until timestamptz;
 
+-- Wann der zweite Elternteil beigetreten ist: Ab da laufen die 14 Testtage (nur beim ersten Beitritt gesetzt).
+alter table public.families add column if not exists joined_at timestamptz;
+update public.families set joined_at = created_at where parent_b is not null and joined_at is null;
+
+-- Bundesland bzw. Region der Schule (z. B. 'DE-NW', 'AT-9') für die Schulferien im Kalender; leer = keine.
+alter table public.families add column if not exists school_state text not null default '';
+alter table public.families drop constraint if exists families_school_state_check;
+alter table public.families add constraint families_school_state_check
+  check (school_state = '' or school_state ~ '^(DE|AT)-[A-Z0-9]{1,2}$');
+
 create unique index if not exists families_parent_a_key on public.families (parent_a);
 create unique index if not exists families_parent_b_key on public.families (parent_b);
 
@@ -87,9 +97,10 @@ as $$
   limit 1
 $$;
 
--- Neuer, noch unbenutzter Einladungscode (6 Großbuchstaben ohne I und O).
--- Darf die Familie gerade schreiben? 14 Tage ab Anlegen kostenlos, danach nur mit Abo – sonst nur lesen.
+-- Darf die Familie gerade schreiben? Allein höchstens 30 Tage ab Anlegen kostenlos; sobald der andere Elternteil
+-- beitritt, 14 Testtage ab dem Beitritt. Danach nur mit Abo – sonst nur lesen.
 -- Lesen, Exportieren, eigene Einträge löschen und das Konto löschen gehen immer (DSGVO).
+-- Muss zu src/data/plus.tsx (SOLO_DAYS, TRIAL_DAYS) passen.
 create or replace function public.family_active()
 returns boolean
 language sql
@@ -100,10 +111,13 @@ as $$
   select exists (
     select 1 from public.families
      where id = public.my_family_id()
-       and (created_at + interval '14 days' > now() or plus_until > now())
+       and (plus_until > now()
+            or (joined_at is null and created_at + interval '30 days' > now())
+            or joined_at + interval '14 days' > now())
   )
 $$;
 
+-- Neuer, noch unbenutzter Einladungscode (6 Großbuchstaben ohne I und O).
 create or replace function public.new_invite_code()
 returns text
 language plpgsql
@@ -196,7 +210,7 @@ begin
   perform public.count_code_attempt();
   -- Nach dem Beitritt bekommt die Familie einen neuen Code: Der alte taugt nie wieder, auch wenn der Platz frei wird.
   update public.families
-     set parent_b = auth.uid(), invite_code = public.new_invite_code()
+     set parent_b = auth.uid(), invite_code = public.new_invite_code(), joined_at = coalesce(joined_at, now())
    where invite_code = upper(trim(p_code))
      and parent_b is null
      and parent_a is not null
@@ -221,7 +235,8 @@ create policy families_update on public.families
 -- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
 revoke select on public.families from authenticated;
 grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
-              default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, plus_until, created_at)
+              default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, plus_until, joined_at,
+              school_state, created_at)
   on public.families to authenticated;
 
 create or replace function public.my_invite_code()
@@ -250,7 +265,7 @@ $$;
 -- Wer zur Familie gehört und der Code sind tabu; Namen, Kinder und Umgangsplan dürfen beide ändern.
 revoke update on public.families from authenticated;
 grant update (name_a, name_b, children, schedule_model, schedule_start, schedule_first, default_share_a,
-              handover_time, handover_place)
+              handover_time, handover_place, school_state)
   on public.families to authenticated;
 
 -- ───────────── Umgang: Ausnahmen und Tausch ─────────────
@@ -494,6 +509,15 @@ begin
   elsif tg_table_name = 'schedule_changes' then
     new.status := 'proposed';
     new.answered_at := null;
+  elsif tg_table_name = 'maintenance_payments' then
+    -- Trägt der Empfänger ein, hat er das Geld erhalten; trägt der Zahlende ein, bestätigt der andere.
+    if new.payer = public.my_parent_key() then
+      new.status := 'open';
+      new.answered_at := null;
+    else
+      new.status := 'confirmed';
+      new.answered_at := now();
+    end if;
   end if;
   return new;
 end;
@@ -1015,13 +1039,323 @@ drop policy if exists receipts_professional on storage.objects;
 create policy receipts_professional on storage.objects for select
   using (bucket_id = 'receipts' and (storage.foldername(name))[1] in (select public.my_case_ids()::text));
 
+-- ───────────── Unterhalt: Soll und Ist ─────────────
+-- Soll: was vereinbart oder festgelegt ist (Absprache, Jugendamtsurkunde, Beschluss) – ab einem Monat. Eine Änderung ist
+-- ein neuer Eintrag, alte bleiben sichtbar. Die App rechnet keinen Unterhalt aus (keine Rechtsberatung).
+-- Ist: Zahlungen je Monat. Trägt der Zahlende ein, bestätigt der Empfänger; trägt der Empfänger ein, gilt sie als erhalten.
+
+create table if not exists public.maintenance_terms (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  payer text not null check (payer in ('a', 'b')),
+  amount_cents int not null check (amount_cents between 0 and 10000000),
+  valid_from date not null check (extract(day from valid_from) = 1),
+  basis text not null default '' check (length(basis) <= 300),
+  created_by uuid default auth.uid() references auth.users (id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.maintenance_terms enable row level security;
+drop policy if exists maintenance_terms_select on public.maintenance_terms;
+create policy maintenance_terms_select on public.maintenance_terms for select using (family_id = public.my_family_id());
+drop policy if exists maintenance_terms_insert on public.maintenance_terms;
+create policy maintenance_terms_insert on public.maintenance_terms
+  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and public.family_active());
+-- Nachweis: kein Bearbeiten und kein Löschen – korrigiert wird mit einem neuen Eintrag.
+
+create table if not exists public.maintenance_payments (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  payer text not null check (payer in ('a', 'b')),
+  month date not null check (extract(day from month) = 1),
+  amount_cents int not null check (amount_cents > 0 and amount_cents <= 10000000),
+  paid_on date not null,
+  note text not null default '' check (length(note) <= 500),
+  status text not null default 'open' check (status in ('open', 'confirmed', 'disputed')),
+  created_by uuid default auth.uid() references auth.users (id) on delete set null,
+  created_at timestamptz not null default now(),
+  answered_at timestamptz
+);
+create index if not exists maintenance_payments_family on public.maintenance_payments (family_id, month);
+
+alter table public.maintenance_payments enable row level security;
+drop policy if exists maintenance_payments_select on public.maintenance_payments;
+create policy maintenance_payments_select on public.maintenance_payments
+  for select using (family_id = public.my_family_id());
+drop policy if exists maintenance_payments_insert on public.maintenance_payments;
+create policy maintenance_payments_insert on public.maintenance_payments
+  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and public.family_active());
+-- Nur eigene, noch unbestätigte Einträge darf man zurücknehmen.
+drop policy if exists maintenance_payments_delete on public.maintenance_payments;
+create policy maintenance_payments_delete on public.maintenance_payments
+  for delete using (created_by = auth.uid() and status = 'open');
+
+create or replace function public.answer_maintenance(p_id uuid, p_confirm boolean)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
+  update public.maintenance_payments
+     set status = case when p_confirm then 'confirmed' else 'disputed' end,
+         answered_at = now()
+   where id = p_id
+     and family_id = public.my_family_id()
+     and status = 'open'
+     and created_by is distinct from auth.uid();
+  if not found then
+    raise exception 'not_allowed';
+  end if;
+end;
+$$;
+
+do $$
+declare
+  t text;
+begin
+  foreach t in array array['maintenance_terms', 'maintenance_payments'] loop
+    execute format('drop trigger if exists force_insert_meta on public.%I', t);
+    execute format(
+      'create trigger force_insert_meta before insert on public.%I for each row execute function public.force_insert_meta()', t
+    );
+    execute format('drop policy if exists %I on public.%I', t || '_professional', t);
+    execute format(
+      'create policy %I on public.%I for select using (family_id in (select public.my_case_ids()))',
+      t || '_professional', t
+    );
+  end loop;
+end;
+$$;
+
+-- ───────────── Packliste für Übergaben ─────────────
+-- „Immer mit“ (recurring) bleibt stehen, „nur nächstes Mal“ verschwindet nach der Übergabe. holder: wo es gerade liegt.
+
+create table if not exists public.packing_items (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  label text not null check (length(label) between 1 and 100),
+  recurring boolean not null default false,
+  packed boolean not null default false,
+  holder text check (holder in ('a', 'b')),
+  updated_by uuid default auth.uid() references auth.users (id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.packing_items enable row level security;
+drop policy if exists packing_items_family on public.packing_items;
+create policy packing_items_family on public.packing_items for all
+  using (family_id = public.my_family_id()) with check (family_id = public.my_family_id() and public.family_active());
+
+drop trigger if exists packing_items_touch on public.packing_items;
+create trigger packing_items_touch before insert or update on public.packing_items
+  for each row execute function public.child_info_touch();
+
+-- Nach der Übergabe: alles wieder auspacken, Einmal-Sachen, die mitgingen, entfernen.
+create or replace function public.reset_packing()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
+  delete from public.packing_items where family_id = public.my_family_id() and packed and not recurring;
+  update public.packing_items set packed = false where family_id = public.my_family_id() and packed;
+end;
+$$;
+
+-- ───────────── Kalender-Abo (iPhone, Google, Outlook) ─────────────
+-- Jeder Elternteil bekommt eine geheime Adresse. Die Edge Function „calendar“ liefert darüber den Umgangsplan als
+-- iCalendar (ICS). Wer die Adresse kennt, sieht den Plan – deshalb jederzeit neu erzeugbar oder abschaltbar.
+
+create table if not exists public.calendar_feeds (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  token text not null unique,
+  lang text not null default 'de',
+  created_at timestamptz not null default now()
+);
+-- Kein direkter Zugriff: nur über die Funktionen unten.
+alter table public.calendar_feeds enable row level security;
+
+create or replace function public.my_calendar_token(p_lang text, p_new boolean default false)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_token text := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
+begin
+  if public.my_family_id() is null then
+    raise exception 'not_allowed';
+  end if;
+  insert into public.calendar_feeds (user_id, token, lang)
+  values (auth.uid(), v_token, coalesce(nullif(left(p_lang, 5), ''), 'de'))
+  on conflict (user_id) do update
+    set token = case when p_new then excluded.token else calendar_feeds.token end,
+        lang = excluded.lang
+  returning token into v_token;
+  return v_token;
+end;
+$$;
+
+create or replace function public.stop_calendar_feed()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  delete from public.calendar_feeds where user_id = auth.uid()
+$$;
+
+-- Bei wem ist das Kind an welchem Tag? Gleiche Regeln wie src/lib/schedule.ts (Muster + bestätigte Ausnahmen).
+create or replace function public.calendar_days(p_family uuid, p_from date, p_to date)
+returns table (day date, parent text)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with f as (
+    select f.*,
+           case f.schedule_model
+             when 'wechsel_7_7' then 'FFFFFFFOOOOOOO'
+             when 'wechsel_2_2_5_5' then 'FFOOFFFFFOOOOO'
+             when 'wechsel_2_2_3' then 'FFOOFFFOOFFOOO'
+             when 'residenz_we' then 'FFFFOOOFFFFFFF'
+           end as pattern
+      from public.families f
+     where f.id = p_family
+  ),
+  ch as (
+    select distinct on (c.day) c.day, c.parent
+      from public.schedule_changes c
+     where c.family_id = p_family and c.status = 'accepted' and c.day between p_from and p_to
+     order by c.day, coalesce(c.answered_at, c.created_at) desc
+  )
+  select d::date,
+         coalesce(
+           ch.parent,
+           case
+             when f.pattern is null or d::date < f.schedule_start then null
+             when substr(f.pattern, ((d::date - f.schedule_start) % 14) + 1, 1) = 'F' then f.schedule_first
+             when f.schedule_first = 'a' then 'b'
+             else 'a'
+           end
+         )
+    from f
+    cross join generate_series(p_from, p_to, interval '1 day') d
+    left join ch on ch.day = d::date
+   order by 1
+$$;
+
+create or replace function public.ics_text(p text)
+returns text
+language sql
+immutable
+as $$
+  select replace(replace(replace(replace(replace(coalesce(p, ''), '\', '\\'), ';', '\;'), ',', '\,'), chr(13), ''), chr(10), '\n')
+$$;
+
+-- Der ganze Kalender als ICS-Text (Zeilen ohne Umbruch nach 75 Zeichen – das macht die Edge Function).
+create or replace function public.calendar_ics(p_token text)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_feed public.calendar_feeds;
+  v_family public.families;
+  v_kids text;
+  v_lines text[] := array[
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Zwei Zuhause//Umgang//DE', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'X-WR-CALNAME:Zwei Zuhause', 'REFRESH-INTERVAL;VALUE=DURATION:PT6H', 'X-PUBLISHED-TTL:PT6H'
+  ];
+  v_stamp text := to_char(now() at time zone 'utc', 'YYYYMMDD"T"HH24MISS"Z"');
+  v_from date := current_date - 60;
+  v_run_start date;
+  v_run_parent text;
+  v_prev text;
+  r record;
+begin
+  select * into v_feed from public.calendar_feeds where token = p_token;
+  if not found then
+    return null;
+  end if;
+  select * into v_family from public.families where parent_a = v_feed.user_id or parent_b = v_feed.user_id limit 1;
+  if not found then
+    return null;
+  end if;
+  v_kids := coalesce(nullif(trim(v_family.children), ''), public.push_text(v_feed.lang, 'calChild', '{}'));
+
+  -- Ein Eintrag je zusammenhängendem Zeitraum („Mia bei Anna“), dazu die Übergaben mit Uhrzeit und Ort.
+  -- Der Tag nach dem Zeitraum (null) schließt den letzten Zeitraum ab.
+  for r in
+    select d.day, d.parent from public.calendar_days(v_family.id, v_from, current_date + 365) d
+    union all select current_date + 366, null
+    order by 1
+  loop
+    if r.parent is distinct from v_run_parent then
+      if v_run_parent is not null then
+        v_lines := v_lines || array[
+          'BEGIN:VEVENT',
+          'UID:' || v_family.id || '-' || to_char(v_run_start, 'YYYYMMDD') || '@zweizuhause',
+          'DTSTAMP:' || v_stamp,
+          'DTSTART;VALUE=DATE:' || to_char(v_run_start, 'YYYYMMDD'),
+          'DTEND;VALUE=DATE:' || to_char(r.day, 'YYYYMMDD'),
+          'SUMMARY:' || public.ics_text(public.push_text(v_feed.lang, 'calStay', jsonb_build_object(
+            'children', v_kids,
+            'name', case v_run_parent when 'a' then v_family.name_a else v_family.name_b end))),
+          'TRANSP:TRANSPARENT',
+          'END:VEVENT'
+        ];
+      end if;
+      -- Übergabe: nur mit festgelegter Uhrzeit, sonst zeigt der Zeitraum den Wechsel schon.
+      if v_prev is not null and r.parent is not null and v_family.handover_time <> '' then
+        v_lines := v_lines || array[
+          'BEGIN:VEVENT',
+          'UID:' || v_family.id || '-h' || to_char(r.day, 'YYYYMMDD') || '@zweizuhause',
+          'DTSTAMP:' || v_stamp,
+          'DTSTART:' || to_char(r.day, 'YYYYMMDD') || 'T' || replace(v_family.handover_time, ':', '') || '00',
+          'DURATION:PT30M',
+          'SUMMARY:' || public.ics_text(public.push_text(v_feed.lang, 'calHandover', jsonb_build_object(
+            'children', v_kids,
+            'name', case r.parent when 'a' then v_family.name_a else v_family.name_b end)))
+        ] || case when v_family.handover_place <> ''
+                  then array['LOCATION:' || public.ics_text(v_family.handover_place)] else array[]::text[] end
+          || array['END:VEVENT'];
+      end if;
+      v_run_start := r.day;
+      v_run_parent := r.parent;
+    end if;
+    if r.parent is not null then
+      v_prev := r.parent;
+    end if;
+  end loop;
+
+  return array_to_string(v_lines || array['END:VCALENDAR'], chr(13) || chr(10)) || chr(13) || chr(10);
+end;
+$$;
+
+revoke execute on function public.calendar_ics(text) from public, anon, authenticated;
+revoke execute on function public.calendar_days(uuid, date, date) from public, anon, authenticated;
+
 -- ───────────── Live-Updates ─────────────
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['families', 'schedule_changes', 'expenses', 'messages', 'child_info', 'decisions', 'handovers', 'agreements', 'professional_access', 'documents'] loop
+  foreach t in array array['families', 'schedule_changes', 'expenses', 'messages', 'child_info', 'decisions', 'handovers', 'agreements', 'professional_access', 'documents',
+                           'maintenance_terms', 'maintenance_payments', 'packing_items'] loop
     if not exists (
       select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = t
     ) then
@@ -1065,7 +1399,8 @@ begin
     'answer_expense(uuid, boolean)', 'mark_messages_read()', 'delete_my_account()',
     'answer_decision(uuid, boolean, text)', 'reply_handover(uuid, boolean, text)', 'accept_agreement(uuid)',
     'create_professional_invite(text, int)', 'approve_professional(uuid)', 'revoke_professional(uuid)',
-    'join_as_professional(text)', 'my_invite_code()', 'set_read_receipts(boolean)'
+    'join_as_professional(text)', 'my_invite_code()', 'set_read_receipts(boolean)',
+    'answer_maintenance(uuid, boolean)', 'reset_packing()', 'my_calendar_token(text, boolean)', 'stop_calendar_feed()'
   ] loop
     execute format('revoke execute on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
@@ -1254,6 +1589,14 @@ begin
     v_title := 'professionalInvite';
     v_body := 'professionalInviteBody';
     v_vars := jsonb_build_object('label', new.label);
+  elsif tg_table_name = 'maintenance_payments' then
+    v_url := '/maintenance';
+    if tg_op = 'INSERT' then
+      v_title := 'maintenanceNew';
+      v_body := 'maintenanceNewBody';
+    else
+      v_title := case when new.status = 'confirmed' then 'maintenanceConfirmed' else 'maintenanceDisputed' end;
+    end if;
   elsif tg_table_name = 'documents' then
     v_url := '/documents';
     v_title := 'documentNew';
@@ -1272,7 +1615,7 @@ do $$
 declare
   t text;
 begin
-  foreach t in array array['messages', 'schedule_changes', 'expenses', 'decisions', 'handovers', 'agreements', 'professional_access', 'documents'] loop
+  foreach t in array array['messages', 'schedule_changes', 'expenses', 'decisions', 'handovers', 'agreements', 'professional_access', 'documents', 'maintenance_payments'] loop
     execute format('drop trigger if exists push_on_insert on public.%I', t);
     execute format(
       'create trigger push_on_insert after insert on public.%I for each row execute function public.push_on_change()', t
@@ -1287,6 +1630,9 @@ create trigger push_on_answer after update of status on public.schedule_changes
   for each row when (old.status = 'proposed' and new.status <> 'proposed') execute function public.push_on_change();
 drop trigger if exists push_on_answer on public.expenses;
 create trigger push_on_answer after update of status on public.expenses
+  for each row when (old.status = 'open' and new.status <> 'open') execute function public.push_on_change();
+drop trigger if exists push_on_answer on public.maintenance_payments;
+create trigger push_on_answer after update of status on public.maintenance_payments
   for each row when (old.status = 'open' and new.status <> 'open') execute function public.push_on_change();
 drop trigger if exists push_on_answer on public.decisions;
 create trigger push_on_answer after update of status on public.decisions
@@ -1325,6 +1671,13 @@ insert into public.push_texts (lang, key, text) values
   ('de', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
   ('de', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
   ('de', 'documentNewBody', '{title}'),
+  ('de', 'maintenanceNew', '💶 {name} hat eine Unterhaltszahlung eingetragen'),
+  ('de', 'maintenanceNewBody', 'Tipp hier, um sie anzusehen.'),
+  ('de', 'maintenanceConfirmed', '✅ {name} hat den Erhalt bestätigt'),
+  ('de', 'maintenanceDisputed', '❌ {name} hat den Erhalt nicht bestätigt'),
+  ('de', 'calStay', '{children} bei {name}'),
+  ('de', 'calHandover', 'Übergabe: {children} zu {name}'),
+  ('de', 'calChild', 'Kind'),
   ('de', 'otherParent', 'Der andere Elternteil'),
   ('en', 'tapToOpen', 'Tap here to view it.'),
   ('en', 'messageTitle', '💬 New message from {name}'),

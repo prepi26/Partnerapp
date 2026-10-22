@@ -12,6 +12,8 @@ import {
   Family,
   FamilyDocument,
   Handover,
+  MaintenancePayment,
+  MaintenanceTerm,
   Message,
   ScheduleChange,
 } from './types';
@@ -27,6 +29,8 @@ export interface CaseData {
   handovers: Handover[];
   agreements: Agreement[];
   documents: FamilyDocument[];
+  maintenance_terms: MaintenanceTerm[];
+  maintenance_payments: MaintenancePayment[];
   receiptUrls: Record<string, string>;
 }
 
@@ -38,7 +42,18 @@ async function load(familyId: string): Promise<CaseData | null> {
   if (!rows[0]) return null;
   const family: Family = { ...rows[0], invite_code: '' };
   const q = (table: string) => supabase.from(table).select('*').eq('family_id', familyId);
-  const [schedule_changes, expenses, messages, child_info, decisions, handovers, agreements, documents] = await Promise.all([
+  const [
+    schedule_changes,
+    expenses,
+    messages,
+    child_info,
+    decisions,
+    handovers,
+    agreements,
+    documents,
+    maintenance_terms,
+    maintenance_payments,
+  ] = await Promise.all([
     q('schedule_changes').order('day'),
     q('expenses').order('day', { ascending: false }),
     q('messages').order('seq'),
@@ -47,6 +62,8 @@ async function load(familyId: string): Promise<CaseData | null> {
     q('handovers').order('day', { ascending: false }),
     q('agreements').order('version', { ascending: false }),
     q('documents').order('created_at', { ascending: false }),
+    q('maintenance_terms').order('valid_from', { ascending: false }),
+    q('maintenance_payments').order('month', { ascending: false }),
   ]);
   const expenseRows = must(expenses) as Expense[];
   const receiptUrls = await signedReceiptUrls(
@@ -62,6 +79,8 @@ async function load(familyId: string): Promise<CaseData | null> {
     handovers: must(handovers) as Handover[],
     agreements: must(agreements) as Agreement[],
     documents: must(documents) as FamilyDocument[],
+    maintenance_terms: must(maintenance_terms) as MaintenanceTerm[],
+    maintenance_payments: must(maintenance_payments) as MaintenancePayment[],
     receiptUrls,
   };
 }

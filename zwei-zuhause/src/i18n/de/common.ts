@@ -60,11 +60,13 @@ export const common = {
     readOnlyTitle: 'Nur noch lesen',
     /** {name} anderer Elternteil */
     readOnlyText:
-      'Die 14 Tage Testzeit sind vorbei. Mit einem Abo für die ganze Familie können du und {name} wieder alles eintragen. Lesen und Exportieren geht weiterhin.',
+      'Die kostenlose Testzeit ist vorbei. Mit einem Abo für die ganze Familie können du und {name} wieder alles eintragen. Lesen und Exportieren geht weiterhin.',
     cta: 'Abo ansehen',
     trialBannerOther: 'Noch {n} Tage kostenlos testen',
     trialBannerOne: 'Noch 1 Tag kostenlos testen',
     trialBannerLast: 'Letzter Tag der kostenlosen Testzeit',
+    /** Allein, kurz vor Ende der kostenlosen Zeit. {n} Tage, {name} anderer Elternteil */
+    soloBanner: 'Noch {n} Tage kostenlos allein – lade {name} ein, dann starten eure 14 Testtage.',
   },
   language: {
     title: 'Sprache',

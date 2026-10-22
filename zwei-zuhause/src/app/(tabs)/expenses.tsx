@@ -7,13 +7,16 @@ import { Card, EmptyState, Fab, GradientHeader } from '@/components/ui';
 import { useFamily } from '@/data/store';
 import { Expense } from '@/data/types';
 import { fmt, useT } from '@/i18n';
-import { formatShort } from '@/lib/dates';
+import { formatMonth, formatShort, parseISO, today } from '@/lib/dates';
+import { monthRows, statusLabel } from '@/lib/maintenance';
 import { balanceAB, categoryOf, formatMoney, shareOf } from '@/lib/money';
-import { colors, spacing } from '@/theme';
+import { colors, radius, spacing } from '@/theme';
 
 export default function Expenses() {
   const t = useT();
-  const { expenses, me, otherName, nameOf, userId } = useFamily();
+  const { expenses, me, otherName, nameOf, userId, maintenance_terms, maintenance_payments } = useFamily();
+  // Unterhalt im laufenden Monat – nur ein Hinweis, die Übersicht liegt auf eigener Seite.
+  const thisMonth = monthRows(maintenance_terms, maintenance_payments, today(), 1)[0];
   const raw = balanceAB(expenses);
   const balance = me === 'a' ? raw : -raw;
   const open = expenses.filter((e) => e.status === 'open').length;
@@ -26,20 +29,38 @@ export default function Expenses() {
         keyExtractor={(e) => e.id}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <Card style={styles.balance}>
-            <Text style={styles.balanceLabel}>
-              {balance === 0
-                ? t.money.list.even
-                : balance > 0
-                  ? fmt(t.money.list.owesYou, { name: otherName })
-                  : fmt(t.money.list.youOwe, { name: otherName })}
-            </Text>
-            <Text style={styles.balanceValue}>{formatMoney(Math.abs(balance))}</Text>
-            <Text style={styles.balanceHint}>
-              {open ? fmt(open === 1 ? t.money.list.openOne : t.money.list.openOther, { n: open }) : ''}
-              {t.money.list.ignoredHint}
-            </Text>
-          </Card>
+          <View>
+            <Card style={styles.balance}>
+              <Text style={styles.balanceLabel}>
+                {balance === 0
+                  ? t.money.list.even
+                  : balance > 0
+                    ? fmt(t.money.list.owesYou, { name: otherName })
+                    : fmt(t.money.list.youOwe, { name: otherName })}
+              </Text>
+              <Text style={styles.balanceValue}>{formatMoney(Math.abs(balance))}</Text>
+              <Text style={styles.balanceHint}>
+                {open ? fmt(open === 1 ? t.money.list.openOne : t.money.list.openOther, { n: open }) : ''}
+                {t.money.list.ignoredHint}
+              </Text>
+            </Card>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/maintenance')}
+              style={({ pressed }) => [styles.maintenance, pressed && { opacity: 0.6 }]}
+            >
+              <Ionicons name="cash-outline" size={20} color={colors.primary} />
+              <Text style={styles.maintenanceText}>
+                {thisMonth?.status
+                  ? fmt(t.money.maintenance.listLinkMonth, {
+                      month: formatMonth(parseISO(thisMonth.month), t),
+                      status: statusLabel(thisMonth.status, t),
+                    })
+                  : t.money.maintenance.listLink}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+            </Pressable>
+          </View>
         }
         ListEmptyComponent={
           <EmptyState
@@ -101,6 +122,16 @@ function Row({
 }
 
 const styles = StyleSheet.create({
+  maintenance: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  maintenanceText: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
   content: { padding: spacing.md, gap: spacing.sm, paddingBottom: 120 },
   balance: { alignItems: 'center', gap: 2, marginBottom: spacing.sm, padding: spacing.lg },
   balanceLabel: { fontSize: 15, color: colors.textMuted, fontWeight: '600' },

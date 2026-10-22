@@ -74,6 +74,14 @@ export const home = {
     helpText: 'Notfallnummern, Jugendamt, Beratungsstellen',
     settings: 'Einstellungen',
     settingsText: 'Namen, Kosten-Anteil, Konto',
+    maintenance: 'Unterhalt',
+    maintenanceText: 'Vereinbart und gezahlt – Monat für Monat',
+    packing: 'Packliste',
+    packingText: 'Was zur nächsten Übergabe mit muss',
+    holidays: 'Schulferien',
+    holidaysText: 'Ferien im Kalender, Aufteilung absprechen',
+    calendarSync: 'Im Handy-Kalender',
+    calendarSyncText: 'Umgangsplan in iPhone-, Google- oder Outlook-Kalender',
   },
   invite: {
     /** {code} Einladungscode */
@@ -84,5 +92,7 @@ export const home = {
     /** {name} anderer Elternteil */
     text: 'Mit diesem Code sieht {name} denselben Kalender und dieselben Kosten und kann dir schreiben. Bis dahin kannst du alles allein nutzen.',
     share: 'Code teilen',
+    /** {name} anderer Elternteil */
+    solo: 'Die 14 kostenlosen Testtage starten erst, wenn {name} dabei ist.',
   },
 };

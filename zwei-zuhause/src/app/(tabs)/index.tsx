@@ -9,15 +9,28 @@ import { parentColor } from '@/components/ParentTag';
 import { Card, GradientHeader, HeaderIcon, IconName } from '@/components/ui';
 import { useFamily } from '@/data/store';
 import { fmt, useT } from '@/i18n';
-import { addDays, countdownLabel, daysBetween, formatWeekday, today } from '@/lib/dates';
+import { addDays, countdownLabel, daysBetween, formatWeekday, parseISO, toISO, today } from '@/lib/dates';
+import { holidayName, upcomingHolidays } from '@/lib/holidays';
 import { balanceAB, formatMoney } from '@/lib/money';
 import { acceptedChanges, dayInfo, handoverWhere, nextHandover } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Home() {
   const t = useT();
-  const { family, me, myName, otherName, nameOf, otherJoined, schedule_changes, expenses, messages, decisions, userId } =
-    useFamily();
+  const {
+    family,
+    me,
+    myName,
+    otherName,
+    nameOf,
+    otherJoined,
+    schedule_changes,
+    expenses,
+    messages,
+    decisions,
+    packing_items,
+    userId,
+  } = useFamily();
 
   const accepted = useMemo(() => acceptedChanges(schedule_changes), [schedule_changes]);
   const now = today();
@@ -40,6 +53,11 @@ export default function Home() {
   // Positiv: der andere schuldet mir.
   const raw = balanceAB(expenses);
   const balance = me === 'a' ? raw : -raw;
+
+  // Nächste Ferien in den kommenden 8 Wochen – Anstoß, sie früh abzusprechen.
+  const nextHoliday = family.school_state ? upcomingHolidays(family.school_state, toISO(now))[0] : undefined;
+  const holidayIn = nextHoliday ? daysBetween(now, parseISO(nextHoliday.start)) : -1;
+  const packed = packing_items.filter((i) => i.packed).length;
 
   const kids = family.children.trim() || t.common.theChild;
   const todayColor = parentColor(todayInfo.parent);
@@ -81,6 +99,15 @@ export default function Home() {
               })}
             </Text>
           ) : null}
+          {handover ? (
+            <Pressable accessibilityRole="button" onPress={() => router.push('/packing')}>
+              <Text style={styles.link}>
+                {packing_items.length
+                  ? fmt(t.family.packing.homeLine, { packed, total: packing_items.length })
+                  : t.family.packing.homeEmpty}
+              </Text>
+            </Pressable>
+          ) : null}
           {family.schedule_model === 'none' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/schedule')}>
               <Text style={styles.link}>{t.home.today.setSchedule}</Text>
@@ -101,6 +128,25 @@ export default function Home() {
         ) : null}
 
         {!otherJoined ? <InviteCard code={family.invite_code} otherName={otherName} /> : null}
+
+        {nextHoliday && holidayIn > 0 && holidayIn <= 56 ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/holidays')}
+            style={({ pressed }) => [styles.banner, pressed && { opacity: 0.7 }]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.bannerText}>
+                {fmt(t.calendar.holidays.homeCard, {
+                  name: holidayName(nextHoliday.kind, t),
+                  countdown: holidayIn < 14 ? countdownLabel(holidayIn) : fmt(t.calendar.holidays.inWeeks, { n: Math.round(holidayIn / 7) }),
+                })}
+              </Text>
+              <Text style={styles.bannerSub}>{t.calendar.holidays.homeCardText}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </Pressable>
+        ) : null}
 
         <View style={styles.tiles}>
           <Tile
@@ -211,6 +257,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   bannerText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  bannerSub: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   helpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 4 },
   helpText: { fontSize: 15, fontWeight: '700', color: colors.primary },
   footer: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },

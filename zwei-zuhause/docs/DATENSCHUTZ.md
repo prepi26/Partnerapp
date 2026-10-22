@@ -23,8 +23,12 @@ und keinen Verkauf von Daten**.
 | Entscheidungen, Elternvereinbarung | gemeinsame Absprachen | beide Elternteile |
 | Infos zum Kind (z. B. Ärzte, Schule, Allergien) | gemeinsamer Informationsstand | beide Elternteile |
 | Dokumente (z. B. Zeugnis, Arztbrief, Bescheid) als Foto oder PDF | gemeinsamer Zugriff | beide Elternteile |
+| Unterhalt: vereinbarter Betrag, Zahlungen, Bestätigungen | Nachweis, was gezahlt wurde | beide Elternteile |
+| Packliste (Sachen des Kindes, wo sie liegen) | Übergaben vorbereiten | beide Elternteile |
+| Bundesland der Schule | Schulferien im Kalender | beide Elternteile |
 | Tagebuch | eigene Dokumentation | **nur du** |
 | Push-Token des Geräts | Mitteilungen | technisch: Expo, Apple/Google |
+| Kalender-Abo (nur wenn du es einschaltest) | Umgangsplan im eigenen Kalender | dein Kalender-Anbieter (z. B. Apple, Google, Microsoft) |
 | Kaufstatus „Plus“ | Freischaltung | RevenueCat, Apple/Google |
 | Einstellungen App-Sperre und Erinnerungen | Komfort | nur auf deinem Gerät |
 
@@ -37,8 +41,13 @@ gespeichert, wenn ihr sie selbst eintragt. Mit dem Eintragen willigst du ausdrü
 lassen sich nur hochladen, nachdem du ausdrücklich eingewilligt hast; der Zeitpunkt der Einwilligung wird gespeichert.
 Dokumente liegen in einem privaten Speicher und sind nur über kurzlebige Links abrufbar (höchstens 10 MB, PDF und Bilder).
 
+**Kalender-Abo:** Schaltest du es ein, erzeugt die App eine geheime Adresse. Darüber holt dein Kalender (iPhone,
+Google, Outlook) den Umgangsplan mit den Namen von Eltern und Kindern sowie Übergabezeit und -ort ab; ab dann
+verarbeitet auch dein Kalender-Anbieter diese Angaben nach seinen eigenen Bedingungen. Du kannst die Adresse jederzeit
+erneuern oder das Abo beenden – dann liefert sie nichts mehr.
+
 **Fachkräfte** (z. B. Jugendamt, Beratungsstelle, Verfahrensbeistand) erhalten nur Lesezugriff, wenn ein Elternteil
-sie einlädt **und** der andere Elternteil zustimmt. Sie sehen Kalender, Übergaben, Kosten, Entscheidungen, Vereinbarung,
+sie einlädt **und** der andere Elternteil zustimmt. Sie sehen Kalender, Übergaben, Kosten, Unterhalt, Entscheidungen, Vereinbarung,
 Infos zum Kind und Nachrichten – **nie** das Tagebuch. Beide Eltern sehen, wer Zugang hat, und können ihn jederzeit
 widerrufen; der Zugang endet außerdem automatisch.
 

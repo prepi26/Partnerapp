@@ -4,7 +4,7 @@ import { Expense } from '@/data/types';
 import { useT } from '@/i18n';
 import { colors } from '@/theme';
 
-export function ExpenseStatus({ expense: e, mine }: { expense: Expense; mine: boolean }) {
+export function ExpenseStatus({ expense: e, mine }: { expense: Pick<Expense, 'status'>; mine: boolean }) {
   const t = useT();
   if (e.status === 'confirmed')
     return <Text style={[styles.status, { color: colors.primary }]}>✓ {t.money.status.confirmed}</Text>;

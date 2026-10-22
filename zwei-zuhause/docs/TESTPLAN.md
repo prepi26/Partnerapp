@@ -2,7 +2,9 @@
 
 **Bereits automatisch getestet** (lokales Supabase + Browser, siehe `e2e/`): Registrierung, Familie anlegen, Beitritt per
 Code, Umgangsplan, Nachricht, Ausgabe + Bestätigung, Entscheidung + Antwort, Übergabe + Widerspruch, Kind-Info,
-Elternvereinbarung + Zustimmung, Einführung, Dokumente (PDF, Gesundheit nur mit Einwilligung), Datenexport, Fachkraft einladen → zustimmen → Fachkraft liest → Kurzbericht, Tagebuch, Hilfe.
+Elternvereinbarung + Zustimmung, Einführung, Dokumente (PDF, Gesundheit nur mit Einwilligung), Datenexport, Fachkraft einladen → zustimmen → Fachkraft liest → Kurzbericht, Tagebuch, Hilfe,
+Allein-Start-Hinweis, Unterhalt (Betrag, Zahlung, Bestätigung), Packliste (abhaken, zurücksetzen), Schulferien
+(Bundesland, Aufteilung vorschlagen). Kalender-Abo: Inhalt (ICS) per SQL-Test und Kalender-Parser geprüft.
 Datenbankregeln: `supabase/test-*.sql`.
 
 **Nur auf echten Geräten prüfbar** – bitte einmal durchgehen:
@@ -26,3 +28,6 @@ Datenbankregeln: `supabase/test-*.sql`.
 | 15 | Dokument fotografieren und als PDF hochladen | erscheint bei beiden; Antippen öffnet Foto/PDF |
 | 16 | Daten exportieren | Teilen-Dialog mit JSON-Datei |
 | 17 | E-Mail ändern | Bestätigungs-Mail an neue Adresse (in Supabase *Secure email change* prüfen) |
+| 18 | Kalender-Abo iPhone: Mehr → Im Handy-Kalender → Kalender abonnieren | Kalender „Zwei Zuhause“ mit „Mia bei …“ und Übergaben; nach Tausch spätestens nach einigen Stunden aktualisiert |
+| 19 | Kalender-Abo Google: Link teilen → calendar.google.com → Per URL | Kalender erscheint; „Neuen Link erzeugen“ → alter Link liefert nichts mehr |
+| 20 | Unterhalt: B trägt Zahlung ein, A hat App geschlossen | A bekommt „💶 … hat eine Unterhaltszahlung eingetragen“; Tippen öffnet Unterhalt |

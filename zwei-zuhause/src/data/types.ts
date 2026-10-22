@@ -25,6 +25,10 @@ export interface Family {
   read_receipts_b: boolean;
   /** Familien-Abo bis (vom Server gesetzt) */
   plus_until: string | null;
+  /** Beitritt des zweiten Elternteils – ab da laufen die Testtage. */
+  joined_at: string | null;
+  /** Region der Schule für die Ferien, z. B. „DE-NW“; leer = keine. */
+  school_state: string;
   created_at: string;
 }
 
@@ -171,4 +175,44 @@ export interface FamilyDocument {
   health_consent_at: string | null;
   created_by: string | null;
   created_at: string;
+}
+
+/** Vereinbarter Unterhalt ab einem Monat (Monatsanfang). Der neueste Eintrag je Monat gilt. */
+export interface MaintenanceTerm {
+  id: string;
+  family_id: string;
+  payer: ParentKey;
+  amount_cents: number;
+  valid_from: ISODate;
+  basis: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface MaintenancePayment {
+  id: string;
+  family_id: string;
+  payer: ParentKey;
+  /** Monatsanfang des Monats, für den gezahlt wurde. */
+  month: ISODate;
+  amount_cents: number;
+  paid_on: ISODate;
+  note: string;
+  status: ExpenseStatus;
+  created_by: string | null;
+  created_at: string;
+  answered_at: string | null;
+}
+
+export interface PackingItem {
+  id: string;
+  family_id: string;
+  label: string;
+  /** Immer mit (bleibt nach der Übergabe stehen) statt nur nächstes Mal. */
+  recurring: boolean;
+  packed: boolean;
+  /** Wo es gerade liegt. */
+  holder: ParentKey | null;
+  updated_by: string | null;
+  updated_at: string;
 }

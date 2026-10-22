@@ -65,6 +65,7 @@ export default function CaseView() {
           decisions: true,
           agreement: true,
           expenses: true,
+          maintenance: true,
           messages: true,
           documents: true,
         },
@@ -75,6 +76,8 @@ export default function CaseView() {
         handovers: data.handovers,
         agreements: data.agreements,
         documents: data.documents,
+        maintenanceTerms: data.maintenance_terms,
+        maintenancePayments: data.maintenance_payments,
         journal: [],
       });
     } catch (e) {

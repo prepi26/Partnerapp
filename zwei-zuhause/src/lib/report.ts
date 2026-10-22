@@ -7,6 +7,8 @@ import {
   Handover,
   ISODate,
   JournalEntry,
+  MaintenancePayment,
+  MaintenanceTerm,
   Message,
   ParentKey,
   ScheduleChange,
@@ -19,6 +21,7 @@ import { addDays, formatDate as formatDateIn, formatTimestamp, parseISO, toISO }
 import { decisionCategory as decisionCategoryIn } from './decisions';
 import { documentCategory as documentCategoryIn } from './documentCategories';
 import { handoverLabel as handoverLabelIn } from './handovers';
+import { monthRowsBetween, statusLabel as maintenanceStatusIn } from './maintenance';
 import { balanceAB, categoryOf as categoryOfIn, formatMoney, needOf as needOfIn, shareOf } from './money';
 import { acceptedChanges, dayInfo, handoverWhere as handoverWhereIn, modelTitle } from './schedule';
 
@@ -31,6 +34,9 @@ const documentCategory = (k: FamilyDocument['category']) => documentCategoryIn(k
 const handoverLabel = (h: Handover) => handoverLabelIn(h, de);
 const categoryOf = (k: string) => categoryOfIn(k, de);
 const needOf = (k: Expense['need']) => needOfIn(k, de);
+const maintenanceStatus = (s: Parameters<typeof maintenanceStatusIn>[0]) => maintenanceStatusIn(s, de);
+const MONTHS = de.common.dates.months;
+const monthName = (iso: ISODate) => `${MONTHS[parseISO(iso).getMonth()]} ${parseISO(iso).getFullYear()}`;
 const AGREEMENT_SECTIONS = agreementSections(de);
 const AGREEMENT_NOTE = de.lib.agreementNote;
 
@@ -40,6 +46,7 @@ export type ReportSection =
   | 'decisions'
   | 'agreement'
   | 'expenses'
+  | 'maintenance'
   | 'messages'
   | 'documents'
   | 'journal';
@@ -61,6 +68,8 @@ export interface ReportInput {
   handovers: Handover[];
   agreements: Agreement[];
   documents?: FamilyDocument[];
+  maintenanceTerms?: MaintenanceTerm[];
+  maintenancePayments?: MaintenancePayment[];
   journal: JournalEntry[];
 }
 
@@ -145,6 +154,13 @@ export function buildReportHtml(input: ReportInput): string {
   const decisions = input.decisions.filter((d) => tsInRange(d.created_at));
   const handovers = input.handovers.filter((h) => inRange(h.day)).sort((x, y) => x.day.localeCompare(y.day));
   const agreement = input.agreements[0];
+  const maintenanceTerms = input.maintenanceTerms ?? [];
+  const maintenancePayments = input.maintenancePayments ?? [];
+  const maintenanceRows = maintenanceTerms.length
+    ? monthRowsBetween(maintenanceTerms, maintenancePayments, input.from, input.to)
+        .filter((r) => r.status)
+        .reverse()
+    : [];
   const parts: string[] = [];
 
   parts.push(`
@@ -203,6 +219,15 @@ export function buildReportHtml(input: ReportInput): string {
               ? `${name('b')} → ${name('a')} ${formatMoney(balance)}`
               : `${name('a')} → ${name('b')} ${formatMoney(-balance)}`
         } · ${expenses.filter((e) => e.status === 'open').length} unbestätigt, ${expenses.filter((e) => e.status === 'disputed').length} abgelehnt<br>
+        ${
+          maintenanceRows.length
+            ? `<b>Unterhalt (laut Eintrag der Eltern):</b> ${maintenanceRows.length} Monate – bezahlt ${
+                maintenanceRows.filter((r) => r.status === 'paid' || r.status === 'more').length
+              }, teilweise ${maintenanceRows.filter((r) => r.status === 'partial').length}, offen ${
+                maintenanceRows.filter((r) => r.status === 'open').length
+              }<br>`
+            : ''
+        }
         <b>Elternvereinbarung:</b> ${
           agreement
             ? `Fassung ${agreement.version}, ${agreement.accepted_a_at && agreement.accepted_b_at ? 'von beiden angenommen' : 'noch nicht von beiden angenommen'}`
@@ -318,6 +343,40 @@ export function buildReportHtml(input: ReportInput): string {
         } <span class="note">(abgelehnte Posten nicht mitgerechnet; Einordnung als Mehr-/Sonderbedarf durch die Eltern, keine rechtliche Bewertung)</span></p>`
           : '<p>Keine im Zeitraum.</p>'
       }`);
+  }
+
+  if (input.mode === 'voll' && on('maintenance') && (maintenanceTerms.length || maintenancePayments.length)) {
+    const payments = maintenancePayments
+      .filter((p) => inRange(p.paid_on) || (p.month >= input.from.slice(0, 8) + '01' && p.month <= input.to))
+      .sort((x, y) => x.paid_on.localeCompare(y.paid_on));
+    parts.push(`<h2>Unterhalt</h2>
+      ${
+        maintenanceRows.length
+          ? `<table><tr><th>Monat</th><th>Vereinbart</th><th>Zahlt</th><th>Bestätigt erhalten</th><th>Unbestätigt</th><th>Stand</th></tr>
+        ${maintenanceRows
+          .map(
+            (r) =>
+              `<tr><td>${monthName(r.month)}</td><td>${formatMoney(r.due)}</td><td>${r.term ? name(r.term.payer) : '–'}</td><td>${formatMoney(r.confirmed)}</td><td>${r.open ? formatMoney(r.open) : '–'}</td><td>${r.status ? maintenanceStatus(r.status) : ''}</td></tr>`,
+          )
+          .join('')}</table>`
+          : ''
+      }
+      ${
+        payments.length
+          ? `<h3>Zahlungen</h3><table><tr><th>Gezahlt am</th><th>Für</th><th>Von</th><th>Betrag</th><th>Notiz</th><th>Status</th></tr>
+        ${payments
+          .map(
+            (p) =>
+              `<tr><td>${formatDate(p.paid_on)}<br><span class="note">eingetragen ${formatTimestamp(p.created_at)} von ${by(p.created_by)}</span></td><td>${monthName(p.month)}</td><td>${name(p.payer)}</td><td>${formatMoney(p.amount_cents)}</td><td>${esc(p.note)}</td><td>${STATUS[p.status]}</td></tr>`,
+          )
+          .join('')}</table>`
+          : '<p>Keine Zahlungen im Zeitraum eingetragen.</p>'
+      }
+      <p class="note">Beträge laut Eintrag der Eltern${
+        maintenanceTerms.some((t) => t.basis)
+          ? ` (Grundlage: ${[...new Set(maintenanceTerms.map((t) => t.basis).filter(Boolean))].map(esc).join('; ')})`
+          : ''
+      }. Keine Berechnung und keine rechtliche Bewertung von Unterhaltsansprüchen.</p>`);
   }
 
   if (input.mode === 'voll' && on('messages')) {

@@ -145,4 +145,28 @@ export const family = {
     label: 'Deine Antwort',
     placeholder: 'Begründung (optional)',
   },
+  packing: {
+    title: 'Packliste',
+    intro: 'Was muss zur nächsten Übergabe mit? Ihr seht beide dieselbe Liste. Abgehakt heißt eingepackt.',
+    always: 'Immer mit',
+    alwaysHint: 'z. B. Medikamente, Kuscheltier, Ausweis',
+    once: 'Nur nächstes Mal',
+    onceHint: 'z. B. Schwimmsachen, Geschenk für Oma',
+    addPlaceholder: 'Was muss mit?',
+    addAlways: 'immer',
+    add: 'Hinzufügen',
+    /** Wo es gerade liegt. {name} Elternteil */
+    at: 'liegt bei {name}',
+    atNobody: 'Wo liegt es?',
+    atYou: 'liegt bei dir',
+    packedA11y: 'eingepackt',
+    remove: 'Entfernen',
+    empty: 'Noch nichts auf der Liste.',
+    reset: 'Übergabe erledigt – Liste zurücksetzen',
+    resetTitle: 'Liste zurücksetzen?',
+    resetText: 'Alle Häkchen verschwinden. Sachen für „nur nächstes Mal“, die eingepackt waren, werden entfernt.',
+    /** Startseite. {packed} eingepackt, {total} gesamt */
+    homeLine: '🎒 Packliste: {packed} von {total} eingepackt',
+    homeEmpty: '🎒 Packliste anlegen',
+  },
 };

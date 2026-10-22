@@ -14,11 +14,13 @@ import { acceptedChanges, dayInfo, other } from '@/lib/schedule';
 import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
-const MAX_DAYS = 42;
+// Lang genug für Sommerferien (in Österreich gut 9 Wochen).
+const MAX_DAYS = 70;
 
 export default function ChangeNew() {
   const t = useT();
-  const params = useLocalSearchParams<{ day?: string }>();
+  // until: Zeitraum vorbelegen, z. B. aus den Schulferien.
+  const params = useLocalSearchParams<{ day?: string; until?: string }>();
   const { family, me, nameOf, otherName, otherJoined, schedule_changes, proposeChanges } = useFamily();
   const [day, setDay] = useState(params.day && /^\d{4}-\d{2}-\d{2}$/.test(params.day) ? params.day : toISO(today()));
   const accepted = useMemo(() => acceptedChanges(schedule_changes), [schedule_changes]);
@@ -26,8 +28,9 @@ export default function ChangeNew() {
   const [parent, setParent] = useState<ParentKey>(current ? other(current) : me);
   const [note, setNote] = useState('');
   // Mehrere Tage am Stück, z. B. Ferien oder eine Dienstreise.
-  const [range, setRange] = useState(false);
-  const [until, setUntil] = useState(day);
+  const presetUntil = params.until && /^\d{4}-\d{2}-\d{2}$/.test(params.until) && params.until > day ? params.until : null;
+  const [range, setRange] = useState(!!presetUntil);
+  const [until, setUntil] = useState(presetUntil ?? day);
   const days = useMemo(() => {
     if (!range) return [day];
     const list: string[] = [];

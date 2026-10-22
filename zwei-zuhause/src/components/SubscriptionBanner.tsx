@@ -14,14 +14,21 @@ import { colors, radius, spacing } from '@/theme';
 export function SubscriptionBanner() {
   const t = useT();
   const { otherName } = useFamily();
-  const { active, inTrial, trialDaysLeft, canWrite } = usePlus();
+  const { active, inTrial, solo, trialDaysLeft, canWrite } = usePlus();
   const s = t.common.subscription;
   if (active) return null;
 
   if (canWrite) {
+    // Allein erklärt die Einladungskarte die Testzeit – erst kurz vor Ende der kostenlosen Zeit erinnern.
+    if (solo && trialDaysLeft > 5) return null;
     if (!purchasesAvailable && trialDaysLeft > 3) return null;
-    const text =
-      trialDaysLeft === 0 ? s.trialBannerLast : trialDaysLeft === 1 ? s.trialBannerOne : fmt(s.trialBannerOther, { n: trialDaysLeft });
+    const text = solo
+      ? fmt(s.soloBanner, { n: trialDaysLeft, name: otherName })
+      : trialDaysLeft === 0
+        ? s.trialBannerLast
+        : trialDaysLeft === 1
+          ? s.trialBannerOne
+          : fmt(s.trialBannerOther, { n: trialDaysLeft });
     return (
       <Pressable accessibilityRole="button" onPress={() => router.push('/plus')} style={styles.trial}>
         <Ionicons name="time-outline" size={18} color={colors.primary} />

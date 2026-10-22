@@ -8,7 +8,8 @@ import { Card, GradientHeader, HeaderIcon, SecondaryButton, tap } from '@/compon
 import { attempt, useFamily } from '@/data/store';
 import { ISODate, ScheduleChange } from '@/data/types';
 import { fmt, useT } from '@/i18n';
-import { formatMonth, formatTimestamp, formatWeekday, toISO, today } from '@/lib/dates';
+import { formatMonth, formatShort, formatTimestamp, formatWeekday, toISO, today } from '@/lib/dates';
+import { holidayName, holidayOn, holidaysOf, regionName } from '@/lib/holidays';
 import { acceptedChanges, dayInfo, handoverWhere, models } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
@@ -46,6 +47,13 @@ export default function Calendar() {
 
   const model = models(t).find((m) => m.key === family.schedule_model)?.title;
   const todayIso = toISO(now);
+  // Schulferien, die den angezeigten Monat berühren.
+  const region = family.school_state;
+  const monthFirst = toISO(month);
+  const monthLast = toISO(new Date(month.getFullYear(), month.getMonth() + 1, 0));
+  const monthHolidays = region
+    ? holidaysOf(region).filter((h) => h.start <= monthLast && h.end >= monthFirst && h.kind !== 'day')
+    : [];
 
   return (
     <View style={{ flex: 1 }}>
@@ -113,6 +121,7 @@ export default function Calendar() {
                       {day.getDate()}
                     </Text>
                     {info.change ? <View style={[styles.marker, { backgroundColor: c.main }]} /> : null}
+                    {region && holidayOn(region, iso) ? <View style={styles.holiday} /> : null}
                   </Pressable>
                 );
               })}
@@ -125,8 +134,30 @@ export default function Calendar() {
           {handoverWhere(family) ? (
             <Text style={styles.where}>{fmt(t.calendar.calendar.handoverWhere, { where: handoverWhere(family) })}</Text>
           ) : null}
+          {monthHolidays.map((h) => (
+            <Text key={h.start} style={styles.holidayText}>
+              {fmt(t.calendar.holidays.inMonth, {
+                name: holidayName(h.kind, t),
+                from: formatShort(h.start, t),
+                to: formatShort(h.end, t),
+              })}
+            </Text>
+          ))}
           <Text style={styles.hint}>{t.calendar.calendar.hint}</Text>
         </Card>
+
+        <View style={styles.links}>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/holidays')}>
+            <Text style={styles.linkText}>
+              {region
+                ? fmt(t.calendar.holidays.calendarLink, { region: regionName(region) })
+                : t.calendar.holidays.calendarLinkNone}
+            </Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => router.push('/calendar-sync')}>
+            <Text style={styles.linkText}>{t.calendar.sync.calendarLink}</Text>
+          </Pressable>
+        </View>
 
         {open.length ? <Text style={styles.section}>{t.calendar.calendar.openSection}</Text> : null}
         {open.map((c) => {
@@ -216,6 +247,18 @@ const styles = StyleSheet.create({
   proposed: { borderWidth: 2, borderColor: colors.warning, borderStyle: 'dashed' },
   dayText: { fontSize: 15, fontWeight: '700' },
   marker: { position: 'absolute', bottom: 5, width: 5, height: 5, borderRadius: 3 },
+  holiday: {
+    position: 'absolute',
+    top: 3,
+    left: 6,
+    right: 6,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.warning,
+  },
+  holidayText: { fontSize: 13, fontWeight: '600', color: colors.text, textAlign: 'center' },
+  links: { gap: spacing.sm, alignItems: 'center' },
+  linkText: { fontSize: 15, fontWeight: '700', color: colors.primary },
   legend: { flexDirection: 'row', gap: spacing.sm, justifyContent: 'center', marginTop: spacing.xs },
   where: { fontSize: 14, fontWeight: '700', color: colors.text, textAlign: 'center' },
   hint: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 17 },

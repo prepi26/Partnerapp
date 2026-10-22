@@ -24,6 +24,12 @@ export const settings = {
     documentNew: 'Dokument teilen',
     settings: 'Einstellungen',
     plus: 'Zwei Zuhause Plus',
+    maintenance: 'Unterhalt',
+    maintenanceNew: 'Zahlung eintragen',
+    maintenanceTerms: 'Unterhalt festlegen',
+    packing: 'Packliste',
+    holidays: 'Schulferien',
+    calendarSync: 'Im Handy-Kalender',
   },
   root: {
     offlineTitle: 'Keine Verbindung',

@@ -175,6 +175,16 @@ export const lib = {
     professionalInviteBody: '{label} – bitte zustimmen oder ablehnen.',
     documentNew: '📄 {name} hat ein Dokument geteilt',
     documentNewBody: '{title}',
+    maintenanceNew: '💶 {name} hat eine Unterhaltszahlung eingetragen',
+    maintenanceNewBody: 'Tipp hier, um sie anzusehen.',
+    maintenanceConfirmed: '✅ {name} hat den Erhalt bestätigt',
+    maintenanceDisputed: '❌ {name} hat den Erhalt nicht bestätigt',
+    /** Kalender-Abo: Eintrag für einen Zeitraum. {children} Kinder, {name} Elternteil */
+    calStay: '{children} bei {name}',
+    /** Kalender-Abo: Übergabe. {children} Kinder, {name} Elternteil, zu dem das Kind geht */
+    calHandover: 'Übergabe: {children} zu {name}',
+    /** Kalender-Abo: Ersatz, wenn keine Kindernamen eingetragen sind */
+    calChild: 'Kind',
     /** Ersatzname, falls kein Name eingetragen ist */
     otherParent: 'Der andere Elternteil',
   },

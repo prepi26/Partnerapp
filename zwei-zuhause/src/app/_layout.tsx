@@ -153,6 +153,12 @@ function RootStack({
         <Stack.Screen name="document-new" options={modal(titles.documentNew)} />
         <Stack.Screen name="settings" options={modal(titles.settings)} />
         <Stack.Screen name="plus" options={modal(titles.plus)} />
+        <Stack.Screen name="maintenance" options={{ headerShown: true, title: titles.maintenance }} />
+        <Stack.Screen name="maintenance-new" options={modal(titles.maintenanceNew)} />
+        <Stack.Screen name="maintenance-terms" options={modal(titles.maintenanceTerms)} />
+        <Stack.Screen name="packing" options={{ headerShown: true, title: titles.packing }} />
+        <Stack.Screen name="holidays" options={{ headerShown: true, title: titles.holidays }} />
+        <Stack.Screen name="calendar-sync" options={{ headerShown: true, title: titles.calendarSync }} />
       </Stack.Protected>
     </Stack>
   );

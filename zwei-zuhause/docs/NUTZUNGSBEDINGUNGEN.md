@@ -12,11 +12,13 @@ empfohlen.)*
 
 Zwei Zuhause ist eine App zur Organisation zwischen getrennt lebenden Eltern: Kalender, Kosten, Nachrichten,
 Entscheidungen, Übergaben, Elternvereinbarung, Infos zum Kind, privates Tagebuch, Berichte und Lesezugang für
-Fachkräfte. Die ersten 14 Tage sind kostenlos, danach ist ein Abo nötig (Abschnitt 5).
+Fachkräfte. Die ersten 14 Tage zu zweit sind kostenlos, danach ist ein Abo nötig (Abschnitt 5).
 
 ## 2. Keine Rechtsberatung
 
-Zwei Zuhause gibt allgemeine Informationen und stellt Werkzeuge zur Dokumentation bereit. Es erbringt **keine
+Zwei Zuhause gibt allgemeine Informationen und stellt Werkzeuge zur Dokumentation bereit. Beträge beim Unterhalt sind
+die Angaben der Eltern; die App berechnet keinen Unterhalt und prüft keine Ansprüche. Ferientermine stammen aus
+öffentlichen Quellen (OpenHolidays, ODbL) und sind ohne Gewähr. Es erbringt **keine
 Rechtsdienstleistung** im Sinne des Rechtsdienstleistungsgesetzes und ersetzt keine Beratung durch Jugendamt,
 Beratungsstellen oder Rechtsanwälte. Einordnungen wie „Mehrbedarf“ oder „Sonderbedarf“ treffen die Eltern selbst.
 Eine Elternvereinbarung ist eine Absprache zwischen den Eltern und ohne gerichtliche Billigung nicht vollstreckbar.
@@ -35,7 +37,8 @@ entscheidet diese selbst. Die Aufzeichnungen belegen Zeitpunkt und Inhalt, nicht
 
 ## 5. Zwei Zuhause Plus (Abo)
 
-- Die ersten **14 Tage ab Anlegen der Familie** sind kostenlos und voll nutzbar.
+- Die ersten **14 Tage ab dem Beitritt des zweiten Elternteils** sind kostenlos und voll nutzbar. Solange nur ein
+  Elternteil dabei ist, ist die App bis zu **30 Tage ab Anlegen der Familie** kostenlos.
 - Danach braucht die Familie das Abo „Zwei Zuhause Plus“ (7,99 € monatlich oder 59,99 € jährlich, Preise laut Store).
   Es gilt für **beide Elternteile der Familie**, unabhängig davon, wer es abschließt.
 - Ohne Abo können alle Einträge weiterhin gelesen, exportiert und eigene Einträge gelöscht werden; Neues eintragen ist

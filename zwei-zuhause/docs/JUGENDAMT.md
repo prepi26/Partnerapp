@@ -14,12 +14,14 @@ Umgangsberatung nach § 18 SGB VIII.
 - Übergaben festhalten – der andere Elternteil kann bestätigen oder widersprechen
 - Wichtige Entscheidungen (§ 1687 BGB) fragen und beantworten
 - Eine **Elternvereinbarung** nach 17 Leitfragen erarbeiten, die beide in der App annehmen
-- Kinderkosten teilen, Nachrichten ohne Löschen, Ton-Hinweis vor dem Senden
+- Kinderkosten teilen, **Unterhalt Soll und Ist** festhalten (der Empfänger bestätigt den Erhalt)
+- Schulferien früh aufteilen, Packliste für Übergaben
+- Nachrichten ohne Löschen, Ton-Hinweis vor dem Senden
 
 **Was Sie als Fachkraft davon haben**
 - **Kostenloser Lesezugang** für Fachkräfte (Eltern zahlen ein Familien-Abo), wenn beide Eltern zustimmen – befristet, jederzeit widerrufbar, ohne private Tagebücher
 - **Kurzbericht auf einer Seite**: Betreuungstage je Elternteil, Übergaben, Antwortzeiten, offene Entscheidungen,
-  Kostensaldo – statt Screenshot-Stapeln
+  Kostensaldo, Unterhalt je Monat (bezahlt / teilweise / offen) – statt Screenshot-Stapeln
 - Vollständige, chronologische Verläufe statt ausgewählter Ausschnitte – beide Eltern sehen dasselbe
 - Die Elternvereinbarung aus der Beratung liegt danach in der App und wird gelebt, nicht abgeheftet
 

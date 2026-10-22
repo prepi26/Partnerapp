@@ -7,7 +7,7 @@ import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
 import { IconName, PrimaryButton, showError } from '@/components/ui';
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
-import { errorMessage } from '@/data/store';
+import { errorMessage, useFamily } from '@/data/store';
 import { Dict, fmt, useT } from '@/i18n';
 import { close } from '@/lib/nav';
 import { colors, gradient, radius, shadow, spacing } from '@/theme';
@@ -39,10 +39,13 @@ function perMonth(pkg: PurchasesPackage, t: Dict) {
 
 export default function PlusScreen() {
   const t = useT();
-  const { active, inTrial, trialDaysLeft, packages, purchase, restore } = usePlus();
+  const { active, inTrial, solo, trialDaysLeft, packages, purchase, restore } = usePlus();
+  const { otherName } = useFamily();
   const p = t.money.plus;
   const trialText = !inTrial
     ? p.trialOver
+    : solo
+      ? fmt(p.trialSolo, { name: otherName, n: trialDaysLeft })
     : trialDaysLeft === 0
       ? p.trialLastDay
       : trialDaysLeft === 1

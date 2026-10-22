@@ -12,7 +12,7 @@ export const calendar = {
     notEntered: 'nicht eingetragen',
     /** {where} Uhrzeit/Ort der Übergabe */
     handoverWhere: 'Übergabe: {where}',
-    hint: 'Tipp auf einen Tag, um einen Tausch vorzuschlagen. Punkt = vereinbarte Ausnahme, Rahmen = offener Vorschlag.',
+    hint: 'Tipp auf einen Tag, um einen Tausch vorzuschlagen. Punkt = vereinbarte Ausnahme, Rahmen = offener Vorschlag, Strich oben = Schulferien.',
     openSection: 'Offene Vorschläge',
     /** Eigener Vorschlag, Kind beim anderen Elternteil {name} */
     proposalMine: 'Du schlägst vor: Kind bei {name}',
@@ -111,5 +111,70 @@ export const calendar = {
     notePlaceholder: 'z. B. Sportsachen fehlten',
     enter: 'Eintragen',
     hint: 'Einträge können nicht geändert oder gelöscht werden. Bleib bei dem, was passiert ist – ohne Bewertung.',
+  },
+  holidays: {
+    title: 'Schulferien',
+    /** Zeile unter dem Kalender. {region} Bundesland */
+    calendarLink: '🏖 Schulferien: {region}',
+    calendarLinkNone: '🏖 Schulferien einblenden',
+    /** Hinweis, wenn im angezeigten Monat Ferien sind. {name} Ferienart, {from}–{to} Datum */
+    inMonth: '{name}: {from} – {to}',
+    region: 'Wo geht das Kind zur Schule?',
+    regionHint: 'Die Ferien erscheinen im Kalender – für euch beide.',
+    none: 'Keine Ferien anzeigen',
+    germany: 'Deutschland',
+    austria: 'Österreich',
+    upcoming: 'Die nächsten Ferien',
+    /** {from}–{to} Datum, {n} Anzahl Tage */
+    range: '{from} – {to} · {n} Tage',
+    rangeOne: '{from} · 1 Tag',
+    /** Wie viele Tage davon bei wem laut Plan. {a}/{b} Namen, {na}/{nb} Anzahl */
+    split: 'Laut Plan: {na} bei {a}, {nb} bei {b}',
+    propose: 'Aufteilung vorschlagen',
+    hint: 'Ferien sind die häufigste Streitfrage. Sprecht sie früh ab – am besten Monate vorher.',
+    source: 'Ferientermine: OpenHolidays (openholidaysapi.org), Lizenz ODbL. Ohne Gewähr – im Zweifel gilt die Schule.',
+    /** Startseite. {name} Ferienart, {countdown} z. B. „in 3 Wochen“ */
+    homeCard: '🏖 {name} beginnen {countdown}',
+    homeCardText: 'Schon abgesprochen, wer wann das Kind hat?',
+    /** {n} Wochen */
+    inWeeks: 'in {n} Wochen',
+    kinds: {
+      winter: 'Winterferien',
+      midyear: 'Halbjahresferien',
+      carnival: 'Faschingsferien',
+      spring: 'Frühjahrsferien',
+      easter: 'Osterferien',
+      pentecost: 'Pfingstferien',
+      summer: 'Sommerferien',
+      autumn: 'Herbstferien',
+      christmas: 'Weihnachtsferien',
+      day: 'Schulfreier Tag',
+    },
+  },
+  sync: {
+    title: 'Im Handy-Kalender',
+    calendarLink: '📲 Im Handy-Kalender anzeigen',
+    intro:
+      'Euer Umgangsplan erscheint in deinem normalen Kalender – iPhone, Google oder Outlook – und aktualisiert sich ' +
+      'von selbst, auch nach einem Tausch.',
+    open: 'Kalender abonnieren',
+    share: 'Link teilen oder kopieren',
+    /** Nachricht beim Teilen. {url} Adresse */
+    shareMessage: 'Mein Kalender-Abo für Zwei Zuhause: {url}',
+    googleTitle: 'Google Kalender (Android)',
+    googleText:
+      'Link teilen oder kopieren, dann am Computer calendar.google.com öffnen → „Weitere Kalender“ → „Per URL“ → Link einfügen.',
+    iphoneTitle: 'iPhone',
+    iphoneText: '„Kalender abonnieren“ tippen und bestätigen. Der Kalender heißt „Zwei Zuhause“.',
+    privacy:
+      'Wer den Link kennt, sieht euren Plan mit den Namen. Teile ihn nicht mit anderen. Kalender-Apps holen Änderungen meist alle paar Stunden.',
+    renew: 'Neuen Link erzeugen',
+    renewTitle: 'Neuen Link erzeugen?',
+    renewText: 'Der alte Link funktioniert dann nicht mehr. Du musst den Kalender neu abonnieren.',
+    stop: 'Kalender-Abo beenden',
+    stopTitle: 'Kalender-Abo beenden?',
+    stopText: 'Der Link funktioniert dann nicht mehr. Lösch den Kalender auch in deiner Kalender-App.',
+    stopped: 'Das Kalender-Abo ist beendet.',
+    noPlan: 'Legt zuerst einen Umgangsplan fest – sonst bleibt der Kalender leer.',
   },
 };

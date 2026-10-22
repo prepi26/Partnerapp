@@ -12,7 +12,8 @@ type Item = { icon: IconName; title: string; text: string; href: Parameters<type
 
 export default function More() {
   const t = useT();
-  const { decisions, handovers, agreements, professional_access, journal, userId, me } = useFamily();
+  const { decisions, handovers, agreements, professional_access, journal, maintenance_payments, userId, me } = useFamily();
+  const openMaintenance = maintenance_payments.filter((p) => p.status === 'open' && p.created_by !== userId).length;
   const { canWrite: plus } = usePlus();
 
   const openDecisions = decisions.filter((d) => d.status === 'proposed' && d.created_by !== userId).length;
@@ -29,6 +30,9 @@ export default function More() {
       items: [
         { icon: 'git-pull-request', title: t.home.more.decisions, text: t.home.more.decisionsText, href: '/decisions', badge: openDecisions },
         { icon: 'car', title: t.home.more.handovers, text: t.home.more.handoversText, href: '/handovers', badge: openHandovers },
+        { icon: 'bag-handle', title: t.home.more.packing, text: t.home.more.packingText, href: '/packing' },
+        { icon: 'cash', title: t.home.more.maintenance, text: t.home.more.maintenanceText, href: '/maintenance', badge: openMaintenance },
+        { icon: 'sunny', title: t.home.more.holidays, text: t.home.more.holidaysText, href: '/holidays' },
         { icon: 'information-circle', title: t.home.more.childInfo, text: t.home.more.childInfoText, href: '/child-info' },
         { icon: 'folder-open', title: t.home.more.documents, text: t.home.more.documentsText, href: '/documents' },
         { icon: 'document-text', title: t.home.more.agreement, text: t.home.more.agreementText, href: '/agreement', badge: agreementOpen },
@@ -45,6 +49,7 @@ export default function More() {
       title: t.home.more.support,
       items: [
         { icon: 'shield-checkmark', title: t.home.more.professionals, text: t.home.more.professionalsText, href: '/professionals', badge: proOpen },
+        { icon: 'phone-portrait', title: t.home.more.calendarSync, text: t.home.more.calendarSyncText, href: '/calendar-sync' },
         { icon: 'help-buoy', title: t.home.more.help, text: t.home.more.helpText, href: '/help' },
         { icon: 'settings', title: t.home.more.settings, text: t.home.more.settingsText, href: '/settings' },
       ],

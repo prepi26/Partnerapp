@@ -25,8 +25,11 @@ import {
   HandoverStatus,
   ISODate,
   JournalEntry,
+  MaintenancePayment,
+  MaintenanceTerm,
   Message,
   NeedType,
+  PackingItem,
   ParentKey,
   ProfessionalAccess,
   ScheduleChange,
@@ -43,6 +46,9 @@ interface Data {
   agreements: Agreement[];
   professional_access: ProfessionalAccess[];
   documents: FamilyDocument[];
+  maintenance_terms: MaintenanceTerm[];
+  maintenance_payments: MaintenancePayment[];
+  packing_items: PackingItem[];
 }
 
 type Table = keyof Data;
@@ -57,6 +63,9 @@ const TABLES: Table[] = [
   'agreements',
   'professional_access',
   'documents',
+  'maintenance_terms',
+  'maintenance_payments',
+  'packing_items',
 ];
 /** Diese Tabellen teilen beide Elternteile – Live-Updates. Das Tagebuch ist privat. */
 const SHARED: Table[] = [
@@ -69,6 +78,9 @@ const SHARED: Table[] = [
   'agreements',
   'professional_access',
   'documents',
+  'maintenance_terms',
+  'maintenance_payments',
+  'packing_items',
 ];
 
 const emptyData: Data = {
@@ -82,6 +94,9 @@ const emptyData: Data = {
   agreements: [],
   professional_access: [],
   documents: [],
+  maintenance_terms: [],
+  maintenance_payments: [],
+  packing_items: [],
 };
 
 async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
@@ -95,6 +110,9 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   if (table === 'handovers') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
   if (table === 'agreements') query = query.order('version', { ascending: false });
   if (table === 'documents') query = query.order('created_at', { ascending: false });
+  if (table === 'maintenance_terms') query = query.order('valid_from', { ascending: false }).order('created_at', { ascending: false });
+  if (table === 'maintenance_payments') query = query.order('month', { ascending: false }).order('created_at', { ascending: false });
+  if (table === 'packing_items') query = query.order('label');
   return must(await query) as Data[T];
 }
 
@@ -180,6 +198,7 @@ type FamilyPatch = Partial<
     | 'default_share_a'
     | 'handover_time'
     | 'handover_place'
+    | 'school_state'
   >
 >;
 
@@ -233,6 +252,24 @@ interface Store extends Data {
     healthConsent: boolean;
   }): Promise<void>;
   removeDocument(doc: FamilyDocument): Promise<void>;
+  setMaintenance(term: { payer: ParentKey; amount_cents: number; valid_from: ISODate; basis: string }): Promise<void>;
+  addMaintenancePayment(payment: {
+    payer: ParentKey;
+    month: ISODate;
+    amount_cents: number;
+    paid_on: ISODate;
+    note: string;
+  }): Promise<void>;
+  answerMaintenance(id: string, confirm: boolean): Promise<void>;
+  removeMaintenancePayment(id: string): Promise<void>;
+  addPackingItem(item: { label: string; recurring: boolean }): Promise<void>;
+  updatePackingItem(id: string, patch: Partial<Pick<PackingItem, 'packed' | 'holder' | 'recurring'>>): Promise<void>;
+  removePackingItem(id: string): Promise<void>;
+  /** Nach der Übergabe: alles auspacken, Einmal-Sachen entfernen. */
+  resetPacking(): Promise<void>;
+  /** Geheime Adresse für das Kalender-Abo (neu = alte Adresse ungültig machen). */
+  calendarToken(lang: string, renew?: boolean): Promise<string>;
+  stopCalendarFeed(): Promise<void>;
   inviteProfessional(label: string, days: number): Promise<string>;
   approveProfessional(id: string): Promise<void>;
   revokeProfessional(id: string): Promise<void>;
@@ -453,6 +490,24 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       removeDocument: async (doc) => {
         await after('documents', await supabase.from('documents').delete().eq('id', doc.id));
         await deleteDocumentFile(doc.file_path);
+      },
+      setMaintenance: async (term) =>
+        after('maintenance_terms', await supabase.from('maintenance_terms').insert(term)),
+      addMaintenancePayment: async (payment) =>
+        after('maintenance_payments', await supabase.from('maintenance_payments').insert(payment)),
+      answerMaintenance: async (id, confirm) =>
+        after('maintenance_payments', await supabase.rpc('answer_maintenance', { p_id: id, p_confirm: confirm })),
+      removeMaintenancePayment: async (id) =>
+        after('maintenance_payments', await supabase.from('maintenance_payments').delete().eq('id', id)),
+      addPackingItem: async (item) => after('packing_items', await supabase.from('packing_items').insert(item)),
+      updatePackingItem: async (id, patch) =>
+        after('packing_items', await supabase.from('packing_items').update(patch).eq('id', id)),
+      removePackingItem: async (id) => after('packing_items', await supabase.from('packing_items').delete().eq('id', id)),
+      resetPacking: async () => after('packing_items', await supabase.rpc('reset_packing')),
+      calendarToken: async (lang, renew = false) =>
+        must(await supabase.rpc('my_calendar_token', { p_lang: lang, p_new: renew })) as string,
+      stopCalendarFeed: async () => {
+        must(await supabase.rpc('stop_calendar_feed'));
       },
       inviteProfessional: async (label, days) => {
         const code = must(await supabase.rpc('create_professional_invite', { p_label: label, p_days: days })) as string;

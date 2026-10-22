@@ -17,11 +17,15 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 • Tausch oder Ferien vorschlagen, der andere stimmt zu oder lehnt ab
 • Auf einen Blick: Bei wem ist das Kind heute, wann und wo ist die nächste Übergabe?
 • Erinnerung am Vorabend jeder Übergabe
+• Schulferien aller Bundesländer (Deutschland und Österreich) im Kalender – Aufteilung per Fingertipp vorschlagen
+• Im Handy-Kalender: Umgangsplan als Abo in iPhone-, Google- oder Outlook-Kalender
+• Packliste: Was muss zur nächsten Übergabe mit, und wo liegt was?
 
 **KOSTEN FAIR TEILEN**
 • Ausgaben fürs Kind mit Anteil (50/50 oder eigener Schlüssel)
 • Der andere bestätigt oder lehnt ab – der Saldo rechnet sich selbst
 • Belegfoto zum Kassenbon, Mehr- und Sonderbedarf kennzeichnen
+• Unterhalt: vereinbarter Betrag und Zahlungen Monat für Monat – der Empfänger bestätigt den Erhalt
 
 **NACHRICHTEN MIT NACHWEIS**
 • Nichts lässt sich nachträglich ändern oder löschen
@@ -48,7 +52,7 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 Server in Frankfurt (EU). Keine Werbung, kein Tracking, keine verkauften Daten. Eigene Daten jederzeit exportieren,
 Konto löschen mit einem Tipp.
 
-**14 TAGE KOSTENLOS TESTEN** – danach ein Abo für die ganze Familie: Zwei Zuhause Plus für 7,99 € im Monat oder
+**14 TAGE KOSTENLOS TESTEN** – ab dem Tag, an dem ihr beide dabei seid. Danach ein Abo für die ganze Familie: Zwei Zuhause Plus für 7,99 € im Monat oder
 59,99 € im Jahr. Einer zahlt, beide Eltern nutzen alles. Ohne Abo bleiben alle Einträge lesbar und exportierbar.
 
 Zwei Zuhause ersetzt keine Rechtsberatung. Bei Fragen zu Sorge, Umgang und Unterhalt helfen Jugendamt,
@@ -70,6 +74,6 @@ Formulierungen, die **nicht** verwendet werden dürfen: „gerichtsfest“, „r
 
 ## Hinweis für die App-Prüfung (App Review Notes)
 Die App verbindet zwei getrennte Elternteile. Zum Testen bitte mit Konto 1 anmelden (Elternteil A, Familie angelegt)
-und optional mit Konto 2 (Elternteil B) auf einem zweiten Gerät. Käufe: Die ersten 14 Tage ab Anlegen der Familie sind kostenlos und
-voll nutzbar; danach braucht die Familie das Abo „Zwei Zuhause Plus“ (ein Abo für beide Eltern), sonst ist die App nur
+und optional mit Konto 2 (Elternteil B) auf einem zweiten Gerät. Käufe: Die ersten 14 Tage ab dem Beitritt des zweiten Elternteils
+(allein: bis zu 30 Tage ab Anlegen der Familie) sind kostenlos und voll nutzbar; danach braucht die Familie das Abo „Zwei Zuhause Plus“ (ein Abo für beide Eltern), sonst ist die App nur
 noch lesbar. Konto löschen: Mehr → Einstellungen → Konto löschen.

@@ -9,8 +9,10 @@ import { useStore } from './store';
 
 /** Name der Berechtigung in RevenueCat (Entitlements → Identifier). */
 const ENTITLEMENT = 'plus';
-/** Kostenlose Testzeit ab Anlegen der Familie (muss zu family_active() in supabase/schema.sql passen). */
+/** Testzeit ab dem Beitritt des anderen Elternteils (muss zu family_active() in supabase/schema.sql passen). */
 export const TRIAL_DAYS = 14;
+/** Solange man allein ist: kostenlos höchstens so lange ab Anlegen der Familie. */
+export const SOLO_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const apiKey = Platform.select({ ios: REVENUECAT_IOS_KEY, android: REVENUECAT_ANDROID_KEY, default: '' });
@@ -22,8 +24,10 @@ let configured = false;
 interface Plus {
   /** Familien-Abo aktiv – egal, welcher Elternteil zahlt. */
   active: boolean;
-  /** Kostenlose Testzeit läuft noch. */
+  /** Kostenlose Zeit läuft noch (allein oder Testtage nach dem Beitritt). */
   inTrial: boolean;
+  /** Der andere ist noch nie beigetreten – die 14 Testtage haben noch nicht begonnen. */
+  solo: boolean;
   /** Ganze Tage Testzeit, die noch übrig sind (0 = heute letzter Tag). */
   trialDaysLeft: number;
   /** Eintragen erlaubt (Abo oder Testzeit) – sonst nur lesen. Der Server prüft dasselbe. */
@@ -85,7 +89,12 @@ export function PlusProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const serverActive = !!family?.plus_until && new Date(family.plus_until).getTime() > now;
-  const trialEnd = family ? new Date(family.created_at).getTime() + TRIAL_DAYS * DAY_MS : 0;
+  const solo = !!family && !family.joined_at;
+  const trialEnd = !family
+    ? 0
+    : family.joined_at
+      ? new Date(family.joined_at).getTime() + TRIAL_DAYS * DAY_MS
+      : new Date(family.created_at).getTime() + SOLO_DAYS * DAY_MS;
   const inTrial = trialEnd > now;
   const trialDaysLeft = inTrial ? Math.floor((trialEnd - now) / DAY_MS) : 0;
 
@@ -113,6 +122,7 @@ export function PlusProvider({ children }: { children: ReactNode }) {
     return {
       active,
       inTrial,
+      solo,
       trialDaysLeft,
       canWrite: active || inTrial,
       packages,
@@ -127,7 +137,7 @@ export function PlusProvider({ children }: { children: ReactNode }) {
       },
       restore: async () => afterPurchase(await Purchases.restorePurchases()),
     };
-  }, [afterPurchase, inTrial, ownEntitlement, packages, serverActive, trialDaysLeft]);
+  }, [afterPurchase, inTrial, ownEntitlement, packages, serverActive, solo, trialDaysLeft]);
 
   return <PlusContext.Provider value={value}>{children}</PlusContext.Provider>;
 }

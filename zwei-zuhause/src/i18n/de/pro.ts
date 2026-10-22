@@ -118,6 +118,7 @@ export const pro = {
       decisions: { title: 'Entscheidungen', text: 'Fragen und Antworten' },
       agreement: { title: 'Elternvereinbarung', text: 'Aktuelle Fassung mit Zustimmungen' },
       expenses: { title: 'Kosten', text: 'Ausgaben, Anteile, Saldo' },
+      maintenance: { title: 'Unterhalt', text: 'Vereinbart und gezahlt je Monat' },
       messages: { title: 'Nachrichten', text: 'Vollständiger Verlauf mit Prüfsummen' },
       documents: { title: 'Dokumente', text: 'Liste der geteilten Dokumente' },
       journal: { title: 'Mein Tagebuch', text: 'Nur deine eigenen Notizen' },

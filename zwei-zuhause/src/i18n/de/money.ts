@@ -125,13 +125,15 @@ export const money = {
     introPrice: 'Erst {price}',
     nothingFound: 'Nichts gefunden',
     heroTitle: 'Zwei Zuhause Plus',
-    heroText: '14 Tage kostenlos testen – danach ein Abo für eure ganze Familie.',
+    heroText: '14 Tage kostenlos testen, sobald ihr beide dabei seid – danach ein Abo für eure ganze Familie.',
     activeTitle: 'Euer Familien-Abo ist aktiv ✓',
     activeText: 'Wer das Abo abgeschlossen hat, verwaltet oder kündigt es in den Einstellungen seines Handys.',
     /** Testzeit läuft noch: {n} Tage */
     trialLeftOther: 'Kostenlose Testzeit: noch {n} Tage',
     trialLeftOne: 'Kostenlose Testzeit: noch 1 Tag',
     trialLastDay: 'Kostenlose Testzeit: heute ist der letzte Tag',
+    /** {name} anderer Elternteil, {n} Tage */
+    trialSolo: 'Die 14 Testtage starten, wenn {name} beitritt. Allein ist die App noch {n} Tage kostenlos.',
     trialOver: 'Die kostenlose Testzeit ist vorbei. Ohne Abo könnt ihr alles lesen, aber nichts Neues eintragen.',
     unavailable: 'Käufe sind nur in der iOS- und Android-App möglich.',
     busy: 'Einen Moment…',
@@ -142,5 +144,72 @@ export const money = {
     restore: 'Käufe wiederherstellen',
     termsLink: 'Nutzungsbedingungen',
     privacyLink: 'Datenschutz',
+  },
+  maintenance: {
+    title: 'Unterhalt',
+    /** Zeile in der Kostenübersicht */
+    listLink: 'Unterhalt – Soll und Ist',
+    /** {month} Monat, {status} Status */
+    listLinkMonth: 'Unterhalt {month}: {status}',
+    intro:
+      'Haltet fest, was vereinbart ist und was gezahlt wurde. So gibt es später keinen Streit über einzelne Monate.',
+    emptyTitle: 'Noch kein Betrag festgelegt',
+    emptyText:
+      'Trag den Betrag ein, der vereinbart oder festgelegt ist – z. B. aus einer Absprache, einer Jugendamtsurkunde oder einem Beschluss.',
+    setTerms: 'Betrag festlegen',
+    changeTerms: 'Betrag ändern',
+    /** {amount} Betrag, {name} Zahlender */
+    agreed: '{amount} im Monat · zahlt {name}',
+    agreedYou: '{amount} im Monat · zahlst du',
+    /** {month} Monat */
+    since: 'seit {month}',
+    /** {basis} Grundlage */
+    basis: 'Grundlage: {basis}',
+    months: 'Monate',
+    /** {paid} gezahlt, {due} Soll */
+    paidOfDue: '{paid} von {due}',
+    statusPaid: 'bezahlt',
+    statusPartial: 'teilweise',
+    statusOpen: 'offen',
+    statusMore: 'mehr als vereinbart',
+    /** {amount} unbestätigter Betrag */
+    unconfirmed: '{amount} noch nicht bestätigt',
+    payments: 'Zahlungen',
+    /** {date} Datum, {month} Monat */
+    paymentLine: 'am {date} für {month}',
+    enteredByYou: 'Von dir eingetragen',
+    /** {name} anderer Elternteil */
+    enteredBy: 'Von {name} eingetragen',
+    confirm: 'Erhalten',
+    dispute: 'Nicht erhalten',
+    withdraw: 'Zurücknehmen',
+    add: 'Zahlung eintragen',
+    emptyPayments: 'Noch keine Zahlungen eingetragen.',
+    hint:
+      'Die App rechnet keinen Unterhalt aus und prüft keine Ansprüche. Fragen dazu beantworten das Jugendamt ' +
+      '(kostenlose Beistandschaft) oder ein Fachanwalt für Familienrecht.',
+  },
+  maintenanceNew: {
+    whoPays: 'Wer zahlt?',
+    month: 'Für welchen Monat?',
+    amount: 'Betrag in €',
+    paidOn: 'Gezahlt am',
+    note: 'Notiz (optional)',
+    notePlaceholder: 'z. B. Überweisung, bar bei der Übergabe',
+    /** {name} anderer Elternteil */
+    payerHint: '{name} bestätigt, ob das Geld angekommen ist.',
+    receiverHint: 'Du bestätigst damit, dass du das Geld erhalten hast.',
+    save: 'Eintragen',
+    invalidAmount: 'Bitte einen Betrag eingeben, z. B. 400 oder 399,50.',
+  },
+  maintenanceTerms: {
+    whoPays: 'Wer zahlt Unterhalt?',
+    amount: 'Betrag pro Monat in €',
+    from: 'Gilt ab',
+    basis: 'Grundlage (optional)',
+    basisPlaceholder: 'z. B. Jugendamtsurkunde vom 3.5.2026',
+    /** {name} anderer Elternteil */
+    sharedHint: 'Der Betrag ist für {name} sichtbar. Frühere Beträge bleiben in der Übersicht erhalten.',
+    save: 'Speichern',
   },
 };

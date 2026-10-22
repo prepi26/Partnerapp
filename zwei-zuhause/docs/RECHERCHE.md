@@ -98,9 +98,13 @@ Hinweis: ohne gerichtliche Billigung (§ 156 Abs. 2 FamFG) nicht vollstreckbar.
 | Hilfe & Beratung (Notfallnummern, Jugendamt-Hinweise) | ✅ gebaut |
 | Zeitraum-Tausch (Ferien) | ✅ gebaut |
 | Fachkraft-Lesezugang (Jugendamt, Beratung, Verfahrensbeistand) | ✅ gebaut (Zustimmung beider Eltern, befristet, widerrufbar, nie das Tagebuch) |
-| Unterhalt Soll/Ist | ⏳ Phase 2 |
-| KI-Umformulierung (Ton) | ⏳ Phase 2 (LLM-Kosten, AV-Vertrag) |
-| Schulferien je Bundesland | ⏳ Phase 2 (Datenquelle nötig) |
+| Unterhalt Soll/Ist (ohne Zahlungsabwicklung – die bräuchte eine BaFin-Erlaubnis) | ✅ gebaut |
+| KI-Umformulierung (Ton) | ❌ bewusst nicht (Entscheidung 22.10.2026) |
+| Schulferien je Bundesland (DE + AT, Quelle OpenHolidays, ODbL) | ✅ gebaut |
+| Kalender-Abo (iPhone, Google, Outlook) | ✅ gebaut |
+| Packliste / Sachen des Kindes bei Übergaben | ✅ gebaut |
+| Solo-Start: Testzeit erst ab Beitritt des anderen | ✅ gebaut |
+| Gemeinsames Fotoalbum | ⏸ offen (Nutzen unklar) |
 | Gewaltschutz-Modus | ⏳ Phase 2 – mit Fachkräften gestalten |
 
 ## Quellen

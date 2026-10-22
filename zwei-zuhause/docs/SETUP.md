@@ -37,7 +37,8 @@ Danach testen: `npx expo start` und mit der Kamera den QR-Code scannen.
 ## 3. Abo „Zwei Zuhause Plus“ – ca. 60 Minuten
 
 **Modell:** Ein Abo für die **ganze Familie** – einer zahlt, beide Eltern nutzen alles. **14 Tage kostenlos** ab dem
-Anlegen der Familie, danach ohne Abo **nur noch lesen** (Lesen, Export, eigene Einträge löschen und Konto löschen
+Beitritt des zweiten Elternteils; wer allein startet, kann die App bis zu 30 Tage kostenlos nutzen. Danach ohne Abo
+**nur noch lesen** (Lesen, Export, eigene Einträge löschen und Konto löschen
 gehen immer – DSGVO). Die Sperre setzt die Datenbank durch (`family_active()` in `schema.sql`), nicht nur die App.
 Fachkräfte zahlen nie.
 
@@ -56,6 +57,10 @@ Fachkräfte zahlen nie.
 5. **RevenueCat-Webhook** (Verlängerungen/Kündigungen): RevenueCat → *Integrations → Webhooks* → URL
    `https://<projekt>.supabase.co/functions/v1/plus`, Authorization-Header `Bearer <REVENUECAT_WEBHOOK_SECRET>`.
 6. Für Android dasselbe mit Google Play (`goog_…`).
+7. **Kalender-Abo** (Umgangsplan im iPhone-/Google-Kalender): zweite Edge Function `calendar` mit dem Inhalt von
+   `supabase/functions/calendar/index.ts` anlegen → **Verify JWT aus** (Kalender-Apps können sich nicht anmelden;
+   geschützt ist die Adresse durch einen langen Zufalls-Token). Per CLI: `supabase functions deploy calendar
+   --no-verify-jwt`. Keine Secrets nötig.
 
 > **Preis:** 7,99 €/Monat bzw. 59,99 €/Jahr pro Familie. Zum Vergleich: OurFamilyWizard 110–200 $/Jahr **pro
 > Elternteil**, Wechselplan 89,98 €/Jahr pro Familie, Copario ab 4,99 €/Monat.
