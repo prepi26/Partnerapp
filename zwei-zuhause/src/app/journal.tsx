@@ -3,14 +3,16 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, confirmDestructive, EmptyState, Fab } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
+import { fmt, useT } from '@/i18n';
 import { formatTimestamp, formatWeekday } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
 
 export default function Journal() {
+  const t = useT();
   const { journal, removeJournal } = useFamily();
 
   const remove = (id: string) =>
-    confirmDestructive('Eintrag löschen?', 'Der Eintrag wird endgültig gelöscht.', 'Löschen', () => {
+    confirmDestructive(t.messages.journal.deleteTitle, t.messages.journal.deleteText, t.common.delete, () => {
       attempt(() => removeJournal(id));
     });
 
@@ -22,17 +24,14 @@ export default function Journal() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           journal.length ? (
-            <Text style={styles.intro}>
-              Halte fest, was passiert ist: Übergaben, Absagen, Stimmung des Kindes. Sachlich, mit Datum – das hilft im
-              Gespräch mit Jugendamt, Beratung oder Anwalt.
-            </Text>
+            <Text style={styles.intro}>{t.messages.journal.intro}</Text>
           ) : null
         }
         ListEmptyComponent={
           <EmptyState
             icon="book-outline"
-            title="Dein privates Protokoll"
-            text="Was du hier schreibst, sieht der andere Elternteil nie. Mit Plus kannst du es als PDF für Beratung oder Anwalt exportieren."
+            title={t.messages.journal.emptyTitle}
+            text={t.messages.journal.emptyText}
           />
         }
         renderItem={({ item }) => (
@@ -40,12 +39,14 @@ export default function Journal() {
             <Card style={{ gap: 6 }}>
               <Text style={styles.day}>{formatWeekday(item.day)}</Text>
               <Text style={styles.text}>{item.text}</Text>
-              <Text style={styles.meta}>Notiert am {formatTimestamp(item.created_at)} · lange drücken zum Löschen</Text>
+              <Text style={styles.meta}>
+                {fmt(t.messages.journal.meta, { time: formatTimestamp(item.created_at) })}
+              </Text>
             </Card>
           </Pressable>
         )}
       />
-      <Fab label="Neuer Eintrag" onPress={() => router.push('/journal-new')} />
+      <Fab label={t.messages.journal.add} onPress={() => router.push('/journal-new')} />
     </View>
   );
 }

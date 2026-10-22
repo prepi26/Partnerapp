@@ -2,76 +2,62 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, IconName } from '@/components/ui';
+import { Dict, fmt, useT } from '@/i18n';
 import { colors, spacing } from '@/theme';
 
-const URGENT: { label: string; number: string; text: string }[] = [
-  { label: 'Notruf', number: '110', text: 'Bei akuter Gefahr für dich oder dein Kind' },
-  { label: 'Hilfetelefon Gewalt gegen Frauen', number: '116016', text: 'Rund um die Uhr, anonym, mehrsprachig' },
-  { label: 'Hilfetelefon Gewalt an Männern', number: '08001239900', text: 'Beratung für betroffene Männer' },
-  { label: 'Nummer gegen Kummer – Kinder & Jugendliche', number: '116111', text: 'Für Kinder und Jugendliche, anonym' },
-  { label: 'Elterntelefon', number: '08001110550', text: 'Kostenlose, anonyme Beratung für Eltern' },
+type HelpTexts = Dict['settings']['help'];
+
+const URGENT: { key: keyof HelpTexts['urgent']; number: string }[] = [
+  { key: 'emergency', number: '110' },
+  { key: 'women', number: '116016' },
+  { key: 'men', number: '08001239900' },
+  { key: 'kids', number: '116111' },
+  { key: 'parents', number: '08001110550' },
 ];
 
-const PLACES: { icon: IconName; title: string; text: string; url?: string }[] = [
-  {
-    icon: 'business-outline',
-    title: 'Jugendamt',
-    text: 'Berät kostenlos bei Trennung, Sorge und Umgang (§§ 17, 18 SGB VIII), hilft bei einer Elternvereinbarung und vermittelt begleiteten Umgang. Zuständig ist das Jugendamt am Wohnort des Kindes.',
-  },
-  {
-    icon: 'people-outline',
-    title: 'Erziehungs- und Familienberatung',
-    text: 'Kostenlos und vertraulich, auch online – für Eltern und Kinder.',
-    url: 'https://www.bke-beratung.de',
-  },
-  {
-    icon: 'git-merge-outline',
-    title: 'Mediation',
-    text: 'Eine neutrale Person hilft euch, selbst eine Lösung zu finden. Oft schneller und günstiger als ein Gerichtsverfahren.',
-  },
-  {
-    icon: 'briefcase-outline',
-    title: 'Fachanwalt für Familienrecht',
-    text: 'Für Fragen zu Sorgerecht, Umgang und Unterhalt im Einzelfall. Bei geringem Einkommen gibt es Beratungshilfe.',
-  },
+const PLACES: { key: keyof HelpTexts['places']; icon: IconName; url?: string }[] = [
+  { key: 'youthOffice', icon: 'business-outline' },
+  { key: 'counseling', icon: 'people-outline', url: 'https://www.bke-beratung.de' },
+  { key: 'mediation', icon: 'git-merge-outline' },
+  { key: 'lawyer', icon: 'briefcase-outline' },
 ];
 
 export default function Help() {
+  const h = useT().settings.help;
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.section}>Sofort Hilfe</Text>
+      <Text style={styles.section}>{h.urgentTitle}</Text>
       {URGENT.map((u) => (
         <Pressable
           key={u.number}
           accessibilityRole="button"
-          accessibilityLabel={`${u.label} anrufen`}
+          accessibilityLabel={fmt(h.call, { label: h.urgent[u.key].label })}
           onPress={() => Linking.openURL(`tel:${u.number}`)}
           style={({ pressed }) => [styles.call, pressed && { opacity: 0.7 }]}
         >
           <Ionicons name="call" size={20} color={colors.white} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.callTitle}>{u.label}</Text>
-            <Text style={styles.callText}>{u.text}</Text>
+            <Text style={styles.callTitle}>{h.urgent[u.key].label}</Text>
+            <Text style={styles.callText}>{h.urgent[u.key].text}</Text>
           </View>
           <Text style={styles.callNumber}>{u.number.replace(/^0800(\d{3})(\d+)$/, '0800 $1 $2')}</Text>
         </Pressable>
       ))}
 
-      <Text style={styles.section}>Wenn du Angst vor dem anderen Elternteil hast</Text>
+      <Text style={styles.section}>{h.afraidTitle}</Text>
       <Card style={{ gap: spacing.sm }}>
-        <Tip text="Deine Sicherheit geht vor. Eine gemeinsame App ist dann nicht der richtige Weg – hol dir zuerst Unterstützung (Hilfetelefon oben, rund um die Uhr)." />
-        <Tip text="Das Jugendamt kann begleiteten Umgang oder Übergaben über Dritte organisieren. Das Familiengericht kann nach dem Gewaltschutzgesetz Kontakt- und Näherungsverbote aussprechen." />
-        <Tip text="Zwei Zuhause speichert keinen Standort. Lesebestätigungen kannst du in den Einstellungen ausschalten, die App-Sperre schützt Nachrichten und Tagebuch." />
-        <Tip text="Nachrichten lassen sich nicht löschen – auch nicht vom anderen Elternteil. Bedrohungen bleiben so dokumentiert." />
+        {h.afraidTips.map((tip) => (
+          <Tip key={tip} text={tip} />
+        ))}
       </Card>
 
-      <Text style={styles.section}>Beratung & Begleitung</Text>
+      <Text style={styles.section}>{h.placesTitle}</Text>
       {PLACES.map((p) => (
-        <Card key={p.title} style={styles.place}>
+        <Card key={p.key} style={styles.place}>
           <Ionicons name={p.icon} size={24} color={colors.primary} />
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={styles.placeTitle}>{p.title}</Text>
-            <Text style={styles.placeText}>{p.text}</Text>
+            <Text style={styles.placeTitle}>{h.places[p.key].title}</Text>
+            <Text style={styles.placeText}>{h.places[p.key].text}</Text>
             {p.url ? (
               <Text style={styles.link} onPress={() => Linking.openURL(p.url!)}>
                 {p.url.replace('https://', '')}
@@ -81,18 +67,14 @@ export default function Help() {
         </Card>
       ))}
 
-      <Text style={styles.section}>Gut zu wissen</Text>
+      <Text style={styles.section}>{h.goodToKnowTitle}</Text>
       <Card style={{ gap: spacing.sm }}>
-        <Tip text="Euer Kind hat ein eigenes Recht auf Umgang mit beiden Eltern. Sprecht gut voneinander – Kinder hören mehr, als man denkt." />
-        <Tip text="Alltägliches entscheidet, wer das Kind gerade betreut. Wichtige Fragen (Schule, Operation, Auslandsreise, Umzug) entscheidet ihr bei gemeinsamer Sorge zusammen." />
-        <Tip text="Eine Elternvereinbarung bindet euch nur gegenseitig. Vollstreckbar wird sie erst, wenn das Familiengericht sie billigt." />
-        <Tip text="Nachrichten-Verläufe zeigen, wer was wann geschrieben hat – nicht, wer recht hat. Fachkräfte achten vor allem darauf, ob ihr im Sinne des Kindes kooperiert." />
+        {h.goodToKnowTips.map((tip) => (
+          <Tip key={tip} text={tip} />
+        ))}
       </Card>
 
-      <Text style={styles.disclaimer}>
-        Zwei Zuhause gibt allgemeine Informationen und ersetzt keine Rechtsberatung. Für deinen Einzelfall wende dich an das
-        Jugendamt, eine Beratungsstelle oder eine Fachanwältin bzw. einen Fachanwalt für Familienrecht.
-      </Text>
+      <Text style={styles.disclaimer}>{h.disclaimer}</Text>
     </ScrollView>
   );
 }

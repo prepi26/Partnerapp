@@ -1019,9 +1019,9 @@ end;
 $$;
 
 -- ───────────── Push-Mitteilungen ─────────────
--- Jedes Handy meldet sein Expo-Push-Token. Neue Nachrichten, Anfragen und Antworten schicken über pg_net
--- eine Mitteilung an den anderen Elternteil (Expo Push Service, exp.host). Bewusst ohne Inhalt –
--- Mitteilungen stehen auf dem Sperrbildschirm und laufen über Expo und Apple/Google.
+-- Jedes Handy meldet sein Expo-Push-Token und seine App-Sprache. Neue Nachrichten, Anfragen und Antworten schicken über
+-- pg_net eine Mitteilung an den anderen Elternteil (Expo Push Service, exp.host) – in dessen Sprache. Bewusst ohne
+-- Inhalt: Mitteilungen stehen auf dem Sperrbildschirm und laufen über Expo und Apple/Google.
 
 create extension if not exists pg_net with schema extensions;
 
@@ -1030,11 +1030,13 @@ create table if not exists public.push_tokens (
   user_id uuid not null references auth.users (id) on delete cascade,
   updated_at timestamptz not null default now()
 );
+alter table public.push_tokens add column if not exists lang text not null default 'de';
 create index if not exists push_tokens_user on public.push_tokens (user_id);
 -- Kein direkter Zugriff: nur über die beiden Funktionen unten.
 alter table public.push_tokens enable row level security;
 
-create or replace function public.register_push_token(p_token text)
+drop function if exists public.register_push_token(text);
+create or replace function public.register_push_token(p_token text, p_lang text default 'de')
 returns void
 language plpgsql
 security definer
@@ -1047,9 +1049,9 @@ begin
   if p_token !~ '^Expo(nent)?PushToken\[.+\]$' then
     raise exception 'invalid_token';
   end if;
-  insert into public.push_tokens (token, user_id, updated_at)
-  values (p_token, auth.uid(), now())
-  on conflict (token) do update set user_id = excluded.user_id, updated_at = now();
+  insert into public.push_tokens (token, user_id, lang, updated_at)
+  values (p_token, auth.uid(), coalesce(nullif(left(p_lang, 5), ''), 'de'), now())
+  on conflict (token) do update set user_id = excluded.user_id, lang = excluded.lang, updated_at = now();
 end;
 $$;
 
@@ -1062,13 +1064,50 @@ as $$
   delete from public.push_tokens where token = p_token and user_id = auth.uid();
 $$;
 
-revoke execute on function public.register_push_token(text) from public, anon;
+revoke execute on function public.register_push_token(text, text) from public, anon;
 revoke execute on function public.unregister_push_token(text) from public, anon;
-grant execute on function public.register_push_token(text) to authenticated;
+grant execute on function public.register_push_token(text, text) to authenticated;
 grant execute on function public.unregister_push_token(text) to authenticated;
 
--- Schickt eine Mitteilung an alle Handys des anderen Elternteils (aus Sicht von p_sender).
-create or replace function public.notify_other(p_family uuid, p_sender uuid, p_title text, p_body text, p_url text)
+-- Übersetzte Mitteilungstexte (Inhalt am Ende dieser Datei, erzeugt aus der App: scripts/push-texts.ts).
+create table if not exists public.push_texts (
+  lang text not null,
+  key text not null,
+  text text not null,
+  primary key (lang, key)
+);
+alter table public.push_texts enable row level security;
+
+-- Text in der gewünschten Sprache (sonst Deutsch) mit eingesetzten Platzhaltern {name}, {label}, {title}.
+create or replace function public.push_text(p_lang text, p_key text, p_vars jsonb)
+returns text
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_text text;
+  v_var record;
+begin
+  select coalesce(
+           (select text from public.push_texts where lang = p_lang and key = p_key),
+           (select text from public.push_texts where lang = 'de' and key = p_key),
+           ''
+         )
+    into v_text;
+  for v_var in select * from jsonb_each_text(coalesce(p_vars, '{}'::jsonb)) loop
+    v_text := replace(v_text, '{' || v_var.key || '}', coalesce(v_var.value, ''));
+  end loop;
+  return v_text;
+end;
+$$;
+
+-- Schickt eine Mitteilung an alle Handys des anderen Elternteils (aus Sicht von p_sender), je Handy in dessen Sprache.
+drop function if exists public.notify_other(uuid, uuid, text, text, text);
+create or replace function public.notify_other(
+  p_family uuid, p_sender uuid, p_title_key text, p_body_key text, p_vars jsonb, p_url text
+)
 returns void
 language plpgsql
 security definer
@@ -1076,21 +1115,28 @@ set search_path = public
 as $$
 declare
   v_other uuid;
+  v_name text;
   v_messages jsonb;
 begin
-  select case when parent_a = p_sender then parent_b else parent_a end
-    into v_other
+  select case when parent_a = p_sender then parent_b else parent_a end,
+         case when parent_a = p_sender then name_a else name_b end
+    into v_other, v_name
     from public.families
    where id = p_family;
   if v_other is null or p_sender is null then
     return;
   end if;
   select jsonb_agg(jsonb_build_object(
-           'to', token, 'title', p_title, 'body', p_body, 'sound', 'default',
+           'to', t.token,
+           'title', public.push_text(t.lang, p_title_key,
+                      p_vars || jsonb_build_object('name',
+                        coalesce(nullif(trim(v_name), ''), public.push_text(t.lang, 'otherParent', '{}'::jsonb)))),
+           'body', public.push_text(t.lang, p_body_key, p_vars),
+           'sound', 'default',
            'data', jsonb_build_object('url', p_url)))
     into v_messages
-    from public.push_tokens
-   where user_id = v_other;
+    from public.push_tokens t
+   where t.user_id = v_other;
   if v_messages is null then
     return;
   end if;
@@ -1105,7 +1151,7 @@ exception when others then
 end;
 $$;
 
-revoke execute on function public.notify_other(uuid, uuid, text, text, text) from public, anon, authenticated;
+revoke execute on function public.notify_other(uuid, uuid, text, text, jsonb, text) from public, anon, authenticated;
 
 create or replace function public.push_on_change()
 returns trigger
@@ -1114,78 +1160,55 @@ security definer
 set search_path = public
 as $$
 declare
-  v_sender uuid := auth.uid();
-  v_name text;
   v_title text;
-  v_body text := 'Tipp hier, um es anzusehen.';
+  v_body text := 'tapToOpen';
+  v_vars jsonb := '{}'::jsonb;
   v_url text := '/';
 begin
-  select case when parent_a = v_sender then name_a else name_b end
-    into v_name
-    from public.families
-   where id = new.family_id;
-  v_name := coalesce(nullif(trim(v_name), ''), 'Der andere Elternteil');
-
   if tg_table_name = 'messages' then
-    v_title := '💬 Neue Nachricht von ' || v_name;
-    v_body := 'Tipp hier, um sie zu lesen.';
+    v_title := 'messageTitle';
+    v_body := 'messageBody';
     v_url := '/messages';
   elsif tg_table_name = 'schedule_changes' then
     v_url := '/calendar';
-    if tg_op = 'INSERT' then
-      v_title := '📅 ' || v_name || ' schlägt eine Änderung im Umgang vor';
-    elsif new.status = 'accepted' then
-      v_title := '✅ ' || v_name || ' hat deinem Vorschlag zugestimmt';
-    else
-      v_title := '❌ ' || v_name || ' hat deinen Vorschlag abgelehnt';
-    end if;
+    v_title := case when tg_op = 'INSERT' then 'changeNew' when new.status = 'accepted' then 'changeAccepted' else 'changeDeclined' end;
   elsif tg_table_name = 'expenses' then
     v_url := '/expenses';
     if tg_op = 'INSERT' then
-      v_title := '💶 ' || v_name || ' hat eine Ausgabe eingetragen';
-      v_body := 'Bitte prüfen und bestätigen.';
-    elsif new.status = 'confirmed' then
-      v_title := '✅ ' || v_name || ' hat eine Ausgabe bestätigt';
+      v_title := 'expenseNew';
+      v_body := 'expenseNewBody';
     else
-      v_title := '❌ ' || v_name || ' hat eine Ausgabe abgelehnt';
+      v_title := case when new.status = 'confirmed' then 'expenseConfirmed' else 'expenseDisputed' end;
     end if;
   elsif tg_table_name = 'decisions' then
     v_url := '/decisions';
-    if tg_op = 'INSERT' then
-      v_title := '🤝 ' || v_name || ' bittet um eine Entscheidung';
-    elsif new.status = 'agreed' then
-      v_title := '✅ ' || v_name || ' hat zugestimmt';
-    else
-      v_title := '❌ ' || v_name || ' hat nicht zugestimmt';
-    end if;
+    v_title := case when tg_op = 'INSERT' then 'decisionNew' when new.status = 'agreed' then 'decisionAgreed' else 'decisionRejected' end;
   elsif tg_table_name = 'handovers' then
     v_url := '/handovers';
-    if tg_op = 'INSERT' then
-      v_title := '🚗 ' || v_name || ' hat eine Übergabe eingetragen';
-    else
-      v_title := '🚗 ' || v_name || ' hat auf deinen Übergabe-Eintrag geantwortet';
-    end if;
+    v_title := case when tg_op = 'INSERT' then 'handoverNew' else 'handoverReply' end;
   elsif tg_table_name = 'agreements' then
     v_url := '/agreement';
     if tg_op = 'INSERT' then
-      v_title := '📝 ' || v_name || ' hat die Elternvereinbarung bearbeitet';
-      v_body := 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.';
+      v_title := 'agreementNew';
+      v_body := 'agreementNewBody';
     else
-      v_title := '📝 ' || v_name || ' hat der Elternvereinbarung zugestimmt';
+      v_title := 'agreementAccepted';
     end if;
-  elsif tg_table_name = 'documents' then
-    v_url := '/documents';
-    v_title := '📄 ' || v_name || ' hat ein Dokument geteilt';
-    v_body := new.title;
   elsif tg_table_name = 'professional_access' then
     v_url := '/professionals';
-    v_title := '🔐 ' || v_name || ' möchte eine Fachkraft einladen';
-    v_body := new.label || ' – bitte zustimmen oder ablehnen.';
+    v_title := 'professionalInvite';
+    v_body := 'professionalInviteBody';
+    v_vars := jsonb_build_object('label', new.label);
+  elsif tg_table_name = 'documents' then
+    v_url := '/documents';
+    v_title := 'documentNew';
+    v_body := 'documentNewBody';
+    v_vars := jsonb_build_object('title', new.title);
   else
     return null;
   end if;
 
-  perform public.notify_other(new.family_id, v_sender, v_title, v_body, v_url);
+  perform public.notify_other(new.family_id, auth.uid(), v_title, v_body, v_vars, v_url);
   return null;
 end;
 $$;
@@ -1221,3 +1244,262 @@ create trigger push_on_answer after update on public.agreements
   for each row when ((old.accepted_a_at is null and new.accepted_a_at is not null)
                   or (old.accepted_b_at is null and new.accepted_b_at is not null))
   execute function public.push_on_change();
+
+-- ───────────── Übersetzte Mitteilungstexte ─────────────
+-- PUSH_TEXTS_BEGIN (erzeugt mit: npx tsx scripts/push-texts.ts – nicht von Hand ändern)
+insert into public.push_texts (lang, key, text) values
+  ('de', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('de', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('de', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('de', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('de', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('de', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('de', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('de', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('de', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('de', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('de', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('de', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('de', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('de', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('de', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('de', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('de', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('de', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('de', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('de', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('de', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('de', 'documentNewBody', '{title}'),
+  ('de', 'otherParent', 'Der andere Elternteil'),
+  ('en', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('en', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('en', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('en', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('en', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('en', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('en', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('en', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('en', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('en', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('en', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('en', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('en', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('en', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('en', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('en', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('en', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('en', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('en', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('en', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('en', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('en', 'documentNewBody', '{title}'),
+  ('en', 'otherParent', 'Der andere Elternteil'),
+  ('tr', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('tr', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('tr', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('tr', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('tr', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('tr', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('tr', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('tr', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('tr', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('tr', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('tr', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('tr', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('tr', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('tr', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('tr', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('tr', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('tr', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('tr', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('tr', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('tr', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('tr', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('tr', 'documentNewBody', '{title}'),
+  ('tr', 'otherParent', 'Der andere Elternteil'),
+  ('ar', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('ar', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('ar', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('ar', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('ar', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('ar', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('ar', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('ar', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('ar', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('ar', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('ar', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('ar', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('ar', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('ar', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('ar', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('ar', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('ar', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('ar', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('ar', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('ar', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('ar', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('ar', 'documentNewBody', '{title}'),
+  ('ar', 'otherParent', 'Der andere Elternteil'),
+  ('ru', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('ru', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('ru', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('ru', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('ru', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('ru', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('ru', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('ru', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('ru', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('ru', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('ru', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('ru', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('ru', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('ru', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('ru', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('ru', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('ru', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('ru', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('ru', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('ru', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('ru', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('ru', 'documentNewBody', '{title}'),
+  ('ru', 'otherParent', 'Der andere Elternteil'),
+  ('uk', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('uk', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('uk', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('uk', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('uk', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('uk', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('uk', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('uk', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('uk', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('uk', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('uk', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('uk', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('uk', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('uk', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('uk', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('uk', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('uk', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('uk', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('uk', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('uk', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('uk', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('uk', 'documentNewBody', '{title}'),
+  ('uk', 'otherParent', 'Der andere Elternteil'),
+  ('pl', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('pl', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('pl', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('pl', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('pl', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('pl', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('pl', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('pl', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('pl', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('pl', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('pl', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('pl', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('pl', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('pl', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('pl', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('pl', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('pl', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('pl', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('pl', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('pl', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('pl', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('pl', 'documentNewBody', '{title}'),
+  ('pl', 'otherParent', 'Der andere Elternteil'),
+  ('sq', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('sq', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('sq', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('sq', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('sq', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('sq', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('sq', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('sq', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('sq', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('sq', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('sq', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('sq', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('sq', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('sq', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('sq', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('sq', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('sq', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('sq', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('sq', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('sq', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('sq', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('sq', 'documentNewBody', '{title}'),
+  ('sq', 'otherParent', 'Der andere Elternteil'),
+  ('ro', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('ro', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('ro', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('ro', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('ro', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('ro', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('ro', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('ro', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('ro', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('ro', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('ro', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('ro', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('ro', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('ro', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('ro', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('ro', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('ro', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('ro', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('ro', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('ro', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('ro', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('ro', 'documentNewBody', '{title}'),
+  ('ro', 'otherParent', 'Der andere Elternteil'),
+  ('sr', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('sr', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('sr', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('sr', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('sr', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('sr', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('sr', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('sr', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('sr', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('sr', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('sr', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('sr', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('sr', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('sr', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('sr', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('sr', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('sr', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('sr', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('sr', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('sr', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('sr', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('sr', 'documentNewBody', '{title}'),
+  ('sr', 'otherParent', 'Der andere Elternteil'),
+  ('fr', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
+  ('fr', 'messageTitle', '💬 Neue Nachricht von {name}'),
+  ('fr', 'messageBody', 'Tipp hier, um sie zu lesen.'),
+  ('fr', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
+  ('fr', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
+  ('fr', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
+  ('fr', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
+  ('fr', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
+  ('fr', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
+  ('fr', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
+  ('fr', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
+  ('fr', 'decisionAgreed', '✅ {name} hat zugestimmt'),
+  ('fr', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
+  ('fr', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
+  ('fr', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
+  ('fr', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
+  ('fr', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
+  ('fr', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
+  ('fr', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
+  ('fr', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
+  ('fr', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('fr', 'documentNewBody', '{title}'),
+  ('fr', 'otherParent', 'Der andere Elternteil')
+on conflict (lang, key) do update set text = excluded.text;
+-- PUSH_TEXTS_END

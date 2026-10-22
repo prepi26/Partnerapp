@@ -7,6 +7,7 @@ import { ParentTag } from '@/components/ParentTag';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { ParentKey } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { addDays, parseISO, toISO, today } from '@/lib/dates';
 import { acceptedChanges, dayInfo, other } from '@/lib/schedule';
 import { close } from '@/lib/nav';
@@ -15,6 +16,7 @@ import { colors, spacing } from '@/theme';
 const MAX_DAYS = 42;
 
 export default function ChangeNew() {
+  const t = useT();
   const params = useLocalSearchParams<{ day?: string }>();
   const { family, me, nameOf, otherName, otherJoined, schedule_changes, proposeChanges } = useFamily();
   const [day, setDay] = useState(params.day && /^\d{4}-\d{2}-\d{2}$/.test(params.day) ? params.day : toISO(today()));
@@ -44,11 +46,11 @@ export default function ChangeNew() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.chips}>
-          <Chip label="Ein Tag" selected={!range} onPress={() => setRange(false)} />
-          <Chip label="Zeitraum (z. B. Ferien)" tint="accent" selected={range} onPress={() => setRange(true)} />
+          <Chip label={t.calendar.changeNew.oneDay} selected={!range} onPress={() => setRange(false)} />
+          <Chip label={t.calendar.changeNew.range} tint="accent" selected={range} onPress={() => setRange(true)} />
         </View>
         <DateField
-          label={range ? 'Von' : 'Tag'}
+          label={range ? t.calendar.changeNew.from : t.calendar.changeNew.day}
           value={day}
           onChange={(d) => {
             setDay(d);
@@ -57,44 +59,44 @@ export default function ChangeNew() {
         />
         {range ? (
           <>
-            <DateField label="Bis einschließlich" value={until} onChange={setUntil} minimumDate={parseISO(day)} />
+            <DateField label={t.calendar.changeNew.until} value={until} onChange={setUntil} minimumDate={parseISO(day)} />
             <Text style={styles.text}>
-              {days.length} {days.length === 1 ? 'Tag' : 'Tage'}
-              {days.length >= MAX_DAYS ? ` (höchstens ${MAX_DAYS} auf einmal)` : ''}
+              {fmt(days.length === 1 ? t.calendar.changeNew.daysOne : t.calendar.changeNew.daysOther, { n: days.length })}
+              {days.length >= MAX_DAYS ? ` (${fmt(t.calendar.changeNew.maxDays, { max: MAX_DAYS })})` : ''}
             </Text>
           </>
         ) : null}
         <View style={{ gap: spacing.xs }}>
-          <Label>Laut Plan</Label>
+          <Label>{t.calendar.changeNew.planned}</Label>
           {current ? (
-            <ParentTag parent={current} name={current === me ? 'bei dir' : `bei ${nameOf(current)}`} />
+            <ParentTag parent={current} name={current === me ? t.calendar.changeNew.atYou : fmt(t.calendar.changeNew.atName, { name: nameOf(current) })} />
           ) : (
-            <Text style={styles.text}>Kein Plan für diesen Tag</Text>
+            <Text style={styles.text}>{t.calendar.changeNew.noPlan}</Text>
           )}
         </View>
-        <Label>Das Kind soll sein bei</Label>
+        <Label>{t.calendar.changeNew.childShouldBe}</Label>
         <View style={styles.chips}>
-          <Chip label="mir" selected={parent === me} onPress={() => setParent(me)} />
+          <Chip label={t.calendar.changeNew.me} selected={parent === me} onPress={() => setParent(me)} />
           <Chip label={otherName} tint="accent" selected={parent !== me} onPress={() => setParent(other(me))} />
         </View>
         <Field
-          label="Begründung (optional)"
+          label={t.calendar.changeNew.noteLabel}
           value={note}
           onChangeText={setNote}
-          placeholder="z. B. Geburtstag der Oma, Dienstreise"
+          placeholder={t.calendar.changeNew.notePlaceholder}
           multiline
           maxLength={500}
         />
         <PrimaryButton
-          title={busy ? 'Sende…' : otherJoined ? 'Vorschlag senden' : 'Eintragen'}
+          title={busy ? t.common.sending : otherJoined ? t.calendar.changeNew.send : t.calendar.changeNew.enter}
           icon="send"
           disabled={busy || (!range && parent === current) || days.length === 0}
           onPress={save}
         />
         <Text style={styles.text}>
           {otherJoined
-            ? `${otherName} muss zustimmen. Erst dann gilt die Änderung – beides wird mit Datum festgehalten.`
-            : `Solange ${otherName} nicht verbunden ist, kannst du den Vorschlag selbst annehmen.`}
+            ? fmt(t.calendar.changeNew.needsConsent, { name: otherName })
+            : fmt(t.calendar.changeNew.notJoined, { name: otherName })}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

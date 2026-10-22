@@ -6,11 +6,13 @@ import { ExpenseStatus } from '@/components/ExpenseStatus';
 import { Card, EmptyState, Fab, GradientHeader } from '@/components/ui';
 import { useFamily } from '@/data/store';
 import { Expense } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { formatShort } from '@/lib/dates';
 import { balanceAB, categoryOf, formatMoney, shareOf } from '@/lib/money';
 import { colors, spacing } from '@/theme';
 
 export default function Expenses() {
+  const t = useT();
   const { expenses, me, otherName, nameOf, userId } = useFamily();
   const raw = balanceAB(expenses);
   const balance = me === 'a' ? raw : -raw;
@@ -18,7 +20,7 @@ export default function Expenses() {
 
   return (
     <View style={{ flex: 1 }}>
-      <GradientHeader title="Kosten" subtitle="Ausgaben fürs Kind teilen" />
+      <GradientHeader title={t.money.list.title} subtitle={t.money.list.subtitle} />
       <FlatList
         data={expenses}
         keyExtractor={(e) => e.id}
@@ -26,26 +28,31 @@ export default function Expenses() {
         ListHeaderComponent={
           <Card style={styles.balance}>
             <Text style={styles.balanceLabel}>
-              {balance === 0 ? 'Ihr seid quitt' : balance > 0 ? `${otherName} schuldet dir` : `Du schuldest ${otherName}`}
+              {balance === 0
+                ? t.money.list.even
+                : balance > 0
+                  ? fmt(t.money.list.owesYou, { name: otherName })
+                  : fmt(t.money.list.youOwe, { name: otherName })}
             </Text>
             <Text style={styles.balanceValue}>{formatMoney(Math.abs(balance))}</Text>
             <Text style={styles.balanceHint}>
-              {open ? `Davon ${open} noch nicht bestätigt. ` : ''}Abgelehnte Einträge zählen nicht.
+              {open ? fmt(open === 1 ? t.money.list.openOne : t.money.list.openOther, { n: open }) : ''}
+              {t.money.list.ignoredHint}
             </Text>
           </Card>
         }
         ListEmptyComponent={
           <EmptyState
             icon="receipt-outline"
-            title="Noch keine Ausgaben"
-            text="Trag ein, was du fürs Kind bezahlt hast – Schuhe, Klassenfahrt, Kita. Der Saldo rechnet sich selbst."
+            title={t.money.list.emptyTitle}
+            text={t.money.list.emptyText}
           />
         }
         renderItem={({ item }) => (
           <Row expense={item} mine={item.created_by === userId} me={me} nameOf={nameOf} />
         )}
       />
-      <Fab label="Neue Ausgabe" onPress={() => router.push('/expense-new')} />
+      <Fab label={t.money.list.add} onPress={() => router.push('/expense-new')} />
     </View>
   );
 }
@@ -61,12 +68,16 @@ function Row({
   me: 'a' | 'b';
   nameOf: (k: 'a' | 'b') => string;
 }) {
-  const cat = categoryOf(e.category);
-  const payer = e.paid_by === me ? 'Du' : nameOf(e.paid_by);
+  const t = useT();
+  const cat = categoryOf(e.category, t);
+  const mePaid = e.paid_by === me;
+  const payer = { name: nameOf(e.paid_by) };
   const detail =
     e.kind === 'payment'
-      ? `${payer} ${e.paid_by === me ? 'hast' : 'hat'} ausgeglichen`
-      : `${payer} ${e.paid_by === me ? 'hast' : 'hat'} bezahlt · dein Anteil ${formatMoney(shareOf(e, me))}`;
+      ? mePaid
+        ? t.money.list.paymentMe
+        : fmt(t.money.list.paymentOther, payer)
+      : `${mePaid ? t.money.list.paidMe : fmt(t.money.list.paidOther, payer)} · ${fmt(t.money.list.yourShare, { amount: formatMoney(shareOf(e, me)) })}`;
   return (
     <Pressable
       accessibilityRole="button"

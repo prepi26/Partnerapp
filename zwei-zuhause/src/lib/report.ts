@@ -12,13 +12,27 @@ import {
   ScheduleChange,
 } from '@/data/types';
 
-import { AGREEMENT_NOTE, AGREEMENT_SECTIONS } from './agreement';
-import { addDays, formatDate, formatTimestamp, MONTHS, parseISO, toISO } from './dates';
-import { decisionCategory } from './decisions';
-import { documentCategory } from './documentCategories';
-import { handoverLabel } from './handovers';
-import { balanceAB, categoryOf, formatMoney, needOf, shareOf } from './money';
-import { acceptedChanges, dayInfo, handoverWhere, MODELS } from './schedule';
+import { de } from '@/i18n/de';
+
+import { agreementSections } from './agreement';
+import { addDays, formatDate as formatDateIn, formatTimestamp, parseISO, toISO } from './dates';
+import { decisionCategory as decisionCategoryIn } from './decisions';
+import { documentCategory as documentCategoryIn } from './documentCategories';
+import { handoverLabel as handoverLabelIn } from './handovers';
+import { balanceAB, categoryOf as categoryOfIn, formatMoney, needOf as needOfIn, shareOf } from './money';
+import { acceptedChanges, dayInfo, handoverWhere as handoverWhereIn, modelTitle } from './schedule';
+
+
+// Berichte sind immer deutsch – sie gehen an deutsche Ämter und Beratungsstellen.
+const formatDate = (d: ISODate | Date) => formatDateIn(d, de);
+const handoverWhere = (f: Family) => handoverWhereIn(f, de);
+const decisionCategory = (k: string) => decisionCategoryIn(k, de);
+const documentCategory = (k: FamilyDocument['category']) => documentCategoryIn(k, de);
+const handoverLabel = (h: Handover) => handoverLabelIn(h, de);
+const categoryOf = (k: string) => categoryOfIn(k, de);
+const needOf = (k: Expense['need']) => needOfIn(k, de);
+const AGREEMENT_SECTIONS = agreementSections(de);
+const AGREEMENT_NOTE = de.lib.agreementNote;
 
 export type ReportSection =
   | 'schedule'
@@ -76,7 +90,7 @@ function nightsPerMonth(input: ReportInput) {
   const rows = new Map<string, { a: number; b: number; none: number }>();
   const end = parseISO(input.to);
   for (let d = parseISO(input.from); d <= end; d = addDays(d, 1)) {
-    const key = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    const key = `${de.common.dates.months[d.getMonth()]} ${d.getFullYear()}`;
     const row = rows.get(key) ?? { a: 0, b: 0, none: 0 };
     const parent = dayInfo(input.family, accepted, new Map(), d).parent;
     if (parent) row[parent]++;
@@ -148,7 +162,7 @@ export function buildReportHtml(input: ReportInput): string {
     totals.b += n.b;
     totals.none += n.none;
   }
-  const model = MODELS.find((m) => m.key === family.schedule_model);
+  const model = { title: modelTitle(family.schedule_model, de) };
 
   if (input.mode === 'kurz') {
     const ho = { on_time: 0, late: 0, missed: 0, confirmed: 0, disputed: 0 };

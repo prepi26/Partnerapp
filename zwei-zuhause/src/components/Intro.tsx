@@ -4,39 +4,22 @@ import { ReactNode, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useT } from '@/i18n';
 import { colors, gradient, radius, spacing } from '@/theme';
 
 const KEY = 'zweizuhause.introSeen';
 
-const SLIDES = [
-  {
-    emoji: '🏠🏠',
-    title: 'Zwei Zuhause, ein Kind',
-    text: 'Umgang, Kosten und Absprachen an einem Ort – sachlich, nachvollziehbar und für beide Eltern gleich.',
-  },
-  {
-    emoji: '👀',
-    title: 'Was beide sehen',
-    text: 'Kalender, Kosten, Nachrichten, Entscheidungen, Übergaben und Dokumente sieht ihr beide. Dein Tagebuch sieht nur du.',
-  },
-  {
-    emoji: '🔒',
-    title: 'Nichts verschwindet',
-    text: 'Nachrichten und Übergabe-Einträge lassen sich nicht ändern oder löschen. Das schützt euch beide. Schreib so, als würde eine Beraterin mitlesen.',
-  },
-  {
-    emoji: '🤝',
-    title: 'Hilfe, wenn es schwer wird',
-    text: 'Jugendamt und Beratung können mit eurer Zustimmung mitlesen. Hast du Angst vor dem anderen Elternteil, hol dir zuerst Hilfe: Hilfetelefon 116 016, rund um die Uhr. Mehr unter Mehr → Hilfe.',
-  },
-];
+/** Emojis der vier Seiten; Titel und Texte im Wörterbuch (t.auth.intro.slides). */
+const SLIDE_EMOJI = ['🏠🏠', '👀', '🔒', '🤝'];
 
 /** Die vier Einführungsseiten. */
 export function Intro({ onDone }: { onDone: () => void }) {
+  const t = useT();
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0);
-  const slide = SLIDES[page];
-  const last = page === SLIDES.length - 1;
+  const slides = t.auth.intro.slides.map((s, i) => ({ ...s, emoji: SLIDE_EMOJI[i] }));
+  const slide = slides[page];
+  const last = page === slides.length - 1;
 
   return (
     <LinearGradient
@@ -48,7 +31,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
       <View style={styles.top}>
         {!last ? (
           <Pressable accessibilityRole="button" onPress={onDone} hitSlop={12}>
-            <Text style={styles.skip}>Überspringen</Text>
+            <Text style={styles.skip}>{t.auth.intro.skip}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -58,7 +41,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
         <Text style={styles.text}>{slide.text}</Text>
       </View>
       <View style={styles.dots}>
-        {SLIDES.map((s, i) => (
+        {slides.map((s, i) => (
           <View key={s.title} style={[styles.dot, i === page && styles.dotActive]} />
         ))}
       </View>
@@ -69,7 +52,7 @@ export function Intro({ onDone }: { onDone: () => void }) {
           onPress={() => (last ? onDone() : setPage(page + 1))}
           style={({ pressed }) => [styles.button, pressed && { opacity: 0.85 }]}
         >
-          <Text style={styles.buttonText}>{last ? 'Los geht’s' : 'Weiter'}</Text>
+          <Text style={styles.buttonText}>{last ? t.auth.intro.start : t.auth.intro.next}</Text>
         </Pressable>
       </View>
     </LinearGradient>

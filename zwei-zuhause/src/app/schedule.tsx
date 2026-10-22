@@ -7,14 +7,16 @@ import { parentColor } from '@/components/ParentTag';
 import { Card, Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { ParentKey, ScheduleModel } from '@/data/types';
-import { addDays, parseISO, WEEKDAYS_SHORT } from '@/lib/dates';
-import { MODELS, normalizeTime, plannedParent } from '@/lib/schedule';
+import { fmt, useT } from '@/i18n';
+import { addDays, parseISO } from '@/lib/dates';
+import { models, normalizeTime, plannedParent } from '@/lib/schedule';
 import { close } from '@/lib/nav';
 import { colors, radius, spacing } from '@/theme';
 
 const TIMES = ['08:00', '15:00', '16:00', '17:00', '18:00', '19:00'];
 
 export default function Schedule() {
+  const t = useT();
   const { family, nameOf, otherJoined, otherName, updateFamily } = useFamily();
   const [model, setModel] = useState<ScheduleModel>(family.schedule_model);
   const [start, setStart] = useState(family.schedule_start);
@@ -48,7 +50,7 @@ export default function Schedule() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={{ gap: spacing.sm }}>
-        {MODELS.map((m) => {
+        {models(t).map((m) => {
           const chosen = m.key === model;
           return (
             <Pressable
@@ -74,22 +76,20 @@ export default function Schedule() {
 
       {model !== 'none' ? (
         <>
-          <DateField label="Plan beginnt am" value={start} onChange={setStart} />
-          <Label>An diesem Tag ist das Kind bei</Label>
+          <DateField label={t.calendar.schedule.start} value={start} onChange={setStart} />
+          <Label>{t.calendar.schedule.firstParent}</Label>
           <View style={styles.chips}>
             <Chip label={nameOf('a')} selected={first === 'a'} onPress={() => setFirst('a')} />
             <Chip label={nameOf('b')} tint="accent" selected={first === 'b'} onPress={() => setFirst('b')} />
           </View>
           {model === 'residenz_we' ? (
-            <Text style={styles.hint}>
-              Wähle als Start einen Montag. Das Wochenende dieser Woche (Fr–So) ist beim anderen Elternteil.
-            </Text>
+            <Text style={styles.hint}>{t.calendar.schedule.residenzHint}</Text>
           ) : null}
 
           <Card style={{ gap: 4 }}>
-            <Label>Vorschau</Label>
+            <Label>{t.calendar.schedule.preview}</Label>
             <View style={styles.week}>
-              {WEEKDAYS_SHORT.map((d) => (
+              {t.common.dates.weekdaysShort.map((d) => (
                 <Text key={d} style={styles.weekday}>
                   {d}
                 </Text>
@@ -113,44 +113,42 @@ export default function Schedule() {
       ) : null}
 
       <Card style={{ gap: spacing.md }}>
-        <Label>Übergabe – wann und wo?</Label>
+        <Label>{t.calendar.schedule.handover}</Label>
         <View style={styles.chips}>
-          {TIMES.map((t) => (
-            <Chip key={t} label={t} tint="accent" selected={cleanTime === t} onPress={() => setTime(t)} />
+          {TIMES.map((slot) => (
+            <Chip key={slot} label={slot} tint="accent" selected={cleanTime === slot} onPress={() => setTime(slot)} />
           ))}
         </View>
         <Field
-          label="Uhrzeit"
+          label={t.calendar.schedule.time}
           value={time}
           onChangeText={setTime}
-          placeholder="z. B. 17:00"
+          placeholder={t.calendar.schedule.timePlaceholder}
           keyboardType="numbers-and-punctuation"
           maxLength={5}
         />
-        {cleanTime === null ? <Text style={styles.error}>Bitte als Uhrzeit eingeben, z. B. 17:00.</Text> : null}
+        {cleanTime === null ? <Text style={styles.error}>{t.calendar.schedule.timeError}</Text> : null}
         <Field
-          label="Ort"
+          label={t.calendar.schedule.place}
           value={place}
           onChangeText={setPlace}
-          placeholder="z. B. Kita Sonnenschein, Schule, vor der Haustür"
+          placeholder={t.calendar.schedule.placePlaceholder}
           maxLength={200}
         />
-        <Text style={styles.hint}>
-          Neutrale Orte wie Kita oder Schule entlasten das Kind – es muss sich nicht vor beiden Eltern verabschieden.
-        </Text>
+        <Text style={styles.hint}>{t.calendar.schedule.placeHint}</Text>
       </Card>
 
       <PrimaryButton
-        title={busy ? 'Speichere…' : 'Plan speichern'}
+        title={busy ? t.common.saving : t.calendar.schedule.save}
         icon="checkmark"
         disabled={busy || cleanTime === null}
         onPress={save}
       />
       <Text style={styles.hint}>
         {otherJoined
-          ? `Der Plan gilt für euch beide. ${otherName} sieht die Änderung sofort.`
-          : `Sobald ${otherName} verbunden ist, gilt derselbe Plan auf beiden Handys.`}{' '}
-        Einzelne Tage ändert ihr im Kalender per Tauschvorschlag.
+          ? fmt(t.calendar.schedule.sharedJoined, { name: otherName })
+          : fmt(t.calendar.schedule.sharedNotJoined, { name: otherName })}{' '}
+        {t.calendar.schedule.singleDays}
       </Text>
     </ScrollView>
   );

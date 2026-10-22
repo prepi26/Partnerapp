@@ -2,6 +2,7 @@ import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, 
 import { AppState } from 'react-native';
 
 import { showError } from '@/components/ui';
+import { currentT } from '@/i18n';
 import { unregisterForPush } from '@/lib/push';
 import { cancelHandoverReminders } from '@/lib/reminders';
 import { must, supabase } from '@/lib/supabase';
@@ -107,21 +108,22 @@ async function fetchFamily(userId: string): Promise<Family | null> {
   return { ...rows[0], invite_code: code ?? '' };
 }
 
-const ERRORS: Record<string, string> = {
-  invalid_code: 'Dieser Code passt nicht oder wurde schon benutzt.',
-  too_many_attempts: 'Zu viele Versuche. Bitte warte eine Stunde und prüfe den Code.',
-  already_in_family: 'Du bist schon mit einer Familie verbunden.',
-  not_authenticated: 'Bitte melde dich erneut an.',
-  not_allowed: 'Das geht nicht mehr – vermutlich wurde es schon beantwortet.',
-  is_professional: 'Dieses Konto ist ein Fachkraft-Zugang. Für die eigene Familie brauchst du ein eigenes Konto.',
-  is_parent: 'Dieses Konto gehört zu einer Familie. Für den Fachkraft-Zugang brauchst du ein eigenes Konto.',
-};
+const ERROR_KEYS = [
+  'invalid_code',
+  'too_many_attempts',
+  'already_in_family',
+  'not_authenticated',
+  'not_allowed',
+  'is_professional',
+  'is_parent',
+] as const;
 
 /** Übersetzt Server-Fehler in verständliche Sätze. */
 export function errorMessage(e: unknown): string {
   const message = e instanceof Error ? e.message : String(e);
-  for (const [key, text] of Object.entries(ERRORS)) if (message.includes(key)) return text;
-  if (/network|fetch/i.test(message)) return 'Keine Verbindung zum Server. Bist du online?';
+  const t = currentT();
+  for (const key of ERROR_KEYS) if (message.includes(key)) return t.common.errors[key];
+  if (/network|fetch/i.test(message)) return t.common.errors.network;
   return message;
 }
 
@@ -131,7 +133,7 @@ export async function attempt(action: () => Promise<unknown>): Promise<boolean> 
     await action();
     return true;
   } catch (e) {
-    showError('Das hat nicht geklappt', errorMessage(e));
+    showError(currentT().common.failed, errorMessage(e));
     return false;
   }
 }

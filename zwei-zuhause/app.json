@@ -53,7 +53,8 @@
         {
           "faceIDPermission": "Damit nur du Zwei Zuhause öffnen kannst."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "owner": "prepi26"
   }

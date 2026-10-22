@@ -7,6 +7,7 @@ import { Card, Field, GradientHeader, HeaderIcon, PrimaryButton, SecondaryButton
 import { FAMILY_COLUMNS } from '@/data/columns';
 import { errorMessage, useStore } from '@/data/store';
 import { Family } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { formatDate } from '@/lib/dates';
 import { supabase } from '@/lib/supabase';
 import { colors, spacing } from '@/theme';
@@ -14,6 +15,8 @@ import { colors, spacing } from '@/theme';
 /** Startseite für Fachkräfte: alle Familien, die sie lesen dürfen. */
 export default function Cases() {
   const { professional_access, userId, joinAsProfessional, signOut, refresh } = useStore();
+  const t = useT();
+  const tc = t.pro.cases;
   const [families, setFamilies] = useState<Record<string, Family>>({});
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -35,7 +38,7 @@ export default function Cases() {
       await joinAsProfessional(code);
       setCode('');
     } catch (e) {
-      showError('Code nicht eingelöst', errorMessage(e));
+      showError(tc.joinFailed, errorMessage(e));
     }
     setBusy(false);
   };
@@ -43,9 +46,9 @@ export default function Cases() {
   return (
     <View style={{ flex: 1 }}>
       <GradientHeader
-        title="Fachkraft-Zugang"
-        subtitle="Nur lesen · von den Eltern freigegeben"
-        right={<HeaderIcon icon="refresh" label="Aktualisieren" onPress={() => refresh().catch(() => {})} />}
+        title={tc.title}
+        subtitle={tc.subtitle}
+        right={<HeaderIcon icon="refresh" label={tc.refresh} onPress={() => refresh().catch(() => {})} />}
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -63,16 +66,16 @@ export default function Cases() {
                 <Card style={[styles.case, !active && { opacity: 0.6 }]}>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={styles.title}>
-                      {f ? `${f.name_a} & ${f.name_b}${f.children ? ` · ${f.children}` : ''}` : 'Familie'}
+                      {f ? `${f.name_a} & ${f.name_b}${f.children ? ` · ${f.children}` : ''}` : tc.family}
                     </Text>
                     <Text style={styles.meta}>
                       {p.revoked_at
-                        ? 'Zugang widerrufen'
+                        ? tc.accessRevoked
                         : expired
-                          ? 'Zugang abgelaufen'
+                          ? tc.accessExpired
                           : f
-                            ? `Freigegeben bis ${formatDate(p.expires_at.slice(0, 10))}`
-                            : 'Wartet auf Zustimmung des zweiten Elternteils'}
+                            ? fmt(tc.sharedUntil, { date: formatDate(p.expires_at.slice(0, 10)) })
+                            : tc.awaitingOtherParent}
                     </Text>
                   </View>
                   {active ? <Ionicons name="chevron-forward" size={20} color={colors.textMuted} /> : null}
@@ -82,25 +85,23 @@ export default function Cases() {
           })}
 
           <Card style={{ gap: spacing.md }}>
-            <Text style={styles.title}>Weitere Familie hinzufügen</Text>
+            <Text style={styles.title}>{tc.addFamily}</Text>
             <Field
-              label="Code von den Eltern"
+              label={tc.codeLabel}
               value={code}
-              onChangeText={(t) => setCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
-              placeholder="8 Zeichen"
+              onChangeText={(v) => setCode(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+              placeholder={tc.codePlaceholder}
               autoCapitalize="characters"
               autoCorrect={false}
               style={styles.code}
             />
-            <PrimaryButton title={busy ? 'Prüfe…' : 'Code einlösen'} icon="key-outline" disabled={busy || code.length !== 8} onPress={join} />
+            <PrimaryButton title={busy ? tc.checking : tc.redeem} icon="key-outline" disabled={busy || code.length !== 8} onPress={join} />
           </Card>
 
           <Text style={styles.note}>
-            Sie sehen Kalender, Übergaben, Kosten, Entscheidungen, Elternvereinbarung, Kind-Infos und Nachrichten – nie die
-            privaten Tagebücher. Die Eltern sehen, dass und wann Sie Zugang haben, und können ihn jederzeit widerrufen. Der
-            Fachkraft-Zugang ist kostenlos.
+            {tc.note}
           </Text>
-          <SecondaryButton title="Abmelden" icon="log-out-outline" onPress={signOut} />
+          <SecondaryButton title={tc.signOut} icon="log-out-outline" onPress={signOut} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

@@ -7,12 +7,14 @@ import { InviteCard } from '@/components/InviteCard';
 import { parentColor } from '@/components/ParentTag';
 import { Card, GradientHeader, HeaderIcon, IconName } from '@/components/ui';
 import { useFamily } from '@/data/store';
+import { fmt, useT } from '@/i18n';
 import { addDays, countdownLabel, daysBetween, formatWeekday, today } from '@/lib/dates';
 import { balanceAB, formatMoney } from '@/lib/money';
 import { acceptedChanges, dayInfo, handoverWhere, nextHandover } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Home() {
+  const t = useT();
   const { family, me, myName, otherName, nameOf, otherJoined, schedule_changes, expenses, messages, decisions, userId } =
     useFamily();
 
@@ -38,36 +40,48 @@ export default function Home() {
   const raw = balanceAB(expenses);
   const balance = me === 'a' ? raw : -raw;
 
-  const kids = family.children.trim() || 'Das Kind';
+  const kids = family.children.trim() || t.common.theChild;
   const todayColor = parentColor(todayInfo.parent);
+  // Satz als Ganzes übersetzen, der Name wird farbig dazwischen gesetzt.
+  const [todayBefore, todayAfter = ''] = fmt(
+    kids.includes(',') || kids.includes(' und ') ? t.home.today.kidsAreWith : t.home.today.kidIsWith,
+    { kids },
+  ).split('{who}');
 
   return (
     <View style={{ flex: 1 }}>
       <GradientHeader
-        title={`Hallo ${myName}`}
+        title={fmt(t.home.today.hello, { name: myName })}
         subtitle={formatWeekday(now)}
-        right={<HeaderIcon icon="settings-outline" label="Einstellungen" onPress={() => router.push('/settings')} />}
+        right={<HeaderIcon icon="settings-outline" label={t.home.today.settings} onPress={() => router.push('/settings')} />}
       />
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={[styles.today, { backgroundColor: todayColor.pale }]}>
-          <Text style={styles.todayLabel}>Heute</Text>
+          <Text style={styles.todayLabel}>{t.home.today.label}</Text>
           {todayInfo.parent ? (
             <Text style={styles.todayText}>
-              {kids} {kids.includes(',') || kids.includes(' und ') ? 'sind' : 'ist'} bei{' '}
-              <Text style={{ color: todayColor.main }}>{todayInfo.parent === me ? 'dir' : nameOf(todayInfo.parent)}</Text>
+              {todayBefore}
+              <Text style={{ color: todayColor.main }}>
+                {todayInfo.parent === me ? t.home.today.withYou : nameOf(todayInfo.parent)}
+              </Text>
+              {todayAfter}
             </Text>
           ) : (
-            <Text style={styles.todayText}>Noch kein Umgangsplan</Text>
+            <Text style={styles.todayText}>{t.home.today.noSchedule}</Text>
           )}
           {handover ? (
             <Text style={styles.todaySub}>
-              Nächste Übergabe {countdownLabel(daysBetween(now, handover.day))} ({formatWeekday(handover.day)}
-              {where ? `, ${where}` : ''}) an {handover.to === me ? 'dich' : nameOf(handover.to)}
+              {fmt(t.home.today.nextHandover, {
+                countdown: countdownLabel(daysBetween(now, handover.day)),
+                weekday: formatWeekday(handover.day),
+                where: where ? `, ${where}` : '',
+                who: handover.to === me ? t.home.today.toYou : nameOf(handover.to),
+              })}
             </Text>
           ) : null}
           {family.schedule_model === 'none' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/schedule')}>
-              <Text style={styles.link}>Umgangsplan festlegen →</Text>
+              <Text style={styles.link}>{t.home.today.setSchedule}</Text>
             </Pressable>
           ) : null}
         </Card>
@@ -79,7 +93,7 @@ export default function Home() {
             style={({ pressed }) => [styles.banner, pressed && { opacity: 0.7 }]}
           >
             <Ionicons name="car" size={20} color={colors.primary} />
-            <Text style={styles.bannerText}>Übergabe gerade? Kurz festhalten, wie es lief.</Text>
+            <Text style={styles.bannerText}>{t.home.today.handoverBanner}</Text>
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
           </Pressable>
         ) : null}
@@ -89,30 +103,34 @@ export default function Home() {
         <View style={styles.tiles}>
           <Tile
             icon="swap-horizontal"
-            title="Tauschanfragen"
-            value={openChanges.length ? `${openChanges.length} offen` : 'Keine offen'}
+            title={t.home.today.swapRequests}
+            value={openChanges.length ? fmt(t.home.today.nOpen, { n: openChanges.length }) : t.home.today.noneOpen}
             highlight={openChanges.length > 0}
             onPress={() => router.navigate('/calendar')}
           />
           <Tile
             icon="chatbubbles"
-            title="Nachrichten"
-            value={unread ? `${unread} neu` : 'Alles gelesen'}
+            title={t.home.today.messages}
+            value={unread ? fmt(t.home.today.nNew, { n: unread }) : t.home.today.allRead}
             highlight={unread > 0}
             onPress={() => router.navigate('/messages')}
           />
           <Tile
             icon="wallet"
-            title={balance === 0 ? 'Kosten' : balance > 0 ? `${otherName} schuldet dir` : `Du schuldest ${otherName}`}
+            title={
+              balance === 0
+                ? t.home.today.costs
+                : fmt(balance > 0 ? t.home.today.owesYou : t.home.today.youOwe, { name: otherName })
+            }
             value={formatMoney(Math.abs(balance))}
             highlight={openExpenses.length > 0}
-            hint={openExpenses.length ? `${openExpenses.length} zu prüfen` : undefined}
+            hint={openExpenses.length ? fmt(t.home.today.nToReview, { n: openExpenses.length }) : undefined}
             onPress={() => router.navigate('/expenses')}
           />
           <Tile
             icon="git-pull-request"
-            title="Entscheidungen"
-            value={openDecisions ? `${openDecisions} offen` : 'Keine offen'}
+            title={t.home.today.decisions}
+            value={openDecisions ? fmt(t.home.today.nOpen, { n: openDecisions }) : t.home.today.noneOpen}
             highlight={openDecisions > 0}
             onPress={() => router.push('/decisions')}
           />
@@ -120,13 +138,10 @@ export default function Home() {
 
         <Pressable accessibilityRole="button" onPress={() => router.push('/help')} style={styles.helpRow}>
           <Ionicons name="help-buoy-outline" size={18} color={colors.primary} />
-          <Text style={styles.helpText}>Hilfe & Beratung</Text>
+          <Text style={styles.helpText}>{t.home.today.help}</Text>
         </Pressable>
 
-        <Text style={styles.footer}>
-          Alles hier ist für beide gleich sichtbar – außer deinem Tagebuch. Nachrichten lassen sich nicht löschen oder
-          ändern.
-        </Text>
+        <Text style={styles.footer}>{t.home.today.footer}</Text>
       </ScrollView>
     </View>
   );

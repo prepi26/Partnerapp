@@ -7,6 +7,7 @@ import { Card, Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryB
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { attempt, useFamily } from '@/data/store';
+import { fmt, Lang, LANGUAGES, useLanguage, useT } from '@/i18n';
 import { loadAppLock, lockAvailable, saveAppLock, unlock } from '@/lib/appLock';
 import { close } from '@/lib/nav';
 import { loadHandoverReminder, refreshHandoverReminders, saveHandoverReminder } from '@/lib/reminders';
@@ -15,6 +16,9 @@ import { colors, spacing } from '@/theme';
 const SHARES = [50, 60, 70, 80, 100, 40, 30, 20, 0];
 
 export default function Settings() {
+  const t = useT();
+  const s = t.settings.settings;
+  const { lang, setLang } = useLanguage();
   const {
     family,
     me,
@@ -39,7 +43,7 @@ export default function Settings() {
   const toggleLock = async (on: boolean) => {
     if (on) {
       if (!(await lockAvailable())) {
-        showError('Keine Gerätesperre', 'Richte zuerst einen Code, Face ID oder Fingerabdruck auf deinem Handy ein.');
+        showError(s.noLockTitle, s.noLockText);
         return;
       }
       // Einmal bestätigen – so ist sicher, dass das Entsperren klappt.
@@ -77,19 +81,22 @@ export default function Settings() {
     else setSaving(false);
   };
 
+  const chooseLanguage = async (code: Lang) => {
+    const needsRestart = await setLang(code);
+    if (needsRestart) showError(t.common.restartTitle, t.common.restartText);
+  };
+
   const logout = () =>
-    confirmDestructive('Abmelden?', 'Deine Daten bleiben gespeichert.', 'Abmelden', () => {
+    confirmDestructive(s.logoutTitle, s.logoutText, s.logout, () => {
       router.dismissAll();
       signOut();
     });
 
   const removeAccount = () =>
     confirmDestructive(
-      'Konto endgültig löschen?',
-      otherJoined
-        ? `Dein Konto und dein Tagebuch werden gelöscht. Kalender, Kosten und Nachrichten bleiben für ${otherName} erhalten – sie sind auch seine/ihre Dokumentation.`
-        : 'Dein Konto, dein Tagebuch und alle Daten der Familie werden gelöscht.',
-      'Endgültig löschen',
+      s.deleteTitle,
+      otherJoined ? fmt(s.deleteTextJoined, { name: otherName }) : s.deleteTextAlone,
+      s.deleteConfirm,
       () => {
         attempt(deleteAccount).then((ok) => ok && router.dismissAll());
       },
@@ -98,9 +105,19 @@ export default function Settings() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Card style={styles.card}>
+          <Label>{t.common.language.title}</Label>
+          <View style={styles.chips}>
+            {LANGUAGES.map((l) => (
+              <Chip key={l.code} label={l.name} selected={lang === l.code} onPress={() => chooseLanguage(l.code)} />
+            ))}
+          </View>
+          <Text style={styles.note}>{t.common.language.hint}</Text>
+        </Card>
+
         {purchasesAvailable || plus ? (
           <SecondaryButton
-            title={plus ? 'Plus ist aktiv ✓' : 'Zwei Zuhause Plus'}
+            title={plus ? s.plusActive : s.plus}
             icon="shield-checkmark"
             onPress={() => router.push('/plus')}
           />
@@ -108,27 +125,27 @@ export default function Settings() {
         {!otherJoined ? <InviteCard code={family.invite_code} otherName={otherName} /> : null}
 
         <Card style={styles.card}>
-          <Field label="Elternteil 1" value={nameA} onChangeText={setNameA} />
-          <Field label="Elternteil 2" value={nameB} onChangeText={setNameB} />
-          <Field label="Kind / Kinder" value={kids} onChangeText={setKids} placeholder="z. B. Mia, Paul" />
+          <Field label={s.parent1} value={nameA} onChangeText={setNameA} />
+          <Field label={s.parent2} value={nameB} onChangeText={setNameB} />
+          <Field label={s.children} value={kids} onChangeText={setKids} placeholder={s.childrenPlaceholder} />
         </Card>
 
         <Card style={styles.card}>
-          <Label>Mein üblicher Anteil an Kosten</Label>
+          <Label>{s.myShare}</Label>
           <View style={styles.chips}>
             {SHARES.map((s) => (
               <Chip key={s} label={`${s} %`} selected={myShare === s} onPress={() => setMyShare(s)} />
             ))}
           </View>
-          <Text style={styles.note}>Vorschlag beim Eintragen – pro Ausgabe änderbar.</Text>
+          <Text style={styles.note}>{s.shareNote}</Text>
         </Card>
 
-        <SecondaryButton title="Umgangsplan ändern" icon="calendar-outline" onPress={() => router.push('/schedule')} />
+        <SecondaryButton title={s.changeSchedule} icon="calendar-outline" onPress={() => router.push('/schedule')} />
 
         <Card style={styles.card}>
           <ToggleRow
-            title="Lesebestätigungen"
-            text={`Zeigt, wann eine Nachricht gelesen wurde. Schaltest du sie aus, sieht ${otherName} nicht, ob du gelesen hast – und du siehst es bei ${otherName} auch nicht.`}
+            title={s.readReceipts}
+            text={fmt(s.readReceiptsText, { name: otherName })}
             value={myReceipts}
             onChange={(on) => attempt(() => setReadReceipts(on))}
           />
@@ -137,14 +154,14 @@ export default function Settings() {
         {Platform.OS !== 'web' ? (
           <Card style={styles.card}>
             <ToggleRow
-              title="App-Sperre"
-              text="Face ID, Fingerabdruck oder Gerätecode beim Öffnen – damit niemand sonst Nachrichten oder Tagebuch sieht."
+              title={s.appLock}
+              text={s.appLockText}
               value={lockOn}
               onChange={toggleLock}
             />
             <ToggleRow
-              title="Erinnerung vor der Übergabe"
-              text="Am Vorabend um 19 Uhr: wer das Kind bekommt, wann und wo."
+              title={s.reminder}
+              text={s.reminderText}
               value={reminderOn}
               onChange={toggleReminder}
             />
@@ -152,31 +169,28 @@ export default function Settings() {
         ) : null}
 
         <PrimaryButton
-          title={saving ? 'Speichere…' : 'Speichern'}
+          title={saving ? t.common.saving : t.common.save}
           icon="checkmark"
           disabled={saving || !nameA.trim() || !nameB.trim()}
           onPress={save}
         />
 
         <View style={styles.footer}>
-          <Text style={styles.note}>
-            Zwei Zuhause ersetzt keine Rechtsberatung. Bei Fragen zu Umgang, Sorgerecht oder Unterhalt helfen
-            Jugendamt, Beratungsstellen und Fachanwälte für Familienrecht.
-          </Text>
+          <Text style={styles.note}>{s.disclaimer}</Text>
           {PRIVACY_URL ? (
             <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>
-              Datenschutz
+              {s.privacy}
             </Text>
           ) : null}
           {TERMS_URL ? (
             <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>
-              Nutzungsbedingungen & Impressum
+              {s.terms}
             </Text>
           ) : null}
-          <SecondaryButton title="Konto & Daten" icon="person-circle-outline" onPress={() => router.push('/account')} />
-          <SecondaryButton title="Einführung ansehen" icon="play-circle-outline" onPress={() => router.push('/intro')} />
-          <SecondaryButton title="Abmelden" icon="log-out-outline" onPress={logout} />
-          <SecondaryButton title="Konto löschen" icon="trash-outline" danger onPress={removeAccount} />
+          <SecondaryButton title={s.account} icon="person-circle-outline" onPress={() => router.push('/account')} />
+          <SecondaryButton title={s.intro} icon="play-circle-outline" onPress={() => router.push('/intro')} />
+          <SecondaryButton title={s.logout} icon="log-out-outline" onPress={logout} />
+          <SecondaryButton title={s.deleteAccount} icon="trash-outline" danger onPress={removeAccount} />
         </View>
       </ScrollView>
     </KeyboardAvoidingView>

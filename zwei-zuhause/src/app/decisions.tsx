@@ -5,20 +5,22 @@ import { AnswerBox } from '@/components/AnswerBox';
 import { Card, EmptyState, Fab, SecondaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { Decision } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { formatDate, formatTimestamp } from '@/lib/dates';
 import { decisionCategory } from '@/lib/decisions';
 import { colors, spacing } from '@/theme';
 
-const STATUS = {
-  proposed: { text: 'wartet auf Antwort', color: colors.warning },
-  agreed: { text: 'zugestimmt', color: colors.primary },
-  rejected: { text: 'nicht zugestimmt', color: colors.danger },
+const STATUS_COLOR = {
+  proposed: colors.warning,
+  agreed: colors.primary,
+  rejected: colors.danger,
 } as const;
 
 export default function Decisions() {
+  const t = useT();
   const { decisions, userId, otherName, nameOf, otherJoined, answerDecision, withdrawDecision } = useFamily();
   const author = (d: Decision) =>
-    d.created_by === userId ? 'Du' : d.created_by ? otherName : `${nameOf('a')}/${nameOf('b')}`;
+    d.created_by === userId ? t.common.youCap : d.created_by ? otherName : `${nameOf('a')}/${nameOf('b')}`;
 
   return (
     <View style={{ flex: 1 }}>
@@ -27,23 +29,19 @@ export default function Decisions() {
         keyExtractor={(d) => d.id}
         contentContainerStyle={styles.content}
         ListHeaderComponent={
-          <Text style={styles.intro}>
-            Über wichtige Fragen – Schule, Operation, Auslandsreise, Umzug – entscheiden Eltern mit gemeinsamer Sorge
-            zusammen. Hier wird gefragt, beantwortet und festgehalten. Alltägliches entscheidet, wer das Kind gerade
-            betreut.
-          </Text>
+          <Text style={styles.intro}>{t.family.decisions.intro}</Text>
         }
         ListEmptyComponent={
           <EmptyState
             icon="git-pull-request-outline"
-            title="Noch nichts zu entscheiden"
-            text={`Stell eine Frage an ${otherName} – mit Frist, wenn es eilt.`}
+            title={t.family.decisions.emptyTitle}
+            text={fmt(t.family.decisions.emptyText, { name: otherName })}
           />
         }
         renderItem={({ item: d }) => {
-          const cat = decisionCategory(d.category);
+          const cat = decisionCategory(d.category, t);
           const mine = d.created_by === userId;
-          const status = STATUS[d.status];
+          const statusColor = STATUS_COLOR[d.status];
           return (
             <Card style={{ gap: 4 }}>
               <Text style={styles.cat}>
@@ -51,26 +49,26 @@ export default function Decisions() {
               </Text>
               <Text style={styles.title}>{d.title}</Text>
               {d.details ? <Text style={styles.text}>{d.details}</Text> : null}
-              {d.due_date ? <Text style={styles.meta}>Antwort erbeten bis {formatDate(d.due_date)}</Text> : null}
+              {d.due_date ? <Text style={styles.meta}>{fmt(t.family.decisions.dueBy, { date: formatDate(d.due_date) })}</Text> : null}
               <Text style={styles.meta}>
                 {author(d)} · {formatTimestamp(d.created_at)}
               </Text>
-              <Text style={[styles.status, { color: status.color }]}>
-                ● {status.text}
+              <Text style={[styles.status, { color: statusColor }]}>
+                ● {t.family.decisions.status[d.status]}
                 {d.answered_at ? ` · ${formatTimestamp(d.answered_at)}` : ''}
               </Text>
               {d.answer_note ? <Text style={styles.text}>„{d.answer_note}“</Text> : null}
               {d.status === 'proposed' && !mine ? (
                 <AnswerBox
-                  yes="Zustimmen"
-                  no="Ablehnen"
-                  placeholder="z. B. Einverstanden, wenn …"
+                  yes={t.family.decisions.yes}
+                  no={t.family.decisions.no}
+                  placeholder={t.family.decisions.answerPlaceholder}
                   onAnswer={(agree, note) => answerDecision(d.id, agree, note)}
                 />
               ) : null}
               {d.status === 'proposed' && mine ? (
                 <SecondaryButton
-                  title="Zurückziehen"
+                  title={t.family.decisions.withdraw}
                   icon="arrow-undo"
                   danger
                   onPress={() => attempt(() => withdrawDecision(d.id))}
@@ -81,11 +79,11 @@ export default function Decisions() {
         }}
         ListFooterComponent={
           otherJoined ? null : (
-            <Text style={styles.meta}>Antworten kann nur der andere Elternteil – sobald er/sie verbunden ist.</Text>
+            <Text style={styles.meta}>{t.family.decisions.otherNotJoined}</Text>
           )
         }
       />
-      <Fab label="Neue Frage" onPress={() => router.push('/decision-new')} />
+      <Fab label={t.family.decisions.fab} onPress={() => router.push('/decision-new')} />
     </View>
   );
 }

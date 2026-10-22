@@ -4,27 +4,31 @@ import { KeyboardAvoidingView, Platform, ScrollView, Share, StyleSheet, Text, Vi
 import { Card, Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
 import { attempt, errorMessage, useFamily } from '@/data/store';
 import { ProfessionalAccess } from '@/data/types';
+import { Dict, fmt, useT } from '@/i18n';
 import { formatDate, formatTimestamp } from '@/lib/dates';
 import { colors, spacing } from '@/theme';
 
 const DURATIONS = [
-  { days: 14, label: '2 Wochen' },
-  { days: 30, label: '1 Monat' },
-  { days: 90, label: '3 Monate' },
-  { days: 180, label: '6 Monate' },
-];
+  { days: 14, labelKey: 'weeks2' },
+  { days: 30, labelKey: 'month1' },
+  { days: 90, labelKey: 'months3' },
+  { days: 180, labelKey: 'months6' },
+] as const;
 
-function state(p: ProfessionalAccess, otherJoined: boolean) {
-  if (p.revoked_at) return { text: `Widerrufen am ${formatTimestamp(p.revoked_at)}`, color: colors.textMuted, active: false };
-  if (new Date(p.expires_at) < new Date()) return { text: 'Abgelaufen', color: colors.textMuted, active: false };
-  if (!p.other_approved_at && otherJoined) return { text: 'Wartet auf Zustimmung', color: colors.warning, active: true };
-  if (!p.professional) return { text: 'Code noch nicht eingelöst', color: colors.warning, active: true };
-  return { text: `Aktiv bis ${formatDate(p.expires_at.slice(0, 10))}`, color: colors.primary, active: true };
+function state(p: ProfessionalAccess, otherJoined: boolean, t: Dict) {
+  const tp = t.pro.professionals;
+  if (p.revoked_at) return { text: fmt(tp.revokedAt, { date: formatTimestamp(p.revoked_at) }), color: colors.textMuted, active: false };
+  if (new Date(p.expires_at) < new Date()) return { text: tp.expired, color: colors.textMuted, active: false };
+  if (!p.other_approved_at && otherJoined) return { text: tp.awaitingApproval, color: colors.warning, active: true };
+  if (!p.professional) return { text: tp.codeNotRedeemed, color: colors.warning, active: true };
+  return { text: fmt(tp.activeUntil, { date: formatDate(p.expires_at.slice(0, 10)) }), color: colors.primary, active: true };
 }
 
 export default function Professionals() {
   const { professional_access, me, otherName, otherJoined, nameOf, inviteProfessional, approveProfessional, revokeProfessional } =
     useFamily();
+  const t = useT();
+  const tp = t.pro.professionals;
   const [label, setLabel] = useState('');
   const [days, setDays] = useState(30);
   const [busy, setBusy] = useState(false);
@@ -35,18 +39,16 @@ export default function Professionals() {
       const code = await inviteProfessional(label.trim(), days);
       setLabel('');
       await Share.share({
-        message:
-          `Zugang zu unserer Familie in „Zwei Zuhause“ (nur lesen, ohne mein privates Tagebuch): ` +
-          `App laden, Konto erstellen, „Ich bin Fachkraft“ wählen und diesen Code eingeben: ${code}`,
+        message: fmt(tp.shareMessage, { code }),
       });
     } catch (e) {
-      showError('Das hat nicht geklappt', errorMessage(e));
+      showError(t.common.failed, errorMessage(e));
     }
     setBusy(false);
   };
 
   const revoke = (p: ProfessionalAccess) =>
-    confirmDestructive('Zugang widerrufen?', `${p.label} sieht danach nichts mehr.`, 'Widerrufen', () => {
+    confirmDestructive(tp.revokeTitle, fmt(tp.revokeText, { label: p.label }), tp.revoke, () => {
       attempt(() => revokeProfessional(p.id));
     });
 
@@ -54,27 +56,26 @@ export default function Professionals() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.intro}>
-          Jugendamt, Beratungsstelle, Mediation, Verfahrensbeistand oder Anwalt können eure Familie lesen – Kalender,
-          Übergaben, Kosten, Entscheidungen, Vereinbarung und Nachrichten. Euer privates Tagebuch nie.
-          {otherJoined ? ` ${otherName} muss jedem Zugang zustimmen.` : ''} Beide können jederzeit widerrufen.
+          {tp.intro}
+          {otherJoined ? ` ${fmt(tp.introOtherMustApprove, { name: otherName })}` : ''} {tp.introBothCanRevoke}
         </Text>
 
         <Card style={{ gap: spacing.md }}>
           <Field
-            label="Wer bekommt Zugang?"
+            label={tp.whoLabel}
             value={label}
             onChangeText={setLabel}
-            placeholder="z. B. Jugendamt Köln, Frau Schmidt"
+            placeholder={tp.whoPlaceholder}
             maxLength={200}
           />
-          <Label>Für wie lange?</Label>
+          <Label>{tp.howLong}</Label>
           <View style={styles.chips}>
             {DURATIONS.map((d) => (
-              <Chip key={d.days} label={d.label} selected={days === d.days} onPress={() => setDays(d.days)} />
+              <Chip key={d.days} label={tp.durations[d.labelKey]} selected={days === d.days} onPress={() => setDays(d.days)} />
             ))}
           </View>
           <PrimaryButton
-            title={busy ? 'Erstelle Code…' : 'Code erstellen & teilen'}
+            title={busy ? tp.creatingCode : tp.createCode}
             icon="key-outline"
             disabled={busy || !label.trim()}
             onPress={invite}
@@ -82,28 +83,30 @@ export default function Professionals() {
         </Card>
 
         {professional_access.map((p) => {
-          const s = state(p, otherJoined);
+          const s = state(p, otherJoined, t);
           const needsMyApproval = s.active && !p.other_approved_at && p.invited_key !== me && !p.revoked_at;
           return (
             <Card key={p.id} style={{ gap: 4 }}>
               <Text style={styles.title}>{p.label}</Text>
               <Text style={[styles.state, { color: s.color }]}>● {s.text}</Text>
               <Text style={styles.meta}>
-                Eingeladen von {p.invited_key === me ? 'dir' : nameOf(p.invited_key)} am {formatTimestamp(p.created_at)}
-                {p.joined_at ? ` · eingelöst ${formatTimestamp(p.joined_at)}` : ''}
+                {p.invited_key === me
+                  ? fmt(tp.invitedByMe, { date: formatTimestamp(p.created_at) })
+                  : fmt(tp.invitedBy, { name: nameOf(p.invited_key), date: formatTimestamp(p.created_at) })}
+                {p.joined_at ? ` · ${fmt(tp.redeemed, { date: formatTimestamp(p.joined_at) })}` : ''}
               </Text>
-              {!p.professional && s.active ? <Text style={styles.code}>Code: {p.code}</Text> : null}
+              {!p.professional && s.active ? <Text style={styles.code}>{fmt(tp.code, { code: p.code })}</Text> : null}
               {needsMyApproval ? (
                 <View style={styles.buttons}>
                   <View style={{ flex: 1 }}>
-                    <SecondaryButton title="Zustimmen" icon="checkmark" onPress={() => attempt(() => approveProfessional(p.id))} />
+                    <SecondaryButton title={tp.approve} icon="checkmark" onPress={() => attempt(() => approveProfessional(p.id))} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <SecondaryButton title="Ablehnen" icon="close" danger onPress={() => revoke(p)} />
+                    <SecondaryButton title={tp.decline} icon="close" danger onPress={() => revoke(p)} />
                   </View>
                 </View>
               ) : s.active ? (
-                <SecondaryButton title="Widerrufen" icon="close-circle-outline" danger onPress={() => revoke(p)} />
+                <SecondaryButton title={tp.revoke} icon="close-circle-outline" danger onPress={() => revoke(p)} />
               ) : null}
             </Card>
           );

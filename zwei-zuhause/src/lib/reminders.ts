@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { Family, ParentKey, ScheduleChange } from '@/data/types';
+import { currentT, fmt } from '@/i18n';
 
 import { addDays, today } from './dates';
 import { acceptedChanges, handoversAhead, handoverWhere } from './schedule';
@@ -66,9 +67,9 @@ export async function refreshHandoverReminders({ family, changes, me, nameOf }: 
     return;
   }
 
-  const kids = family.children.trim() || 'Das Kind';
-  const plural = kids.includes(',') || kids.includes(' und ');
-  const where = handoverWhere(family);
+  const t = currentT();
+  const kids = family.children.trim() || t.common.theChild;
+  const where = handoverWhere(family, t);
   const now = new Date();
   const upcoming = handoversAhead(family, acceptedChanges(changes), today()).slice(0, MAX_AHEAD);
 
@@ -76,13 +77,13 @@ export async function refreshHandoverReminders({ family, changes, me, nameOf }: 
     const eve = addDays(h.day, -1);
     const when = new Date(eve.getFullYear(), eve.getMonth(), eve.getDate(), HOUR, 0);
     if (when <= now) continue;
-    const to = h.to === me ? 'zu dir' : `zu ${nameOf(h.to)}`;
+    const to = h.to === me ? t.lib.reminder.toYou : fmt(t.lib.reminder.toOther, { name: nameOf(h.to) });
     try {
       await Notifications.scheduleNotificationAsync({
         identifier: `${PREFIX}${h.day.getTime()}`,
         content: {
-          title: 'Morgen ist Übergabe',
-          body: `${kids} ${plural ? 'gehen' : 'geht'} ${to}${where ? ` · ${where}` : ''}`,
+          title: t.lib.reminder.title,
+          body: fmt(t.lib.reminder.body, { kids, to, where: where ? ` · ${where}` : '' }),
           data: { url: '/calendar' },
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },

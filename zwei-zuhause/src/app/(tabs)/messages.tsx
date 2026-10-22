@@ -15,6 +15,7 @@ import {
 
 import { EmptyState, GradientHeader, HeaderIcon, showError, tap } from '@/components/ui';
 import { errorMessage, useFamily } from '@/data/store';
+import { currentT, fmt, useT } from '@/i18n';
 import { Message } from '@/data/types';
 import { formatTimestamp } from '@/lib/dates';
 import { toneHints } from '@/lib/tone';
@@ -22,18 +23,20 @@ import { colors, radius, spacing } from '@/theme';
 
 /** Vor dem Senden kurz nachfragen, wenn der Ton-Check etwas findet. */
 function confirmTone(hints: string[], onSend: () => void) {
-  const message = `${hints.join('\n\n')}\n\nNachrichten lassen sich später nicht mehr ändern.`;
+  const t = currentT();
+  const message = `${hints.join('\n\n')}\n\n${t.messages.chat.toneNote}`;
   if (Platform.OS === 'web') {
-    if (window.confirm(`Nochmal lesen?\n\n${message}`)) onSend();
+    if (window.confirm(`${t.messages.chat.toneTitle}\n\n${message}`)) onSend();
     return;
   }
-  Alert.alert('Nochmal lesen?', message, [
-    { text: 'Überarbeiten', style: 'cancel' },
-    { text: 'Trotzdem senden', onPress: onSend },
+  Alert.alert(t.messages.chat.toneTitle, message, [
+    { text: t.messages.chat.toneRevise, style: 'cancel' },
+    { text: t.messages.chat.toneSendAnyway, onPress: onSend },
   ]);
 }
 
 export default function Messages() {
+  const t = useT();
   const { messages, me, otherName, otherJoined, sendMessage, markRead, readReceiptsVisible } = useFamily();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -54,7 +57,7 @@ export default function Messages() {
       setText('');
       tap();
     } catch (e) {
-      showError('Nicht gesendet', errorMessage(e));
+      showError(t.messages.chat.notSent, errorMessage(e));
     }
     setSending(false);
   };
@@ -68,9 +71,9 @@ export default function Messages() {
   return (
     <View style={{ flex: 1 }}>
       <GradientHeader
-        title="Nachrichten"
-        subtitle={`mit ${otherName} · nicht löschbar`}
-        right={<HeaderIcon icon="help-buoy-outline" label="Hilfe & Beratung" onPress={() => router.push('/help')} />}
+        title={t.messages.chat.title}
+        subtitle={fmt(t.messages.chat.subtitle, { name: otherName })}
+        right={<HeaderIcon icon="help-buoy-outline" label={t.messages.chat.help} onPress={() => router.push('/help')} />}
       />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -86,11 +89,11 @@ export default function Messages() {
           ListEmptyComponent={
             <EmptyState
               icon="chatbubbles-outline"
-              title="Sachlich bleiben"
+              title={t.messages.chat.emptyTitle}
               text={
                 otherJoined
-                  ? 'Jede Nachricht wird mit Datum, Uhrzeit und Prüfsumme gespeichert und kann nicht gelöscht werden. Das schützt euch beide.'
-                  : `Sobald ${otherName} verbunden ist, könnt ihr hier schreiben.`
+                  ? t.messages.chat.emptyText
+                  : fmt(t.messages.chat.emptyWaiting, { name: otherName })
               }
             />
           }
@@ -102,7 +105,7 @@ export default function Messages() {
           <TextInput
             value={text}
             onChangeText={setText}
-            placeholder={otherJoined ? 'Nachricht schreiben…' : `${otherName} ist noch nicht verbunden`}
+            placeholder={otherJoined ? t.messages.chat.placeholder : fmt(t.messages.chat.notConnected, { name: otherName })}
             placeholderTextColor={colors.textMuted}
             editable={otherJoined}
             multiline
@@ -111,7 +114,7 @@ export default function Messages() {
           />
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Senden"
+            accessibilityLabel={t.messages.chat.send}
             disabled={sending || !text.trim() || !otherJoined}
             onPress={trySend}
             style={({ pressed }) => [
@@ -129,6 +132,7 @@ export default function Messages() {
 }
 
 function Bubble({ message: m, mine, showRead }: { message: Message; mine: boolean; showRead: boolean }) {
+  const t = useT();
   return (
     <View style={[styles.bubbleWrap, mine ? styles.right : styles.left]}>
       <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
@@ -136,7 +140,9 @@ function Bubble({ message: m, mine, showRead }: { message: Message; mine: boolea
       </View>
       <Text style={styles.meta}>
         {formatTimestamp(m.created_at)}
-        {mine ? (showRead && m.read_at ? ` · gelesen ${formatTimestamp(m.read_at)}` : ' · zugestellt') : ''} · #
+        {mine ? (showRead && m.read_at
+            ? ` · ${fmt(t.messages.chat.read, { time: formatTimestamp(m.read_at) })}`
+            : ` · ${t.messages.chat.delivered}`) : ''} · #
         {m.hash.slice(0, 8)}
       </Text>
     </View>

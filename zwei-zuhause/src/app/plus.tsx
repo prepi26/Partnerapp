@@ -8,32 +8,37 @@ import { IconName, PrimaryButton, showError } from '@/components/ui';
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { errorMessage } from '@/data/store';
+import { Dict, fmt, useT } from '@/i18n';
 import { close } from '@/lib/nav';
 import { colors, gradient, radius, shadow, spacing } from '@/theme';
 
-const BENEFITS: { icon: IconName; title: string; text: string }[] = [
-  {
-    icon: 'document-text',
-    title: 'Berichte als PDF',
-    text: 'Umgang, Kosten, Nachrichten und Tagebuch – fertig für Jugendamt, Beratung oder Anwalt.',
-  },
-  { icon: 'camera', title: 'Belege fotografieren', text: 'Kassenbon zur Ausgabe – nie wieder „Das hast du nie bezahlt“.' },
-  { icon: 'shield-checkmark', title: 'Nachweise, die halten', text: 'Mit Datum, Uhrzeit und Prüfsumme zu jedem Eintrag.' },
-  { icon: 'heart', title: 'Unterstützt Zwei Zuhause', text: 'Keine Werbung, keine verkauften Daten. Server in der EU.' },
-];
+function benefits(t: Dict): { icon: IconName; title: string; text: string }[] {
+  const b = t.money.plus.benefits;
+  return [
+    { icon: 'document-text', title: b.reportsTitle, text: b.reportsText },
+    { icon: 'camera', title: b.receiptsTitle, text: b.receiptsText },
+    { icon: 'shield-checkmark', title: b.proofTitle, text: b.proofText },
+    { icon: 'heart', title: b.supportTitle, text: b.supportText },
+  ];
+}
 
-const PERIOD: Partial<Record<PACKAGE_TYPE, string>> = {
-  [PACKAGE_TYPE.ANNUAL]: 'Jährlich',
-  [PACKAGE_TYPE.MONTHLY]: 'Monatlich',
-  [PACKAGE_TYPE.LIFETIME]: 'Einmalig, für immer',
-};
+function period(t: Dict): Partial<Record<PACKAGE_TYPE, string>> {
+  return {
+    [PACKAGE_TYPE.ANNUAL]: t.money.plus.period.annual,
+    [PACKAGE_TYPE.MONTHLY]: t.money.plus.period.monthly,
+    [PACKAGE_TYPE.LIFETIME]: t.money.plus.period.lifetime,
+  };
+}
 
-function perMonth(pkg: PurchasesPackage) {
+function perMonth(pkg: PurchasesPackage, t: Dict) {
   if (pkg.packageType !== PACKAGE_TYPE.ANNUAL) return null;
-  return pkg.product.pricePerMonthString ? `nur ${pkg.product.pricePerMonthString} / Monat` : null;
+  return pkg.product.pricePerMonthString
+    ? fmt(t.money.plus.perMonth, { price: pkg.product.pricePerMonthString })
+    : null;
 }
 
 export default function PlusScreen() {
+  const t = useT();
   const { active, packages, purchase, restore } = usePlus();
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -48,9 +53,9 @@ export default function PlusScreen() {
     setBusy(true);
     try {
       if (await action()) close();
-      else if (failText) showError('Nichts gefunden', failText);
+      else if (failText) showError(t.money.plus.nothingFound, failText);
     } catch (e) {
-      showError('Das hat nicht geklappt', errorMessage(e));
+      showError(t.common.failed, errorMessage(e));
     }
     setBusy(false);
   };
@@ -59,14 +64,12 @@ export default function PlusScreen() {
     <ScrollView contentContainerStyle={styles.content}>
       <LinearGradient colors={gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
         <Text style={styles.heroEmoji}>🏠🏠</Text>
-        <Text style={styles.heroTitle}>Zwei Zuhause Plus</Text>
-        <Text style={styles.heroText}>
-          Kalender, Kosten und Nachrichten bleiben kostenlos. Plus ist für alles, was du belegen musst.
-        </Text>
+        <Text style={styles.heroTitle}>{t.money.plus.heroTitle}</Text>
+        <Text style={styles.heroText}>{t.money.plus.heroText}</Text>
       </LinearGradient>
 
       <View style={styles.benefits}>
-        {BENEFITS.map((b) => (
+        {benefits(t).map((b) => (
           <View key={b.title} style={styles.benefit}>
             <View style={styles.benefitIcon}>
               <Ionicons name={b.icon} size={20} color={colors.primary} />
@@ -81,11 +84,11 @@ export default function PlusScreen() {
 
       {active ? (
         <View style={styles.activeBox}>
-          <Text style={styles.activeTitle}>Plus ist aktiv ✓</Text>
-          <Text style={styles.small}>Verwalten oder kündigen kannst du dein Abo in den Einstellungen deines Handys.</Text>
+          <Text style={styles.activeTitle}>{t.money.plus.activeTitle}</Text>
+          <Text style={styles.small}>{t.money.plus.activeText}</Text>
         </View>
       ) : !purchasesAvailable ? (
-        <Text style={styles.small}>Käufe sind nur in der iOS- und Android-App möglich.</Text>
+        <Text style={styles.small}>{t.money.plus.unavailable}</Text>
       ) : packages.length === 0 ? (
         <ActivityIndicator color={colors.primary} />
       ) : (
@@ -93,7 +96,7 @@ export default function PlusScreen() {
           <View style={{ gap: spacing.sm }}>
             {packages.map((pkg) => {
               const isChosen = pkg.identifier === chosen?.identifier;
-              const hint = perMonth(pkg);
+              const hint = perMonth(pkg, t);
               return (
                 <Pressable
                   key={pkg.identifier}
@@ -103,12 +106,12 @@ export default function PlusScreen() {
                   style={[styles.option, isChosen && styles.optionChosen]}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{PERIOD[pkg.packageType] ?? pkg.product.title}</Text>
+                    <Text style={styles.optionTitle}>{period(t)[pkg.packageType] ?? pkg.product.title}</Text>
                     {pkg.product.introPrice ? (
                       <Text style={styles.trial}>
                         {pkg.product.introPrice.price === 0
-                          ? `${pkg.product.introPrice.periodNumberOfUnits} ${unit(pkg.product.introPrice.periodUnit)} gratis testen`
-                          : `Erst ${pkg.product.introPrice.priceString}`}
+                          ? trial(pkg.product.introPrice.periodNumberOfUnits, pkg.product.introPrice.periodUnit, t)
+                          : fmt(t.money.plus.introPrice, { price: pkg.product.introPrice.priceString })}
                       </Text>
                     ) : hint ? (
                       <Text style={styles.trial}>{hint}</Text>
@@ -126,15 +129,12 @@ export default function PlusScreen() {
           </View>
 
           <PrimaryButton
-            title={busy ? 'Einen Moment…' : 'Plus freischalten'}
+            title={busy ? t.money.plus.busy : t.money.plus.unlock}
             icon="shield-checkmark"
             disabled={busy || !chosen}
             onPress={() => chosen && run(() => purchase(chosen), '')}
           />
-          <Text style={styles.small}>
-            Das Abo gilt nur für dich, nicht für den anderen Elternteil. Es verlängert sich automatisch, bis du es
-            mindestens 24 Stunden vor Ablauf in den Einstellungen von App Store bzw. Google Play kündigst.
-          </Text>
+          <Text style={styles.small}>{t.money.plus.terms}</Text>
         </>
       )}
 
@@ -143,18 +143,18 @@ export default function PlusScreen() {
           <Pressable
             accessibilityRole="button"
             disabled={busy}
-            onPress={() => run(restore, 'Zu deinem Konto gibt es keinen aktiven Kauf.')}
+            onPress={() => run(restore, t.money.plus.noPurchase)}
           >
-            <Text style={styles.link}>Käufe wiederherstellen</Text>
+            <Text style={styles.link}>{t.money.plus.restore}</Text>
           </Pressable>
           {TERMS_URL ? (
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL(TERMS_URL)}>
-              <Text style={styles.link}>Nutzungsbedingungen</Text>
+              <Text style={styles.link}>{t.money.plus.termsLink}</Text>
             </Pressable>
           ) : null}
           {PRIVACY_URL ? (
             <Pressable accessibilityRole="link" onPress={() => Linking.openURL(PRIVACY_URL)}>
-              <Text style={styles.link}>Datenschutz</Text>
+              <Text style={styles.link}>{t.money.plus.privacyLink}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -163,8 +163,16 @@ export default function PlusScreen() {
   );
 }
 
-function unit(u: string) {
-  return { DAY: 'Tage', WEEK: 'Wochen', MONTH: 'Monate', YEAR: 'Jahre' }[u] ?? u;
+function trial(n: number, u: string, t: Dict) {
+  const s = t.money.plus.trial;
+  const one = n === 1;
+  const template = {
+    DAY: one ? s.dayOne : s.dayOther,
+    WEEK: one ? s.weekOne : s.weekOther,
+    MONTH: one ? s.monthOne : s.monthOther,
+    YEAR: one ? s.yearOne : s.yearOther,
+  }[u];
+  return template ? fmt(template, { n }) : fmt(s.fallback, { n, unit: u });
 }
 
 const styles = StyleSheet.create({

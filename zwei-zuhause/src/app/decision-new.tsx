@@ -4,12 +4,14 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 import { DateField } from '@/components/DateField';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
+import { fmt, useT } from '@/i18n';
 import { addDays, toISO, today } from '@/lib/dates';
-import { DECISION_CATEGORIES, decisionCategory } from '@/lib/decisions';
+import { decisionCategories, decisionCategory } from '@/lib/decisions';
 import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 export default function DecisionNew() {
+  const t = useT();
   const { otherName, addDecision } = useFamily();
   const [category, setCategory] = useState('schule');
   const [title, setTitle] = useState('');
@@ -27,14 +29,14 @@ export default function DecisionNew() {
     else setBusy(false);
   };
 
-  const examples = decisionCategory(category).examples;
+  const examples = decisionCategory(category, t).examples;
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Label>Thema</Label>
+        <Label>{t.family.decisionNew.topic}</Label>
         <View style={styles.chips}>
-          {DECISION_CATEGORIES.map((c) => (
+          {decisionCategories(t).map((c) => (
             <Chip
               key={c.key}
               label={`${c.emoji} ${c.label}`}
@@ -43,37 +45,34 @@ export default function DecisionNew() {
             />
           ))}
         </View>
-        {examples ? <Text style={styles.hint}>z. B. {examples}</Text> : null}
+        {examples ? <Text style={styles.hint}>{fmt(t.family.examples, { examples })}</Text> : null}
         <Field
-          label="Worum geht es?"
+          label={t.family.decisionNew.titleLabel}
           value={title}
           onChangeText={setTitle}
-          placeholder="z. B. Klassenfahrt nach Italien im Mai"
+          placeholder={t.family.decisionNew.titlePlaceholder}
           maxLength={200}
         />
         <Field
-          label="Details"
+          label={t.family.decisionNew.details}
           value={details}
           onChangeText={setDetails}
-          placeholder="Was, wann, wie viel kostet es, was spricht dafür?"
+          placeholder={t.family.decisionNew.detailsPlaceholder}
           multiline
           maxLength={4000}
         />
         <View style={styles.chips}>
-          <Chip label="Ohne Frist" selected={!withDue} onPress={() => setWithDue(false)} />
-          <Chip label="Antwort bis …" tint="accent" selected={withDue} onPress={() => setWithDue(true)} />
+          <Chip label={t.family.decisionNew.noDue} selected={!withDue} onPress={() => setWithDue(false)} />
+          <Chip label={t.family.decisionNew.withDue} tint="accent" selected={withDue} onPress={() => setWithDue(true)} />
         </View>
-        {withDue ? <DateField label="Antwort erbeten bis" value={due} onChange={setDue} minimumDate={today()} /> : null}
+        {withDue ? <DateField label={t.family.decisionNew.dueLabel} value={due} onChange={setDue} minimumDate={today()} /> : null}
         <PrimaryButton
-          title={busy ? 'Sende…' : `An ${otherName} senden`}
+          title={busy ? t.common.sending : fmt(t.family.decisionNew.send, { name: otherName })}
           icon="send"
           disabled={busy || !title.trim()}
           onPress={save}
         />
-        <Text style={styles.hint}>
-          Tipp: Schreib sachlich, was du vorschlägst und warum. Ein Vorschlag mit Begründung wird eher angenommen als
-          eine Forderung.
-        </Text>
+        <Text style={styles.hint}>{t.family.decisionNew.tip}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

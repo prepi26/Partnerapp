@@ -4,32 +4,35 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 're
 import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { AgreementContent } from '@/data/types';
-import { AGREEMENT_SECTIONS } from '@/lib/agreement';
-import { handoverWhere, MODELS } from '@/lib/schedule';
+import { fmt, useT } from '@/i18n';
+import { agreementSections } from '@/lib/agreement';
 import { close } from '@/lib/nav';
+import { handoverWhere, models } from '@/lib/schedule';
 import { colors, spacing } from '@/theme';
 
 export default function AgreementEdit() {
+  const t = useT();
   const { agreements, family, otherName, saveAgreement } = useFamily();
+  const sections = agreementSections(t);
   const latest = agreements[0];
   const [content, setContent] = useState<AgreementContent>(() => {
     if (latest) return { ...latest.content };
     // Erster Entwurf: das gewählte Umgangsmodell schon eintragen.
-    const model = MODELS.find((m) => m.key === family.schedule_model);
+    const model = models(t).find((m) => m.key === family.schedule_model);
     const draft: AgreementContent = {};
     if (family.schedule_model !== 'none' && model) draft.betreuung = `${model.title}. ${model.text}`;
-    if (handoverWhere(family)) draft.uebergabe = `Übergabe: ${handoverWhere(family)}.`;
+    if (handoverWhere(family, t)) draft.uebergabe = fmt(t.family.agreementEdit.handoverDraft, { where: handoverWhere(family, t) });
     return draft;
   });
   const [busy, setBusy] = useState(false);
 
-  const changed = AGREEMENT_SECTIONS.some((s) => (content[s.key] ?? '').trim() !== (latest?.content[s.key] ?? '').trim());
-  const filled = AGREEMENT_SECTIONS.filter((s) => content[s.key]?.trim()).length;
+  const changed = sections.some((s) => (content[s.key] ?? '').trim() !== (latest?.content[s.key] ?? '').trim());
+  const filled = sections.filter((s) => content[s.key]?.trim()).length;
 
   const save = async () => {
     setBusy(true);
     const clean: AgreementContent = {};
-    for (const s of AGREEMENT_SECTIONS) if (content[s.key]?.trim()) clean[s.key] = content[s.key].trim();
+    for (const s of sections) if (content[s.key]?.trim()) clean[s.key] = content[s.key].trim();
     const ok = await attempt(() => saveAgreement(clean));
     if (ok) close();
     else setBusy(false);
@@ -38,28 +41,25 @@ export default function AgreementEdit() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.intro}>
-          Schreib in eigenen Worten, was gelten soll. Leere Abschnitte bleiben einfach weg. Mit dem Speichern stimmst du
-          dieser Fassung zu; {otherName} stimmt danach zu oder schlägt eine Änderung vor.
-        </Text>
-        {AGREEMENT_SECTIONS.map((s) => (
+        <Text style={styles.intro}>{fmt(t.family.agreementEdit.intro, { name: otherName })}</Text>
+        {sections.map((s) => (
           <Field
             key={s.key}
             label={s.title}
             value={content[s.key] ?? ''}
-            onChangeText={(t) => setContent((c) => ({ ...c, [s.key]: t }))}
+            onChangeText={(text) => setContent((c) => ({ ...c, [s.key]: text }))}
             placeholder={s.questions}
             multiline
             maxLength={3000}
           />
         ))}
         <PrimaryButton
-          title={busy ? 'Speichere…' : latest ? 'Neue Fassung vorschlagen' : 'Speichern & zustimmen'}
+          title={busy ? t.common.saving : latest ? t.family.agreementEdit.proposeNew : t.family.agreementEdit.saveAccept}
           icon="checkmark"
           disabled={busy || filled === 0 || !changed}
           onPress={save}
         />
-        <Text style={styles.hint}>{filled} von {AGREEMENT_SECTIONS.length} Abschnitten ausgefüllt</Text>
+        <Text style={styles.hint}>{fmt(t.family.agreementEdit.filled, { n: filled, total: sections.length })}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -4,11 +4,13 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Chip, EmptyState, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
+import { fmt, useT } from '@/i18n';
+import { agreementSections } from '@/lib/agreement';
 import { formatTimestamp } from '@/lib/dates';
-import { AGREEMENT_NOTE, AGREEMENT_SECTIONS } from '@/lib/agreement';
 import { colors, spacing } from '@/theme';
 
 export default function AgreementScreen() {
+  const t = useT();
   const { agreements, me, otherKey, otherName, otherJoined, nameOf, acceptAgreement } = useFamily();
   const [versionId, setVersionId] = useState<string | null>(null);
   const latest = agreements[0];
@@ -19,11 +21,15 @@ export default function AgreementScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <EmptyState
           icon="document-text-outline"
-          title="Eure Elternvereinbarung"
-          text="Haltet fest, was für euch gilt: Rhythmus, Übergaben, Ferien, Kosten, Kommunikation. 17 Leitfragen helfen beim Formulieren."
+          title={t.family.agreement.emptyTitle}
+          text={t.family.agreement.emptyText}
         />
-        <PrimaryButton title="Vereinbarung beginnen" icon="create-outline" onPress={() => router.push('/agreement-edit')} />
-        <Text style={styles.note}>{AGREEMENT_NOTE}</Text>
+        <PrimaryButton
+          title={t.family.agreement.start}
+          icon="create-outline"
+          onPress={() => router.push('/agreement-edit')}
+        />
+        <Text style={styles.note}>{t.lib.agreementNote}</Text>
       </ScrollView>
     );
   }
@@ -40,7 +46,7 @@ export default function AgreementScreen() {
           {agreements.map((a) => (
             <Chip
               key={a.id}
-              label={`Fassung ${a.version}`}
+              label={fmt(t.family.agreement.version, { n: a.version })}
               selected={a.id === shown.id}
               onPress={() => setVersionId(a.id)}
             />
@@ -50,26 +56,35 @@ export default function AgreementScreen() {
 
       <Card style={[styles.status, both ? styles.ok : styles.open]}>
         <Text style={styles.statusTitle}>
-          {both ? '✓ Von beiden angenommen' : isLatest ? 'Wartet auf Zustimmung' : 'Ältere Fassung'}
+          {both
+            ? `✓ ${t.family.agreement.bothAccepted}`
+            : isLatest
+              ? t.family.agreement.waiting
+              : t.family.agreement.older}
         </Text>
         {(['a', 'b'] as const).map((k) => (
           <Text key={k} style={styles.statusLine}>
-            {nameOf(k)}: {acceptedAt(k) ? `zugestimmt am ${formatTimestamp(acceptedAt(k)!)}` : 'noch nicht zugestimmt'}
+            {nameOf(k)}:{' '}
+            {acceptedAt(k)
+              ? fmt(t.family.agreement.acceptedAt, { date: formatTimestamp(acceptedAt(k)!) })
+              : t.family.agreement.notAccepted}
           </Text>
         ))}
-        <Text style={styles.hash}>Fassung {shown.version} · Prüfsumme {shown.hash.slice(0, 16)}</Text>
+        <Text style={styles.hash}>
+          {fmt(t.family.agreement.hash, { version: shown.version, hash: shown.hash.slice(0, 16) })}
+        </Text>
       </Card>
 
       {isLatest && !iAccepted ? (
-        <PrimaryButton title="Ich stimme dieser Fassung zu" icon="checkmark-done" onPress={() => attempt(() => acceptAgreement(shown.id))} />
+        <PrimaryButton title={t.family.agreement.accept} icon="checkmark-done" onPress={() => attempt(() => acceptAgreement(shown.id))} />
       ) : null}
       {isLatest && iAccepted && !acceptedAt(otherKey) ? (
         <Text style={styles.note}>
-          {otherJoined ? `${otherName} wurde benachrichtigt.` : `Sobald ${otherName} verbunden ist, kann er/sie zustimmen.`}
+          {fmt(otherJoined ? t.family.agreement.notified : t.family.agreement.notJoined, { name: otherName })}
         </Text>
       ) : null}
 
-      {AGREEMENT_SECTIONS.filter((s) => shown.content[s.key]?.trim()).map((s) => (
+      {agreementSections(t).filter((s) => shown.content[s.key]?.trim()).map((s) => (
         <View key={s.key} style={{ gap: 4 }}>
           <Text style={styles.section}>{s.title}</Text>
           <Text style={styles.text}>{shown.content[s.key]}</Text>
@@ -77,11 +92,12 @@ export default function AgreementScreen() {
       ))}
 
       {isLatest ? (
-        <SecondaryButton title="Änderung vorschlagen" icon="create-outline" onPress={() => router.push('/agreement-edit')} />
+        <SecondaryButton title={t.family.agreement.propose} icon="create-outline" onPress={() => router.push('/agreement-edit')} />
       ) : null}
       <Text style={styles.note}>
-        Jede Änderung wird eine neue Fassung, der beide neu zustimmen. Ältere Fassungen bleiben unverändert erhalten.{'\n\n'}
-        {AGREEMENT_NOTE}
+        {t.family.agreement.versionsNote}
+        {'\n\n'}
+        {t.lib.agreementNote}
       </Text>
     </ScrollView>
   );

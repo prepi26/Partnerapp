@@ -10,6 +10,7 @@ import { HandoverReminders } from '@/components/HandoverReminders';
 import { IntroGate } from '@/components/Intro';
 import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
+import { LanguageProvider, useT } from '@/i18n';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
 import { StoreProvider, useStore } from '@/data/store';
@@ -19,17 +20,19 @@ import { colors, spacing } from '@/theme';
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <StatusBar style="light" />
-      {isConfigured ? (
-        <IntroGate>
-          <AuthProvider>
-            <Gate />
-          </AuthProvider>
-        </IntroGate>
-      ) : (
-        <NotConfigured />
-      )}
-      <DialogHost />
+      <LanguageProvider>
+        <StatusBar style="light" />
+        {isConfigured ? (
+          <IntroGate>
+            <AuthProvider>
+              <Gate />
+            </AuthProvider>
+          </IntroGate>
+        ) : (
+          <NotConfigured />
+        )}
+        <DialogHost />
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }
@@ -49,14 +52,15 @@ function Gate() {
 }
 
 function SignedIn() {
+  const t = useT();
   const { loading, loadFailed, family, isProfessional, retry } = useStore();
   if (loading) return <Blank />;
   if (loadFailed) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Keine Verbindung</Text>
-        <Text style={styles.text}>Eure Daten liegen auf dem Server. Prüf deine Internetverbindung.</Text>
-        <PrimaryButton title="Nochmal versuchen" icon="refresh" onPress={retry} />
+        <Text style={styles.title}>{t.settings.root.offlineTitle}</Text>
+        <Text style={styles.text}>{t.settings.root.offlineText}</Text>
+        <PrimaryButton title={t.settings.root.retry} icon="refresh" onPress={retry} />
       </View>
     );
   }
@@ -99,6 +103,8 @@ function RootStack({
   hasFamily: boolean;
   professional: boolean;
 }) {
+  const t = useT();
+  const titles = t.settings.titles;
   return (
     <Stack
       screenOptions={{
@@ -124,29 +130,29 @@ function RootStack({
       </Stack.Protected>
       <Stack.Protected guard={signedIn && hasFamily}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="change-new" options={modal('Tag tauschen')} />
-        <Stack.Screen name="expense-new" options={modal('Neue Ausgabe')} />
-        <Stack.Screen name="expense/[id]" options={{ headerShown: true, title: 'Ausgabe' }} />
-        <Stack.Screen name="journal-new" options={modal('Neuer Eintrag')} />
-        <Stack.Screen name="schedule" options={modal('Umgangsplan')} />
-        <Stack.Screen name="report" options={{ headerShown: true, title: 'Bericht als PDF' }} />
-        <Stack.Screen name="journal" options={{ headerShown: true, title: 'Tagebuch 🔒' }} />
-        <Stack.Screen name="decisions" options={{ headerShown: true, title: 'Entscheidungen' }} />
-        <Stack.Screen name="decision-new" options={modal('Neue Frage')} />
-        <Stack.Screen name="handovers" options={{ headerShown: true, title: 'Übergaben' }} />
-        <Stack.Screen name="handover-new" options={modal('Übergabe eintragen')} />
-        <Stack.Screen name="child-info" options={{ headerShown: true, title: 'Infos zum Kind' }} />
-        <Stack.Screen name="child-info-edit" options={modal('Info')} />
-        <Stack.Screen name="agreement" options={{ headerShown: true, title: 'Elternvereinbarung' }} />
-        <Stack.Screen name="agreement-edit" options={modal('Vereinbarung bearbeiten')} />
-        <Stack.Screen name="professionals" options={{ headerShown: true, title: 'Fachkräfte' }} />
-        <Stack.Screen name="help" options={{ headerShown: true, title: 'Hilfe & Beratung' }} />
+        <Stack.Screen name="change-new" options={modal(titles.changeNew)} />
+        <Stack.Screen name="expense-new" options={modal(titles.expenseNew)} />
+        <Stack.Screen name="expense/[id]" options={{ headerShown: true, title: titles.expense }} />
+        <Stack.Screen name="journal-new" options={modal(titles.journalNew)} />
+        <Stack.Screen name="schedule" options={modal(titles.schedule)} />
+        <Stack.Screen name="report" options={{ headerShown: true, title: titles.report }} />
+        <Stack.Screen name="journal" options={{ headerShown: true, title: titles.journal }} />
+        <Stack.Screen name="decisions" options={{ headerShown: true, title: titles.decisions }} />
+        <Stack.Screen name="decision-new" options={modal(titles.decisionNew)} />
+        <Stack.Screen name="handovers" options={{ headerShown: true, title: titles.handovers }} />
+        <Stack.Screen name="handover-new" options={modal(titles.handoverNew)} />
+        <Stack.Screen name="child-info" options={{ headerShown: true, title: titles.childInfo }} />
+        <Stack.Screen name="child-info-edit" options={modal(titles.childInfoEdit)} />
+        <Stack.Screen name="agreement" options={{ headerShown: true, title: titles.agreement }} />
+        <Stack.Screen name="agreement-edit" options={modal(titles.agreementEdit)} />
+        <Stack.Screen name="professionals" options={{ headerShown: true, title: titles.professionals }} />
+        <Stack.Screen name="help" options={{ headerShown: true, title: titles.help }} />
         <Stack.Screen name="intro" options={{ presentation: 'fullScreenModal' }} />
-        <Stack.Screen name="account" options={{ headerShown: true, title: 'Konto & Daten' }} />
-        <Stack.Screen name="documents" options={{ headerShown: true, title: 'Dokumente' }} />
-        <Stack.Screen name="document-new" options={modal('Dokument teilen')} />
-        <Stack.Screen name="settings" options={modal('Einstellungen')} />
-        <Stack.Screen name="plus" options={modal('Zwei Zuhause Plus')} />
+        <Stack.Screen name="account" options={{ headerShown: true, title: titles.account }} />
+        <Stack.Screen name="documents" options={{ headerShown: true, title: titles.documents }} />
+        <Stack.Screen name="document-new" options={modal(titles.documentNew)} />
+        <Stack.Screen name="settings" options={modal(titles.settings)} />
+        <Stack.Screen name="plus" options={modal(titles.plus)} />
       </Stack.Protected>
     </Stack>
   );
@@ -161,12 +167,11 @@ function Blank() {
 }
 
 function NotConfigured() {
+  const t = useT();
   return (
     <View style={styles.center}>
-      <Text style={styles.title}>Server fehlt noch</Text>
-      <Text style={styles.text}>
-        Trage die Supabase-Adresse und den anon-Key in die Datei .env ein (siehe SETUP.md).
-      </Text>
+      <Text style={styles.title}>{t.settings.root.notConfiguredTitle}</Text>
+      <Text style={styles.text}>{t.settings.root.notConfiguredText}</Text>
     </View>
   );
 }

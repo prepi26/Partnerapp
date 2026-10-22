@@ -5,9 +5,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Chip, Field, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
 import { errorMessage, useStore } from '@/data/store';
+import { useT } from '@/i18n';
 import { colors, gradient, spacing } from '@/theme';
 
 export default function Onboarding() {
+  const t = useT();
+  const o = t.auth.onboarding;
   const { createFamily, joinFamily, joinAsProfessional, signOut } = useStore();
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'create' | 'join' | 'pro'>('create');
@@ -23,7 +26,7 @@ export default function Onboarding() {
     try {
       await action();
     } catch (e) {
-      showError('Das hat nicht geklappt', errorMessage(e));
+      showError(t.common.failed, errorMessage(e));
       setBusy(false);
     }
   };
@@ -37,37 +40,34 @@ export default function Onboarding() {
           keyboardDismissMode="on-drag"
         >
           <View style={styles.hero}>
-            <Text style={styles.title}>Eure Familie</Text>
-            <Text style={styles.subtitle}>
-              Ein Elternteil legt die Familie an und bekommt einen Code für den anderen. Du kannst auch erst einmal
-              allein starten – Kalender, Kosten und Tagebuch funktionieren sofort.
-            </Text>
+            <Text style={styles.title}>{o.title}</Text>
+            <Text style={styles.subtitle}>{o.subtitle}</Text>
           </View>
 
           <View style={styles.switch}>
-            <Chip label="Familie anlegen" selected={mode === 'create'} onPress={() => setMode('create')} />
-            <Chip label="Ich habe einen Code" tint="accent" selected={mode === 'join'} onPress={() => setMode('join')} />
-            <Chip label="Ich bin Fachkraft" tint="accent" selected={mode === 'pro'} onPress={() => setMode('pro')} />
+            <Chip label={o.createFamily} selected={mode === 'create'} onPress={() => setMode('create')} />
+            <Chip label={o.haveCode} tint="accent" selected={mode === 'join'} onPress={() => setMode('join')} />
+            <Chip label={o.imProfessional} tint="accent" selected={mode === 'pro'} onPress={() => setMode('pro')} />
           </View>
 
           <Card style={styles.card}>
             {mode === 'create' ? (
               <>
-                <Field label="Dein Name" value={myName} onChangeText={setMyName} placeholder="z. B. Sandra" />
+                <Field label={o.yourName} value={myName} onChangeText={setMyName} placeholder={o.yourNamePlaceholder} />
                 <Field
-                  label="Name des anderen Elternteils"
+                  label={o.otherName}
                   value={otherName}
                   onChangeText={setOtherName}
-                  placeholder="z. B. Thomas"
+                  placeholder={o.otherNamePlaceholder}
                 />
                 <Field
-                  label="Kind / Kinder (Vornamen)"
+                  label={o.kids}
                   value={kids}
                   onChangeText={setKids}
-                  placeholder="z. B. Mia, Paul"
+                  placeholder={o.kidsPlaceholder}
                 />
                 <PrimaryButton
-                  title={busy ? 'Lege an…' : 'Familie anlegen'}
+                  title={busy ? o.creating : o.createFamily}
                   icon="home"
                   disabled={busy || !myName.trim() || !otherName.trim()}
                   onPress={() => run(() => createFamily(myName.trim(), otherName.trim(), kids.trim()))}
@@ -75,22 +75,19 @@ export default function Onboarding() {
               </>
             ) : mode === 'pro' ? (
               <>
-                <Text style={styles.cardText}>
-                  Für Jugendamt, Beratungsstelle, Mediation, Verfahrensbeistand oder Anwalt: Die Eltern erstellen in der
-                  App einen 8-stelligen Code für dich. Der Zugang ist kostenlos und nur lesend.
-                </Text>
+                <Text style={styles.cardText}>{o.proText}</Text>
                 <Field
-                  label="Code der Familie"
+                  label={o.familyCode}
                   value={proCode}
-                  onChangeText={(t) => setProCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
-                  placeholder="8 Zeichen"
+                  onChangeText={(text) => setProCode(text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8))}
+                  placeholder={o.familyCodePlaceholder}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   autoComplete="off"
                   style={styles.code}
                 />
                 <PrimaryButton
-                  title={busy ? 'Prüfe…' : 'Zugang öffnen'}
+                  title={busy ? o.checking : o.openAccess}
                   icon="key-outline"
                   disabled={busy || proCode.length !== 8}
                   onPress={() => run(() => joinAsProfessional(proCode))}
@@ -99,10 +96,10 @@ export default function Onboarding() {
             ) : (
               <>
                 <Field
-                  label="Code vom anderen Elternteil"
+                  label={o.otherParentCode}
                   value={code}
-                  onChangeText={(t) => setCode(normalizeCode(t))}
-                  placeholder="z. B. KMPQXT"
+                  onChangeText={(text) => setCode(normalizeCode(text))}
+                  placeholder={o.otherParentCodePlaceholder}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   autoComplete="off"
@@ -110,7 +107,7 @@ export default function Onboarding() {
                   style={styles.code}
                 />
                 <PrimaryButton
-                  title={busy ? 'Verbinde…' : 'Verbinden'}
+                  title={busy ? o.connecting : o.connect}
                   icon="link"
                   disabled={busy || code.length !== 6}
                   onPress={() => run(() => joinFamily(code))}
@@ -119,11 +116,9 @@ export default function Onboarding() {
             )}
           </Card>
 
-          <Text style={styles.privacy}>
-            🔒 Nur ihr beide seht Kalender, Kosten und Nachrichten. Dein Tagebuch sieht niemand außer dir.
-          </Text>
+          <Text style={styles.privacy}>🔒 {o.privacy}</Text>
 
-          <SecondaryButton title="Abmelden" onPress={signOut} />
+          <SecondaryButton title={o.signOut} onPress={signOut} />
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>

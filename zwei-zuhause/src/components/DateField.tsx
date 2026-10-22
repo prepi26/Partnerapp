@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ISODate } from '@/data/types';
+import { useT } from '@/i18n';
 import { formatDate, parseISO, toISO } from '@/lib/dates';
 import { colors, radius, spacing } from '@/theme';
 
@@ -74,13 +75,14 @@ export function DateField({
 }
 
 function WebDateInput({ label, value, onChange }: { label: string; value: ISODate; onChange: (v: ISODate) => void }) {
+  const t = useT();
   const [text, setText] = useState(value);
   return (
     <View style={styles.wrap}>
       <Label>{label}</Label>
       <TextInput
         value={text}
-        placeholder="JJJJ-MM-TT"
+        placeholder={t.settings.dateField.webPlaceholder}
         placeholderTextColor={colors.textMuted}
         onChangeText={(t) => {
           setText(t);

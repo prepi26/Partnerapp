@@ -7,12 +7,14 @@ import { confirmDestructive, EmptyState, Fab } from '@/components/ui';
 import { formatSize } from '@/data/documents';
 import { attempt, useFamily } from '@/data/store';
 import { FamilyDocument } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { formatDate, formatTimestamp } from '@/lib/dates';
-import { DOCUMENT_CATEGORIES } from '@/lib/documentCategories';
+import { documentCategories } from '@/lib/documentCategories';
 import { openDocument } from '@/lib/openDocument';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Documents() {
+  const t = useT();
   const { documents, userId, otherName, removeDocument } = useFamily();
   const [opening, setOpening] = useState<string | null>(null);
 
@@ -23,25 +25,27 @@ export default function Documents() {
   };
 
   const remove = (doc: FamilyDocument) =>
-    confirmDestructive('Dokument löschen?', `„${doc.title}“ wird für euch beide gelöscht.`, 'Löschen', () => {
-      attempt(() => removeDocument(doc));
-    });
+    confirmDestructive(
+      t.family.documents.deleteTitle,
+      fmt(t.family.documents.deleteText, { title: doc.title }),
+      t.common.delete,
+      () => {
+        attempt(() => removeDocument(doc));
+      },
+    );
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.intro}>
-          Zeugnisse, Arztbriefe, Bescheide – beide Eltern sehen dieselben Dokumente. Löschen kann nur, wer ein Dokument
-          hochgeladen hat.
-        </Text>
+        <Text style={styles.intro}>{t.family.documents.intro}</Text>
         {documents.length === 0 ? (
           <EmptyState
             icon="folder-open-outline"
-            title="Noch keine Dokumente"
-            text="Fotografiere ein Zeugnis oder lade ein PDF hoch – dann muss niemand mehr nach Kopien fragen."
+            title={t.family.documents.emptyTitle}
+            text={t.family.documents.emptyText}
           />
         ) : null}
-        {DOCUMENT_CATEGORIES.map((cat) => {
+        {documentCategories(t).map((cat) => {
           const list = documents.filter((d) => d.category === cat.key);
           if (!list.length) return null;
           return (
@@ -56,7 +60,7 @@ export default function Documents() {
                     <Pressable
                       key={d.id}
                       accessibilityRole="button"
-                      accessibilityLabel={`${d.title} öffnen`}
+                      accessibilityLabel={fmt(t.family.documents.open, { title: d.title })}
                       onPress={() => open(d)}
                       onLongPress={mine ? () => remove(d) : undefined}
                       style={({ pressed }) => [styles.row, i > 0 && styles.divider, pressed && { opacity: 0.6 }]}
@@ -71,8 +75,8 @@ export default function Documents() {
                           {d.title}
                         </Text>
                         <Text style={styles.meta}>
-                          {d.doc_date ? `vom ${formatDate(d.doc_date)} · ` : ''}
-                          {mine ? 'von dir' : `von ${otherName}`} · {formatTimestamp(d.created_at)} ·{' '}
+                          {d.doc_date ? `${fmt(t.family.documents.dated, { date: formatDate(d.doc_date) })} · ` : ''}
+                          {mine ? t.family.documents.byYou : fmt(t.family.documents.byOther, { name: otherName })} · {formatTimestamp(d.created_at)} ·{' '}
                           {formatSize(d.size_bytes)}
                         </Text>
                       </View>
@@ -85,10 +89,10 @@ export default function Documents() {
           );
         })}
         {documents.some((d) => d.created_by === userId) ? (
-          <Text style={styles.hint}>Eigene Dokumente: lange drücken zum Löschen.</Text>
+          <Text style={styles.hint}>{t.family.documents.longPressHint}</Text>
         ) : null}
       </ScrollView>
-      <Fab label="Dokument hinzufügen" onPress={() => router.push('/document-new')} />
+      <Fab label={t.family.documents.fab} onPress={() => router.push('/document-new')} />
     </View>
   );
 }

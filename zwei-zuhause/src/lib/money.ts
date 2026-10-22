@@ -1,4 +1,5 @@
 import { Expense, NeedType, ParentKey } from '@/data/types';
+import { currentT, Dict } from '@/i18n';
 
 /** 1234 -> "12,34 €" (ohne Intl, das nicht auf jedem Gerät vollständig ist). */
 export function formatMoney(cents: number): string {
@@ -39,35 +40,37 @@ export function balanceAB(expenses: Expense[]): number {
   return balance;
 }
 
-export const CATEGORIES: { key: string; label: string; emoji: string }[] = [
-  { key: 'kleidung', label: 'Kleidung', emoji: '👕' },
-  { key: 'schule', label: 'Schule & Kita', emoji: '🎒' },
-  { key: 'gesundheit', label: 'Gesundheit', emoji: '🩺' },
-  { key: 'freizeit', label: 'Hobby & Verein', emoji: '⚽' },
-  { key: 'urlaub', label: 'Ferien & Ausflüge', emoji: '🏖️' },
-  { key: 'betreuung', label: 'Betreuung', emoji: '🧸' },
-  { key: 'sonstiges', label: 'Sonstiges', emoji: '📦' },
-];
+const CATEGORY_EMOJI = {
+  kleidung: '👕',
+  schule: '🎒',
+  gesundheit: '🩺',
+  freizeit: '⚽',
+  urlaub: '🏖️',
+  betreuung: '🧸',
+  sonstiges: '📦',
+} as const;
+type CategoryKey = keyof typeof CATEGORY_EMOJI;
 
-export function categoryOf(key: string) {
-  return CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[CATEGORIES.length - 1];
+export function categories(t: Dict = currentT()): { key: CategoryKey; label: string; emoji: string }[] {
+  return (Object.keys(CATEGORY_EMOJI) as CategoryKey[]).map((key) => ({
+    key,
+    label: t.lib.expenseCategories[key],
+    emoji: CATEGORY_EMOJI[key],
+  }));
 }
 
-/** Nur zur Orientierung – die Einordnung im Einzelfall ist keine Frage, die die App beantwortet. */
-export const NEEDS: { key: NeedType; label: string; text: string }[] = [
-  { key: 'regular', label: 'Laufend', text: 'Alltägliches, das eigentlich der Unterhalt abdeckt – z. B. Kleidung, Schulsachen.' },
-  {
-    key: 'mehrbedarf',
-    label: 'Mehrbedarf',
-    text: 'Regelmäßig und vorhersehbar, zusätzlich zum Unterhalt – z. B. Kita-Beitrag, Nachhilfe, Zahnspange.',
-  },
-  {
-    key: 'sonderbedarf',
-    label: 'Sonderbedarf',
-    text: 'Unvorhersehbar und außergewöhnlich hoch – z. B. kurzfristige Behandlung. Zeitnah ansprechen: Der Anspruch ist befristet.',
-  },
-];
+export function categoryOf(key: string, t: Dict = currentT()) {
+  const all = categories(t);
+  return all.find((c) => c.key === key) ?? all[all.length - 1];
+}
 
-export function needOf(key: NeedType) {
-  return NEEDS.find((n) => n.key === key) ?? NEEDS[0];
+const NEED_KEYS: NeedType[] = ['regular', 'mehrbedarf', 'sonderbedarf'];
+
+/** Nur zur Orientierung – die Einordnung im Einzelfall ist keine Frage, die die App beantwortet. */
+export function needs(t: Dict = currentT()): { key: NeedType; label: string; text: string }[] {
+  return NEED_KEYS.map((key) => ({ key, ...t.lib.needs[key] }));
+}
+
+export function needOf(key: NeedType, t: Dict = currentT()) {
+  return { key, ...(t.lib.needs[key] ?? t.lib.needs.regular) };
 }

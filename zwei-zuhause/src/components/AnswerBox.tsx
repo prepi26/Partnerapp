@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Field, SecondaryButton } from '@/components/ui';
 import { attempt } from '@/data/store';
+import { useT } from '@/i18n';
 import { spacing } from '@/theme';
 
 /** Zustimmen oder ablehnen – optional mit kurzer Begründung, die mit festgehalten wird. */
@@ -10,13 +11,14 @@ export function AnswerBox({
   yes,
   no,
   onAnswer,
-  placeholder = 'Begründung (optional)',
+  placeholder,
 }: {
   yes: string;
   no: string;
   onAnswer: (accept: boolean, note: string) => Promise<void>;
   placeholder?: string;
 }) {
+  const t = useT();
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const answer = async (accept: boolean) => {
@@ -26,7 +28,13 @@ export function AnswerBox({
   };
   return (
     <View style={styles.box}>
-      <Field label="Deine Antwort" value={note} onChangeText={setNote} placeholder={placeholder} maxLength={1000} />
+      <Field
+        label={t.family.answerBox.label}
+        value={note}
+        onChangeText={setNote}
+        placeholder={placeholder ?? t.family.answerBox.placeholder}
+        maxLength={1000}
+      />
       <View style={styles.buttons}>
         <View style={{ flex: 1 }}>
           <SecondaryButton title={yes} icon="checkmark" onPress={() => !busy && answer(true)} />

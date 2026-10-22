@@ -9,13 +9,15 @@ import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { usePlus } from '@/data/plus';
 import { attempt, NewPhoto, useFamily } from '@/data/store';
 import { ExpenseKind, NeedType, ParentKey } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { toISO, today } from '@/lib/dates';
-import { CATEGORIES, formatMoney, NEEDS, parseMoney } from '@/lib/money';
+import { categories, formatMoney, needs, parseMoney } from '@/lib/money';
 import { other } from '@/lib/schedule';
 import { close } from '@/lib/nav';
 import { colors, radius, spacing } from '@/theme';
 
 export default function ExpenseNew() {
+  const t = useT();
   const { family, me, otherName, otherJoined, addExpense } = useFamily();
   const { active: plus } = usePlus();
   const [kind, setKind] = useState<ExpenseKind>('expense');
@@ -33,6 +35,7 @@ export default function ExpenseNew() {
 
   const cents = parseMoney(amount);
   const shares = [...new Set([50, defaultMine, 100 - defaultMine, 0, 100])];
+  const needList = needs(t);
 
   const pickReceipt = async (camera: boolean) => {
     if (!plus) {
@@ -59,7 +62,7 @@ export default function ExpenseNew() {
     const ok = await attempt(() =>
       addExpense({
         kind,
-        title: title.trim() || (kind === 'payment' ? 'Ausgleichszahlung' : 'Ausgabe'),
+        title: title.trim() || (kind === 'payment' ? t.money.new.defaultPayment : t.money.new.defaultExpense),
         category: kind === 'payment' ? 'ausgleich' : category,
         amount_cents: cents,
         day,
@@ -77,40 +80,48 @@ export default function ExpenseNew() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.chips}>
-          <Chip label="Ausgabe" selected={kind === 'expense'} onPress={() => setKind('expense')} />
-          <Chip label="Ausgleichszahlung" tint="accent" selected={kind === 'payment'} onPress={() => setKind('payment')} />
+          <Chip label={t.money.new.kindExpense} selected={kind === 'expense'} onPress={() => setKind('expense')} />
+          <Chip label={t.money.new.kindPayment} tint="accent" selected={kind === 'payment'} onPress={() => setKind('payment')} />
         </View>
 
         <Field
-          label="Betrag in €"
+          label={t.money.new.amount}
           value={amount}
           onChangeText={setAmount}
-          placeholder="0,00"
+          placeholder={t.money.new.amountPlaceholder}
           keyboardType="decimal-pad"
           style={styles.amount}
         />
         <Field
-          label={kind === 'payment' ? 'Notiz (optional)' : 'Wofür?'}
+          label={kind === 'payment' ? t.money.new.note : t.money.new.what}
           value={title}
           onChangeText={setTitle}
-          placeholder={kind === 'payment' ? 'z. B. Überweisung Oktober' : 'z. B. Winterjacke'}
+          placeholder={kind === 'payment' ? t.money.new.notePlaceholder : t.money.new.whatPlaceholder}
           maxLength={200}
         />
-        <DateField label="Datum" value={day} onChange={setDay} maximumDate={today()} />
+        <DateField label={t.money.new.date} value={day} onChange={setDay} maximumDate={today()} />
 
-        <Label>{kind === 'payment' ? 'Wer hat gezahlt?' : 'Wer hat bezahlt?'}</Label>
+        <Label>{kind === 'payment' ? t.money.new.whoPaidPayment : t.money.new.whoPaidExpense}</Label>
         <View style={styles.chips}>
-          <Chip label="Ich" selected={paidBy === me} onPress={() => setPaidBy(me)} />
+          <Chip label={t.money.new.me} selected={paidBy === me} onPress={() => setPaidBy(me)} />
           <Chip label={otherName} tint="accent" selected={paidBy !== me} onPress={() => setPaidBy(other(me))} />
         </View>
         {kind === 'payment' ? (
           <Text style={styles.hint}>
-            {paidBy === me ? `Du hast ${otherName}` : `${otherName} hat dir`} {cents ? formatMoney(cents) : 'den Betrag'}{' '}
-            gezahlt, um den Saldo auszugleichen.
+            {fmt(
+              paidBy === me
+                ? cents
+                  ? t.money.new.paymentHintMe
+                  : t.money.new.paymentHintMeNoAmount
+                : cents
+                  ? t.money.new.paymentHintOther
+                  : t.money.new.paymentHintOtherNoAmount,
+              { name: otherName, amount: cents ? formatMoney(cents) : '' },
+            )}
           </Text>
         ) : (
           <>
-            <Label>Mein Anteil</Label>
+            <Label>{t.money.new.myShare}</Label>
             <View style={styles.chips}>
               {shares.map((s) => (
                 <Chip key={s} label={`${s} %`} selected={myShare === s} onPress={() => setMyShare(s)} />
@@ -118,13 +129,17 @@ export default function ExpenseNew() {
             </View>
             <Text style={styles.hint}>
               {cents
-                ? `Du trägst ${formatMoney(Math.round((cents * myShare) / 100))}, ${otherName} ${formatMoney(cents - Math.round((cents * myShare) / 100))}.`
-                : 'Den Standard-Anteil stellst du in den Einstellungen ein.'}
+                ? fmt(t.money.new.shareHint, {
+                    mine: formatMoney(Math.round((cents * myShare) / 100)),
+                    name: otherName,
+                    theirs: formatMoney(cents - Math.round((cents * myShare) / 100)),
+                  })
+                : t.money.new.shareDefaultHint}
             </Text>
 
-            <Label>Kategorie</Label>
+            <Label>{t.money.new.category}</Label>
             <View style={styles.chips}>
-              {CATEGORIES.map((c) => (
+              {categories(t).map((c) => (
                 <Chip
                   key={c.key}
                   label={`${c.emoji} ${c.label}`}
@@ -134,42 +149,42 @@ export default function ExpenseNew() {
               ))}
             </View>
 
-            <Label>Art der Ausgabe</Label>
+            <Label>{t.money.new.need}</Label>
             <View style={styles.chips}>
-              {NEEDS.map((n) => (
+              {needList.map((n) => (
                 <Chip key={n.key} label={n.label} tint="accent" selected={need === n.key} onPress={() => setNeed(n.key)} />
               ))}
             </View>
-            <Text style={styles.hint}>{NEEDS.find((n) => n.key === need)?.text}</Text>
+            <Text style={styles.hint}>{needList.find((n) => n.key === need)?.text}</Text>
           </>
         )}
 
-        <Label>Beleg {plus ? '' : '(Plus)'}</Label>
+        <Label>{plus ? t.money.new.receipt : t.money.new.receiptPlus}</Label>
         {receipt ? (
-          <Pressable accessibilityRole="button" accessibilityLabel="Beleg entfernen" onPress={() => setReceipt(null)}>
+          <Pressable accessibilityRole="button" accessibilityLabel={t.money.new.removeReceipt} onPress={() => setReceipt(null)}>
             <Image source={{ uri: receipt.uri }} style={styles.receipt} />
-            <Text style={styles.hint}>Tippen zum Entfernen</Text>
+            <Text style={styles.hint}>{t.money.new.tapToRemove}</Text>
           </Pressable>
         ) : (
           <View style={styles.chips}>
             {Platform.OS !== 'web' ? (
               <Pressable accessibilityRole="button" onPress={() => pickReceipt(true)} style={styles.receiptButton}>
                 <Ionicons name="camera-outline" size={20} color={colors.primary} />
-                <Text style={styles.receiptText}>Foto machen</Text>
+                <Text style={styles.receiptText}>{t.money.new.takePhoto}</Text>
               </Pressable>
             ) : null}
             <Pressable accessibilityRole="button" onPress={() => pickReceipt(false)} style={styles.receiptButton}>
               <Ionicons name="image-outline" size={20} color={colors.primary} />
-              <Text style={styles.receiptText}>Aus Fotos</Text>
+              <Text style={styles.receiptText}>{t.money.new.fromPhotos}</Text>
             </Pressable>
           </View>
         )}
 
-        <PrimaryButton title={busy ? 'Speichere…' : 'Speichern'} icon="checkmark" disabled={busy || !cents} onPress={save} />
+        <PrimaryButton title={busy ? t.common.saving : t.common.save} icon="checkmark" disabled={busy || !cents} onPress={save} />
         <Text style={styles.hint}>
           {otherJoined
-            ? `${otherName} kann den Eintrag bestätigen oder ablehnen. Bestätigte Einträge lassen sich nicht mehr löschen.`
-            : `Sobald ${otherName} verbunden ist, kann er/sie deine Einträge bestätigen.`}
+            ? fmt(t.money.new.confirmHint, { name: otherName })
+            : fmt(t.money.new.notJoinedHint, { name: otherName })}
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

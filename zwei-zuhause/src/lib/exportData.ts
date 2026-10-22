@@ -2,6 +2,8 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
+import { currentT } from '@/i18n';
+
 import { toISO, today } from './dates';
 
 /**
@@ -23,5 +25,5 @@ export async function shareDataExport(data: Record<string, unknown>) {
   const file = new File(Paths.cache, name);
   file.create({ overwrite: true });
   file.write(json);
-  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Meine Daten' });
+  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: currentT().settings.account.shareTitle });
 }

@@ -9,12 +9,14 @@ import { Card, Chip, Field, Label, PrimaryButton, showError } from '@/components
 import { formatSize, MAX_DOCUMENT_BYTES, PickedFile } from '@/data/documents';
 import { attempt, useFamily } from '@/data/store';
 import { DocumentCategory } from '@/data/types';
+import { fmt, useT } from '@/i18n';
 import { toISO, today } from '@/lib/dates';
-import { DOCUMENT_CATEGORIES, documentCategory } from '@/lib/documentCategories';
+import { documentCategories, documentCategory } from '@/lib/documentCategories';
 import { close } from '@/lib/nav';
 import { colors, radius, spacing } from '@/theme';
 
 export default function DocumentNew() {
+  const t = useT();
   const { otherName, addDocument } = useFamily();
   const [file, setFile] = useState<PickedFile | null>(null);
   const [title, setTitle] = useState('');
@@ -26,7 +28,10 @@ export default function DocumentNew() {
 
   const accept = (picked: PickedFile) => {
     if (picked.size > MAX_DOCUMENT_BYTES) {
-      showError('Datei zu groß', `Höchstens ${formatSize(MAX_DOCUMENT_BYTES)} – bitte als kleineres Foto oder PDF.`);
+      showError(
+        t.family.documentNew.tooBigTitle,
+        fmt(t.family.documentNew.tooBigText, { size: formatSize(MAX_DOCUMENT_BYTES) }),
+      );
       return;
     }
     setFile(picked);
@@ -95,56 +100,61 @@ export default function DocumentNew() {
               </Text>
               <Text style={styles.hint}>{file.size ? formatSize(file.size) : ''}</Text>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Andere Datei" onPress={() => setFile(null)}>
+            <Pressable accessibilityRole="button" accessibilityLabel={t.family.documentNew.otherFile} onPress={() => setFile(null)}>
               <Ionicons name="close-circle" size={24} color={colors.textMuted} />
             </Pressable>
           </Card>
         ) : (
           <View style={styles.pickers}>
-            {Platform.OS !== 'web' ? <PickButton icon="camera-outline" label="Fotografieren" onPress={() => pickPhoto(true)} /> : null}
-            <PickButton icon="image-outline" label="Aus Fotos" onPress={() => pickPhoto(false)} />
-            <PickButton icon="document-outline" label="PDF / Datei" onPress={pickFile} />
+            {Platform.OS !== 'web' ? (
+              <PickButton icon="camera-outline" label={t.family.documentNew.takePhoto} onPress={() => pickPhoto(true)} />
+            ) : null}
+            <PickButton icon="image-outline" label={t.family.documentNew.fromPhotos} onPress={() => pickPhoto(false)} />
+            <PickButton icon="document-outline" label={t.family.documentNew.pdfFile} onPress={pickFile} />
           </View>
         )}
 
-        <Field label="Titel" value={title} onChangeText={setTitle} placeholder="z. B. Zeugnis 2. Klasse" maxLength={200} />
+        <Field
+          label={t.family.documentNew.titleLabel}
+          value={title}
+          onChangeText={setTitle}
+          placeholder={t.family.documentNew.titlePlaceholder}
+          maxLength={200}
+        />
 
-        <Label>Bereich</Label>
+        <Label>{t.family.documentNew.area}</Label>
         <View style={styles.chips}>
-          {DOCUMENT_CATEGORIES.map((c) => (
+          {documentCategories(t).map((c) => (
             <Chip key={c.key} label={`${c.emoji} ${c.label}`} selected={category === c.key} onPress={() => setCategory(c.key)} />
           ))}
         </View>
-        <Text style={styles.hint}>z. B. {documentCategory(category).examples}</Text>
+        <Text style={styles.hint}>{fmt(t.family.examples, { examples: documentCategory(category, t).examples })}</Text>
 
         <View style={styles.chips}>
-          <Chip label="Ohne Datum" tint="accent" selected={!withDate} onPress={() => setWithDate(false)} />
-          <Chip label="Dokument vom …" tint="accent" selected={withDate} onPress={() => setWithDate(true)} />
+          <Chip label={t.family.documentNew.noDate} tint="accent" selected={!withDate} onPress={() => setWithDate(false)} />
+          <Chip label={t.family.documentNew.withDate} tint="accent" selected={withDate} onPress={() => setWithDate(true)} />
         </View>
-        {withDate ? <DateField label="Datum des Dokuments" value={docDate} onChange={setDocDate} maximumDate={today()} /> : null}
+        {withDate ? (
+          <DateField label={t.family.documentNew.dateLabel} value={docDate} onChange={setDocDate} maximumDate={today()} />
+        ) : null}
 
         {health ? (
           <Card style={styles.consent}>
             <View style={styles.consentRow}>
-              <Text style={styles.consentText}>
-                Ich willige ein, dass dieses Gesundheitsdokument gespeichert und {otherName} gezeigt wird (Art. 9 DSGVO).
-                Ich kann es jederzeit wieder löschen.
-              </Text>
+              <Text style={styles.consentText}>{fmt(t.family.documentNew.healthConsent, { name: otherName })}</Text>
               <Switch value={consent} onValueChange={setConsent} trackColor={{ true: colors.primary }} />
             </View>
-            <Text style={styles.hint}>Bitte nur hochladen, was ihr beide für die Betreuung wirklich braucht.</Text>
+            <Text style={styles.hint}>{t.family.documentNew.healthHint}</Text>
           </Card>
         ) : null}
 
         <PrimaryButton
-          title={busy ? 'Lade hoch…' : 'Teilen'}
+          title={busy ? t.family.documentNew.uploading : t.family.documentNew.share}
           icon="cloud-upload-outline"
           disabled={busy || !file || !title.trim() || (health && !consent)}
           onPress={save}
         />
-        <Text style={styles.hint}>
-          {otherName} sieht das Dokument sofort. Fachkräfte mit Zugang können es ebenfalls lesen.
-        </Text>
+        <Text style={styles.hint}>{fmt(t.family.documentNew.visibleHint, { name: otherName })}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

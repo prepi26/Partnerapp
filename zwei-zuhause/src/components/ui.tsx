@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { currentT } from '@/i18n';
 import { colors, gradient, radius, shadow, spacing } from '@/theme';
 
 export type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -45,7 +46,7 @@ export function confirmDestructive(title: string, message: string, action: strin
     return;
   }
   Alert.alert(title, message, [
-    { text: 'Abbrechen', style: 'cancel' },
+    { text: currentT().common.cancel, style: 'cancel' },
     { text: action, style: 'destructive', onPress: onConfirm },
   ]);
 }
@@ -78,7 +79,7 @@ export function DialogHost() {
             {request.onConfirm ? (
               <>
                 <Pressable accessibilityRole="button" onPress={close} style={styles.dialogButton}>
-                  <Text style={styles.dialogCancel}>Abbrechen</Text>
+                  <Text style={styles.dialogCancel}>{currentT().common.cancel}</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -93,7 +94,7 @@ export function DialogHost() {
               </>
             ) : (
               <Pressable accessibilityRole="button" onPress={close} style={styles.dialogButton}>
-                <Text style={styles.dialogOk}>OK</Text>
+                <Text style={styles.dialogOk}>{currentT().common.ok}</Text>
               </Pressable>
             )}
           </View>
@@ -256,7 +257,7 @@ export function KeyboardDoneBar({ id }: { id: string }) {
     <InputAccessoryView nativeID={id}>
       <View style={styles.doneBar}>
         <Pressable accessibilityRole="button" onPress={Keyboard.dismiss} hitSlop={12}>
-          <Text style={styles.doneText}>Fertig</Text>
+          <Text style={styles.doneText}>{currentT().common.done}</Text>
         </Pressable>
       </View>
     </InputAccessoryView>

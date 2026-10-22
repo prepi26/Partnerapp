@@ -7,15 +7,16 @@ import { Card, Chip, EmptyState, PrimaryButton, SecondaryButton, showError } fro
 import { useCase } from '@/data/case';
 import { attempt, errorMessage, useStore } from '@/data/store';
 import { ParentKey } from '@/data/types';
-import { AGREEMENT_SECTIONS } from '@/lib/agreement';
+import { fmt, useT } from '@/i18n';
+import { agreementSections } from '@/lib/agreement';
 import { addDays, formatDate, formatTimestamp, formatWeekday, toISO, today } from '@/lib/dates';
 import { decisionCategory } from '@/lib/decisions';
 import { documentCategory } from '@/lib/documentCategories';
 import { handoverLabel } from '@/lib/handovers';
 import { balanceAB, formatMoney } from '@/lib/money';
 import { openDocument } from '@/lib/openDocument';
-import { acceptedChanges, dayInfo, MODELS } from '@/lib/schedule';
-import { RANGES, shareReport } from '@/lib/shareReport';
+import { acceptedChanges, dayInfo, models } from '@/lib/schedule';
+import { RANGES, ranges, shareReport } from '@/lib/shareReport';
 import { colors, spacing } from '@/theme';
 
 /** Fachkraft-Ansicht einer Familie: nur lesen, Berichte als PDF. */
@@ -23,6 +24,8 @@ export default function CaseView() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { professional_access, userId, revokeProfessional } = useStore();
   const { data, loading, error, reload } = useCase(id);
+  const t = useT();
+  const tc = t.pro.case;
   const [range, setRange] = useState<string>('90');
   const [busy, setBusy] = useState(false);
   const access = professional_access.find((p) => p.family_id === id && p.professional === userId && !p.revoked_at);
@@ -33,8 +36,8 @@ export default function CaseView() {
   if (error || !data) {
     return (
       <View style={{ padding: spacing.lg, gap: spacing.md }}>
-        <EmptyState icon="lock-closed-outline" title="Kein Zugriff" text={error ?? 'Dieser Zugang ist nicht (mehr) aktiv.'} />
-        <SecondaryButton title="Neu laden" icon="refresh" onPress={reload} />
+        <EmptyState icon="lock-closed-outline" title={tc.noAccess} text={error ?? tc.accessInactive} />
+        <SecondaryButton title={tc.reload} icon="refresh" onPress={reload} />
       </View>
     );
   }
@@ -44,7 +47,7 @@ export default function CaseView() {
   const now = today();
   const todayParent = dayInfo(family, accepted, new Map(), now).parent;
   const balance = balanceAB(data.expenses);
-  const model = MODELS.find((m) => m.key === family.schedule_model);
+  const model = models(t).find((m) => m.key === family.schedule_model);
   const agreement = data.agreements[0];
 
   const pdf = async (mode: 'kurz' | 'voll') => {
@@ -75,7 +78,7 @@ export default function CaseView() {
         journal: [],
       });
     } catch (e) {
-      showError('PDF nicht erstellt', errorMessage(e));
+      showError(t.pro.pdfFailed, errorMessage(e));
     }
     setBusy(false);
   };
@@ -84,59 +87,59 @@ export default function CaseView() {
     <ScrollView contentContainerStyle={styles.content}>
       <Stack.Screen options={{ title: `${family.name_a} & ${family.name_b}` }} />
       <Card style={{ gap: 4, backgroundColor: parentColor(todayParent).pale }}>
-        <Text style={styles.big}>{family.children || 'Kind'}</Text>
+        <Text style={styles.big}>{family.children || tc.child}</Text>
         <Text style={styles.text}>
-          Heute bei {todayParent ? name(todayParent) : '–'} · {model?.title ?? 'kein Plan'}
+          {fmt(tc.todayAt, { name: todayParent ? name(todayParent) : '–', plan: model?.title ?? tc.noPlan })}
         </Text>
         <Text style={styles.meta}>{formatWeekday(now)}</Text>
       </Card>
 
-      <Text style={styles.section}>Bericht als PDF</Text>
+      <Text style={styles.section}>{tc.reportPdf}</Text>
       <View style={styles.chips}>
-        {RANGES.map((r) => (
+        {ranges(t).map((r) => (
           <Chip key={r.key} label={r.label} selected={range === r.key} onPress={() => setRange(r.key)} />
         ))}
       </View>
       <View style={styles.buttons}>
         <View style={{ flex: 1 }}>
-          <PrimaryButton title="Kurzbericht" icon="document-outline" disabled={busy} onPress={() => pdf('kurz')} />
+          <PrimaryButton title={tc.shortReport} icon="document-outline" disabled={busy} onPress={() => pdf('kurz')} />
         </View>
         <View style={{ flex: 1 }}>
-          <SecondaryButton title="Vollständig" icon="documents-outline" onPress={() => !busy && pdf('voll')} />
+          <SecondaryButton title={tc.fullReport} icon="documents-outline" onPress={() => !busy && pdf('voll')} />
         </View>
       </View>
 
-      <Text style={styles.section}>Übergaben</Text>
+      <Text style={styles.section}>{tc.handovers}</Text>
       <Card style={{ gap: 6 }}>
         {data.handovers.slice(0, 8).map((h) => (
           <Text key={h.id} style={styles.text}>
             {formatDate(h.day)}: {handoverLabel(h)}
-            {h.reply ? ` · ${h.reply === 'confirmed' ? 'bestätigt' : 'widersprochen'}` : ''}
+            {h.reply ? ` · ${h.reply === 'confirmed' ? tc.confirmed : tc.disputed}` : ''}
           </Text>
         ))}
-        {data.handovers.length === 0 ? <Text style={styles.meta}>Keine erfasst.</Text> : null}
+        {data.handovers.length === 0 ? <Text style={styles.meta}>{tc.noneRecorded}</Text> : null}
       </Card>
 
-      <Text style={styles.section}>Entscheidungen</Text>
+      <Text style={styles.section}>{tc.decisions}</Text>
       <Card style={{ gap: 6 }}>
         {data.decisions.slice(0, 8).map((d) => (
           <Text key={d.id} style={styles.text}>
             {decisionCategory(d.category).emoji} {d.title} –{' '}
-            {d.status === 'proposed' ? 'offen' : d.status === 'agreed' ? 'zugestimmt' : 'nicht zugestimmt'}
+            {d.status === 'proposed' ? tc.decisionOpen : d.status === 'agreed' ? tc.decisionAgreed : tc.decisionRejected}
           </Text>
         ))}
-        {data.decisions.length === 0 ? <Text style={styles.meta}>Keine erfasst.</Text> : null}
+        {data.decisions.length === 0 ? <Text style={styles.meta}>{tc.noneRecorded}</Text> : null}
       </Card>
 
-      <Text style={styles.section}>Elternvereinbarung</Text>
+      <Text style={styles.section}>{tc.agreement}</Text>
       <Card style={{ gap: 6 }}>
         {agreement ? (
           <>
             <Text style={styles.text}>
-              Fassung {agreement.version} ·{' '}
-              {agreement.accepted_a_at && agreement.accepted_b_at ? 'von beiden angenommen' : 'nicht von beiden angenommen'}
+              {fmt(tc.agreementVersion, { version: agreement.version })} ·{' '}
+              {agreement.accepted_a_at && agreement.accepted_b_at ? tc.acceptedByBoth : tc.notAcceptedByBoth}
             </Text>
-            {AGREEMENT_SECTIONS.filter((s) => agreement.content[s.key]).map((s) => (
+            {agreementSections(t).filter((s) => agreement.content[s.key]).map((s) => (
               <Text key={s.key} style={styles.text}>
                 <Text style={{ fontWeight: '700' }}>{s.title}: </Text>
                 {agreement.content[s.key]}
@@ -144,23 +147,26 @@ export default function CaseView() {
             ))}
           </>
         ) : (
-          <Text style={styles.meta}>Keine Vereinbarung.</Text>
+          <Text style={styles.meta}>{tc.noAgreement}</Text>
         )}
       </Card>
 
-      <Text style={styles.section}>Kosten</Text>
+      <Text style={styles.section}>{tc.costs}</Text>
       <Card style={{ gap: 4 }}>
         <Text style={styles.text}>
-          {data.expenses.length} Einträge · Saldo:{' '}
-          {balance === 0
-            ? 'ausgeglichen'
-            : balance > 0
-              ? `${family.name_b} → ${family.name_a} ${formatMoney(balance)}`
-              : `${family.name_a} → ${family.name_b} ${formatMoney(-balance)}`}
+          {fmt(data.expenses.length === 1 ? tc.costSummaryOne : tc.costSummaryOther, {
+            n: data.expenses.length,
+            balance:
+              balance === 0
+                ? tc.balanced
+                : balance > 0
+                  ? `${family.name_b} → ${family.name_a} ${formatMoney(balance)}`
+                  : `${family.name_a} → ${family.name_b} ${formatMoney(-balance)}`,
+          })}
         </Text>
       </Card>
 
-      <Text style={styles.section}>Letzte Nachrichten</Text>
+      <Text style={styles.section}>{tc.lastMessages}</Text>
       <Card style={{ gap: spacing.sm }}>
         {data.messages.slice(-10).map((m) => (
           <View key={m.id}>
@@ -170,15 +176,15 @@ export default function CaseView() {
             <Text style={styles.text}>{m.text}</Text>
           </View>
         ))}
-        {data.messages.length === 0 ? <Text style={styles.meta}>Keine Nachrichten.</Text> : null}
+        {data.messages.length === 0 ? <Text style={styles.meta}>{tc.noMessages}</Text> : null}
         {data.messages.length > 10 ? (
-          <Text style={styles.meta}>Den vollständigen Verlauf enthält der PDF-Bericht.</Text>
+          <Text style={styles.meta}>{tc.fullHistoryInPdf}</Text>
         ) : null}
       </Card>
 
       {data.documents.length ? (
         <>
-          <Text style={styles.section}>Dokumente</Text>
+          <Text style={styles.section}>{tc.documents}</Text>
           <Card style={{ gap: 6 }}>
             {data.documents.map((d) => (
               <Text key={d.id} style={[styles.text, styles.link]} onPress={() => openDocument(d)}>
@@ -192,7 +198,7 @@ export default function CaseView() {
 
       {data.child_info.length ? (
         <>
-          <Text style={styles.section}>Infos zum Kind</Text>
+          <Text style={styles.section}>{tc.childInfo}</Text>
           <Card style={{ gap: 4 }}>
             {data.child_info.map((i) => (
               <Text key={i.id} style={styles.text}>
@@ -206,7 +212,7 @@ export default function CaseView() {
 
       {access ? (
         <SecondaryButton
-          title="Zugang beenden"
+          title={tc.endAccess}
           icon="close-circle-outline"
           danger
           onPress={() => attempt(() => revokeProfessional(access.id))}

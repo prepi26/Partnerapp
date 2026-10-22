@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
 
+import { currentT } from '@/i18n';
+
 const KEY = 'zweizuhause.appLock';
 
 /** Nach so langer Zeit im Hintergrund wird wieder nach Face ID / Code gefragt. */
@@ -36,11 +38,12 @@ export async function lockAvailable(): Promise<boolean> {
 
 /** Fragt nach Face ID / Fingerabdruck, ersatzweise nach dem Gerätecode. */
 export async function unlock(): Promise<boolean> {
+  const t = currentT();
   try {
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Zwei Zuhause entsperren',
-      cancelLabel: 'Abbrechen',
-      fallbackLabel: 'Code eingeben',
+      promptMessage: t.auth.appLock.prompt,
+      cancelLabel: t.common.cancel,
+      fallbackLabel: t.auth.appLock.enterCode,
       disableDeviceFallback: false,
     });
     return result.success;

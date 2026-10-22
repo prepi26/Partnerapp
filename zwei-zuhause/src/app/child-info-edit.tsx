@@ -4,12 +4,14 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 
 import { Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
-import { INFO_CATEGORIES, infoCategory } from '@/lib/childInfo';
+import { fmt, useT } from '@/i18n';
+import { infoCategories, infoCategory } from '@/lib/childInfo';
 import { close } from '@/lib/nav';
 import { spacing } from '@/theme';
 
 export default function ChildInfoEdit() {
   const params = useLocalSearchParams<{ id?: string; category?: string }>();
+  const t = useT();
   const { child_info, saveChildInfo, removeChildInfo } = useFamily();
   const existing = child_info.find((i) => i.id === params.id);
   const [category, setCategory] = useState(existing?.category ?? params.category ?? 'gesundheit');
@@ -18,7 +20,7 @@ export default function ChildInfoEdit() {
   const [busy, setBusy] = useState(false);
 
   const used = new Set(child_info.filter((i) => i.category === category).map((i) => i.label));
-  const suggestions = infoCategory(category).suggestions.filter((s) => !used.has(s));
+  const suggestions = infoCategory(category, t).suggestions.filter((s) => !used.has(s));
 
   const save = async () => {
     setBusy(true);
@@ -31,16 +33,21 @@ export default function ChildInfoEdit() {
 
   const remove = () =>
     existing &&
-    confirmDestructive('Eintrag löschen?', `„${existing.label}“ wird für euch beide gelöscht.`, 'Löschen', () => {
-      attempt(() => removeChildInfo(existing.id)).then((ok) => ok && close());
-    });
+    confirmDestructive(
+      t.family.childInfoEdit.deleteTitle,
+      fmt(t.family.childInfoEdit.deleteText, { label: existing.label }),
+      t.common.delete,
+      () => {
+        attempt(() => removeChildInfo(existing.id)).then((ok) => ok && close());
+      },
+    );
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Label>Bereich</Label>
+        <Label>{t.family.childInfoEdit.area}</Label>
         <View style={styles.chips}>
-          {INFO_CATEGORIES.map((c) => (
+          {infoCategories(t).map((c) => (
             <Chip
               key={c.key}
               label={`${c.emoji} ${c.label}`}
@@ -49,7 +56,13 @@ export default function ChildInfoEdit() {
             />
           ))}
         </View>
-        <Field label="Was?" value={label} onChangeText={setLabel} placeholder="z. B. Kinderarzt" maxLength={100} />
+        <Field
+          label={t.family.childInfoEdit.what}
+          value={label}
+          onChangeText={setLabel}
+          placeholder={t.family.childInfoEdit.whatPlaceholder}
+          maxLength={100}
+        />
         {!existing && suggestions.length ? (
           <View style={styles.chips}>
             {suggestions.map((s) => (
@@ -58,15 +71,20 @@ export default function ChildInfoEdit() {
           </View>
         ) : null}
         <Field
-          label="Angabe"
+          label={t.family.childInfoEdit.value}
           value={value}
           onChangeText={setValue}
-          placeholder="z. B. Dr. Weber, Hauptstr. 5, 0221 123456"
+          placeholder={t.family.childInfoEdit.valuePlaceholder}
           multiline
           maxLength={2000}
         />
-        <PrimaryButton title={busy ? 'Speichere…' : 'Speichern'} icon="checkmark" disabled={busy || !label.trim()} onPress={save} />
-        {existing ? <SecondaryButton title="Löschen" icon="trash-outline" danger onPress={remove} /> : null}
+        <PrimaryButton
+          title={busy ? t.common.saving : t.common.save}
+          icon="checkmark"
+          disabled={busy || !label.trim()}
+          onPress={save}
+        />
+        {existing ? <SecondaryButton title={t.common.delete} icon="trash-outline" danger onPress={remove} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );

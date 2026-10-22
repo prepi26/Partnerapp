@@ -4,6 +4,7 @@ import { ColorValue } from 'react-native';
 
 import { IconName } from '@/components/ui';
 import { useFamily } from '@/data/store';
+import { useT } from '@/i18n';
 import { colors } from '@/theme';
 
 function icon(name: IconName, focusedName: IconName) {
@@ -13,6 +14,7 @@ function icon(name: IconName, focusedName: IconName) {
 }
 
 export default function TabLayout() {
+  const t = useT();
   const { messages, me, userId, decisions, handovers, agreements, professional_access } = useFamily();
   const unread = messages.filter((m) => m.sender_key !== me && !m.read_at).length;
   const latest = agreements[0];
@@ -33,13 +35,13 @@ export default function TabLayout() {
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'Heute', tabBarIcon: icon('home-outline', 'home') }} />
-      <Tabs.Screen name="calendar" options={{ title: 'Kalender', tabBarIcon: icon('calendar-outline', 'calendar') }} />
-      <Tabs.Screen name="expenses" options={{ title: 'Kosten', tabBarIcon: icon('wallet-outline', 'wallet') }} />
+      <Tabs.Screen name="index" options={{ title: t.home.tabs.today, tabBarIcon: icon('home-outline', 'home') }} />
+      <Tabs.Screen name="calendar" options={{ title: t.home.tabs.calendar, tabBarIcon: icon('calendar-outline', 'calendar') }} />
+      <Tabs.Screen name="expenses" options={{ title: t.home.tabs.expenses, tabBarIcon: icon('wallet-outline', 'wallet') }} />
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Nachrichten',
+          title: t.home.tabs.messages,
           tabBarIcon: icon('chatbubbles-outline', 'chatbubbles'),
           tabBarBadge: unread > 0 ? unread : undefined,
         }}
@@ -47,7 +49,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: 'Mehr',
+          title: t.home.tabs.more,
           tabBarIcon: icon('grid-outline', 'grid'),
           tabBarBadge: pending > 0 ? pending : undefined,
         }}

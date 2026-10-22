@@ -1,23 +1,5 @@
 import { ISODate } from '@/data/types';
-
-export const MONTHS = [
-  'Januar',
-  'Februar',
-  'März',
-  'April',
-  'Mai',
-  'Juni',
-  'Juli',
-  'August',
-  'September',
-  'Oktober',
-  'November',
-  'Dezember',
-];
-
-/** Montag zuerst, wie im deutschen Kalender. */
-export const WEEKDAYS_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const WEEKDAYS = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+import { currentT, Dict, fmt } from '@/i18n';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -50,20 +32,29 @@ export function daysBetween(a: Date, b: Date): number {
   return Math.round((ub - ua) / DAY_MS);
 }
 
-export function formatDate(iso: ISODate | Date): string {
+export function formatDate(iso: ISODate | Date, t: Dict = currentT()): string {
   const d = typeof iso === 'string' ? parseISO(iso) : iso;
-  return `${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return fmt(t.common.dates.long, { d: d.getDate(), month: t.common.dates.months[d.getMonth()], y: d.getFullYear() });
 }
 
-export function formatShort(iso: ISODate | Date): string {
+export function formatShort(iso: ISODate | Date, t: Dict = currentT()): string {
   const d = typeof iso === 'string' ? parseISO(iso) : iso;
-  return `${d.getDate()}. ${MONTHS[d.getMonth()].slice(0, 3)}`;
+  return fmt(t.common.dates.short, { d: d.getDate(), mon: t.common.dates.months[d.getMonth()].slice(0, 3) });
 }
 
 /** „Freitag, 24. Oktober“ */
-export function formatWeekday(iso: ISODate | Date): string {
+export function formatWeekday(iso: ISODate | Date, t: Dict = currentT()): string {
   const d = typeof iso === 'string' ? parseISO(iso) : iso;
-  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}`;
+  return fmt(t.common.dates.weekday, {
+    weekday: t.common.dates.weekdays[d.getDay()],
+    d: d.getDate(),
+    month: t.common.dates.months[d.getMonth()],
+  });
+}
+
+/** „Oktober 2026“ */
+export function formatMonth(date: Date, t: Dict = currentT()): string {
+  return `${t.common.dates.months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 /** Datum und Uhrzeit eines Zeitstempels, z. B. „24.10.2026, 18:05“. Für Nachweise immer mit Jahr. */
@@ -73,8 +64,8 @@ export function formatTimestamp(ts: string): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function countdownLabel(inDays: number): string {
-  if (inDays === 0) return 'heute';
-  if (inDays === 1) return 'morgen';
-  return `in ${inDays} Tagen`;
+export function countdownLabel(inDays: number, t: Dict = currentT()): string {
+  if (inDays === 0) return t.common.dates.today;
+  if (inDays === 1) return t.common.dates.tomorrow;
+  return fmt(t.common.dates.inDays, { n: inDays });
 }

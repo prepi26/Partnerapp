@@ -4,11 +4,13 @@ import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { AnswerBox } from '@/components/AnswerBox';
 import { Card, EmptyState, Fab } from '@/components/ui';
 import { useFamily } from '@/data/store';
+import { fmt, useT } from '@/i18n';
 import { formatTimestamp, formatWeekday } from '@/lib/dates';
 import { handoverLabel } from '@/lib/handovers';
 import { colors, spacing } from '@/theme';
 
 export default function Handovers() {
+  const t = useT();
   const { handovers, userId, otherName, replyHandover } = useFamily();
   const counts = { on_time: 0, late: 0, missed: 0 };
   for (const h of handovers) counts[h.status]++;
@@ -21,15 +23,12 @@ export default function Handovers() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <>
-            <Text style={styles.intro}>
-              Halte kurz fest, wie eine Übergabe gelaufen ist. Der andere Elternteil kann bestätigen oder widersprechen –
-              so entsteht ein faires Bild statt zwei Erinnerungen.
-            </Text>
+            <Text style={styles.intro}>{t.calendar.handovers.intro}</Text>
             {handovers.length ? (
               <Card style={styles.stats}>
-                <Stat label="pünktlich" value={counts.on_time} />
-                <Stat label="verspätet" value={counts.late} />
-                <Stat label="ausgefallen" value={counts.missed} />
+                <Stat label={t.calendar.handovers.statOnTime} value={counts.on_time} />
+                <Stat label={t.calendar.handovers.statLate} value={counts.late} />
+                <Stat label={t.calendar.handovers.statMissed} value={counts.missed} />
               </Card>
             ) : null}
           </>
@@ -37,32 +36,34 @@ export default function Handovers() {
         ListEmptyComponent={
           <EmptyState
             icon="car-outline"
-            title="Noch keine Übergaben"
-            text="Ein Tipp nach jeder Übergabe genügt – auch wenn alles gut lief. Gerade das zeigt, dass es klappt."
+            title={t.calendar.handovers.emptyTitle}
+            text={t.calendar.handovers.emptyText}
           />
         }
         renderItem={({ item: h }) => {
           const mine = h.created_by === userId;
           return (
             <Card style={{ gap: 4 }}>
-              <Text style={styles.day}>{formatWeekday(h.day)}</Text>
-              <Text style={styles.status}>{handoverLabel(h)}</Text>
+              <Text style={styles.day}>{formatWeekday(h.day, t)}</Text>
+              <Text style={styles.status}>{handoverLabel(h, t)}</Text>
               {h.note ? <Text style={styles.text}>{h.note}</Text> : null}
               <Text style={styles.meta}>
-                {mine ? 'Von dir' : `Von ${otherName}`} eingetragen · {formatTimestamp(h.created_at)}
+                {mine ? t.calendar.handovers.enteredByYou : fmt(t.calendar.handovers.enteredBy, { name: otherName })} ·{' '}
+                {formatTimestamp(h.created_at)}
               </Text>
               {h.reply ? (
                 <Text style={[styles.reply, { color: h.reply === 'confirmed' ? colors.primary : colors.danger }]}>
-                  {h.reply === 'confirmed' ? '✓ bestätigt' : '✗ widersprochen'}
-                  {h.reply_note ? `: „${h.reply_note}“` : ''} · {formatTimestamp(h.replied_at ?? h.created_at)}
+                  {h.reply === 'confirmed' ? `✓ ${t.calendar.handovers.confirmed}` : `✗ ${t.calendar.handovers.disputed}`}
+                  {h.reply_note ? `: ${fmt(t.calendar.quote, { text: h.reply_note })}` : ''} ·{' '}
+                  {formatTimestamp(h.replied_at ?? h.created_at)}
                 </Text>
               ) : mine ? (
-                <Text style={styles.meta}>Noch keine Rückmeldung von {otherName}</Text>
+                <Text style={styles.meta}>{fmt(t.calendar.handovers.noReply, { name: otherName })}</Text>
               ) : (
                 <AnswerBox
-                  yes="Stimmt so"
-                  no="Stimmt nicht"
-                  placeholder="z. B. Stau auf der A3, kurz Bescheid gegeben"
+                  yes={t.calendar.handovers.yes}
+                  no={t.calendar.handovers.no}
+                  placeholder={t.calendar.handovers.replyPlaceholder}
                   onAnswer={(confirm, note) => replyHandover(h.id, confirm, note)}
                 />
               )}
@@ -70,7 +71,7 @@ export default function Handovers() {
           );
         }}
       />
-      <Fab label="Übergabe eintragen" onPress={() => router.push('/handover-new')} />
+      <Fab label={t.calendar.handovers.add} onPress={() => router.push('/handover-new')} />
     </View>
   );
 }

@@ -1,17 +1,29 @@
+import { currentT, Dict } from '@/i18n';
+
 /**
  * Themen, bei denen Eltern mit gemeinsamer Sorge sich in der Regel einigen müssen
  * (§ 1687 BGB, „Angelegenheiten von erheblicher Bedeutung“). Nur zur Orientierung.
  */
-export const DECISION_CATEGORIES: { key: string; label: string; emoji: string; examples: string }[] = [
-  { key: 'schule', label: 'Schule & Kita', emoji: '🎒', examples: 'Schulwahl, Schulwechsel, Kita-Platz, Förderschule' },
-  { key: 'gesundheit', label: 'Gesundheit', emoji: '🩺', examples: 'Operation, Impfungen, Therapie, Zahnspange' },
-  { key: 'reise', label: 'Reisen', emoji: '✈️', examples: 'Auslandsreise, Fernreise, Schüleraustausch, Reisepass' },
-  { key: 'wohnort', label: 'Wohnort', emoji: '🏠', examples: 'Umzug, Wechsel des Lebensmittelpunkts' },
-  { key: 'religion', label: 'Religion & Name', emoji: '🕊️', examples: 'Taufe, Religionsunterricht, Namensänderung' },
-  { key: 'freizeit', label: 'Freizeit', emoji: '⚽', examples: 'Verein, Instrument, Handy, Ferienlager' },
-  { key: 'sonstiges', label: 'Sonstiges', emoji: '📌', examples: '' },
-];
+const DECISION_EMOJI = {
+  schule: '🎒',
+  gesundheit: '🩺',
+  reise: '✈️',
+  wohnort: '🏠',
+  religion: '🕊️',
+  freizeit: '⚽',
+  sonstiges: '📌',
+} as const;
+type DecisionKey = keyof typeof DECISION_EMOJI;
 
-export function decisionCategory(key: string) {
-  return DECISION_CATEGORIES.find((c) => c.key === key) ?? DECISION_CATEGORIES[DECISION_CATEGORIES.length - 1];
+export function decisionCategories(t: Dict = currentT()) {
+  return (Object.keys(DECISION_EMOJI) as DecisionKey[]).map((key) => ({
+    key,
+    emoji: DECISION_EMOJI[key],
+    ...t.lib.decisionCategories[key],
+  }));
+}
+
+export function decisionCategory(key: string, t: Dict = currentT()) {
+  const all = decisionCategories(t);
+  return all.find((c) => c.key === key) ?? all[all.length - 1];
 }

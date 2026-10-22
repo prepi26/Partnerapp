@@ -1,5 +1,7 @@
 import { Family, ISODate, ParentKey, ScheduleChange, ScheduleModel } from '@/data/types';
 
+import { currentT, Dict, fmt } from '@/i18n';
+
 import { addDays, daysBetween, parseISO, toISO } from './dates';
 
 /**
@@ -14,17 +16,16 @@ const PATTERNS: Record<Exclude<ScheduleModel, 'none'>, string> = {
   residenz_we: 'FFFFOOOFFFFFFF',
 };
 
-export const MODELS: { key: ScheduleModel; title: string; text: string }[] = [
-  { key: 'wechsel_7_7', title: 'Wechselmodell 7/7', text: 'Eine Woche hier, eine Woche dort.' },
-  { key: 'wechsel_2_2_5_5', title: 'Wechselmodell 2-2-5-5', text: 'Feste Wochentage plus Wochenenden im Wechsel.' },
-  { key: 'wechsel_2_2_3', title: 'Wechselmodell 2-2-3', text: 'Kurze Abstände – gut für kleine Kinder.' },
-  {
-    key: 'residenz_we',
-    title: 'Residenzmodell',
-    text: 'Das Kind lebt überwiegend bei einem, jedes zweite Wochenende (Fr–So) beim anderen.',
-  },
-  { key: 'none', title: 'Kein fester Plan', text: 'Ihr tragt jeden Tag einzeln ein.' },
-];
+export const MODEL_KEYS: ScheduleModel[] = ['wechsel_7_7', 'wechsel_2_2_5_5', 'wechsel_2_2_3', 'residenz_we', 'none'];
+
+/** Umgangsmodelle mit Titel und Erklärung in der gewählten Sprache. */
+export function models(t: Dict = currentT()): { key: ScheduleModel; title: string; text: string }[] {
+  return MODEL_KEYS.map((key) => ({ key, ...t.lib.models[key] }));
+}
+
+export function modelTitle(key: ScheduleModel, t: Dict = currentT()) {
+  return t.lib.models[key].title;
+}
 
 export function other(key: ParentKey): ParentKey {
   return key === 'a' ? 'b' : 'a';
@@ -99,8 +100,13 @@ export function nextHandover(
 }
 
 /** „17:00 · Kita Sonnenschein“ – leer, wenn nichts festgelegt ist. */
-export function handoverWhere(family: Pick<Family, 'handover_time' | 'handover_place'>): string {
-  return [family.handover_time && `${family.handover_time} Uhr`, family.handover_place.trim()].filter(Boolean).join(' · ');
+export function handoverWhere(
+  family: Pick<Family, 'handover_time' | 'handover_place'>,
+  t: Dict = currentT(),
+): string {
+  return [family.handover_time && fmt(t.common.dates.clock, { time: family.handover_time }), family.handover_place.trim()]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 /** Gültige Uhrzeit „HH:MM“ (oder leer). Akzeptiert auch „17“ und „17.30“. */

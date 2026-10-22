@@ -1,39 +1,26 @@
-/** Bereiche der Kind-Infos mit Vorschlägen, was typischerweise hineingehört. */
-export const INFO_CATEGORIES: { key: string; label: string; emoji: string; suggestions: string[] }[] = [
-  {
-    key: 'gesundheit',
-    label: 'Gesundheit',
-    emoji: '🩺',
-    suggestions: ['Kinderarzt', 'Zahnarzt', 'Krankenkasse', 'Allergien', 'Medikamente', 'Impfungen', 'Blutgruppe'],
-  },
-  {
-    key: 'schule',
-    label: 'Schule & Kita',
-    emoji: '🎒',
-    suggestions: ['Schule / Kita', 'Klasse / Gruppe', 'Klassenlehrer:in', 'Schulzeiten', 'Hort / Betreuung'],
-  },
-  { key: 'groessen', label: 'Größen', emoji: '📏', suggestions: ['Kleidergröße', 'Schuhgröße', 'Körpergröße'] },
-  {
-    key: 'dokumente',
-    label: 'Dokumente',
-    emoji: '🪪',
-    suggestions: ['Kinderreisepass', 'Personalausweis', 'Steuer-ID', 'Krankenversicherungskarte'],
-  },
-  {
-    key: 'kontakte',
-    label: 'Kontakte',
-    emoji: '📞',
-    suggestions: ['Großeltern', 'Babysitter', 'Trainer:in', 'Beste Freundin / bester Freund'],
-  },
-  {
-    key: 'alltag',
-    label: 'Alltag',
-    emoji: '🧸',
-    suggestions: ['Schlafenszeit', 'Lieblingsessen', 'Kuscheltier', 'Medienzeit', 'Hobbys'],
-  },
-  { key: 'sonstiges', label: 'Sonstiges', emoji: '📌', suggestions: [] },
-];
+import { currentT, Dict } from '@/i18n';
 
-export function infoCategory(key: string) {
-  return INFO_CATEGORIES.find((c) => c.key === key) ?? INFO_CATEGORIES[INFO_CATEGORIES.length - 1];
+/** Bereiche der Kind-Infos mit Vorschlägen, was typischerweise hineingehört. */
+const INFO_EMOJI = {
+  gesundheit: '🩺',
+  schule: '🎒',
+  groessen: '📏',
+  dokumente: '🪪',
+  kontakte: '📞',
+  alltag: '🧸',
+  sonstiges: '📌',
+} as const;
+type InfoKey = keyof typeof INFO_EMOJI;
+
+export function infoCategories(t: Dict = currentT()) {
+  return (Object.keys(INFO_EMOJI) as InfoKey[]).map((key) => ({
+    key,
+    emoji: INFO_EMOJI[key],
+    ...t.lib.infoCategories[key],
+  }));
+}
+
+export function infoCategory(key: string, t: Dict = currentT()) {
+  const all = infoCategories(t);
+  return all.find((c) => c.key === key) ?? all[all.length - 1];
 }

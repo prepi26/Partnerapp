@@ -1,6 +1,7 @@
 import { File } from 'expo-file-system';
 import { Platform } from 'react-native';
 
+import { currentT } from '@/i18n';
 import { must, supabase } from '@/lib/supabase';
 
 const BUCKET = 'documents';
@@ -48,7 +49,7 @@ export async function deleteAllDocumentFiles(familyId: string) {
 /** Kurzlebiger Link zum Öffnen (der Speicher ist privat). */
 export async function documentUrl(path: string): Promise<string> {
   const data = must(await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 10));
-  if (!data?.signedUrl) throw new Error('Dokument nicht gefunden.');
+  if (!data?.signedUrl) throw new Error(currentT().family.documents.notFound);
   return data.signedUrl;
 }
 

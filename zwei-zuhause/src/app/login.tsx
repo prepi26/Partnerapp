@@ -4,29 +4,33 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Chip, Field, PrimaryButton, showError } from '@/components/ui';
+import { currentT, Dict, fmt, useT } from '@/i18n';
 import { supabase } from '@/lib/supabase';
 import { colors, gradient, spacing } from '@/theme';
 
 const MIN_PASSWORD = 8;
 
 /** Übersetzt die Supabase-Fehler beim Anmelden in verständliche Sätze. */
-function loginError(message: string): string {
-  if (/invalid login credentials/i.test(message)) return 'E-Mail oder Passwort stimmen nicht.';
+function loginError(message: string, t: Dict = currentT()): string {
+  const e = t.auth.login.errors;
+  if (/invalid login credentials/i.test(message)) return e.invalidCredentials;
   if (/already registered|already exists/i.test(message)) {
-    return 'Mit dieser E-Mail gibt es schon ein Konto. Wechsle zu „Anmelden“.';
+    return e.alreadyRegistered;
   }
-  if (/email not confirmed/i.test(message)) return 'Diese E-Mail ist noch nicht bestätigt.';
+  if (/email not confirmed/i.test(message)) return e.notConfirmed;
   if (/expired|invalid.*(token|otp)|(token|otp).*invalid/i.test(message)) {
-    return 'Der Code stimmt nicht oder ist abgelaufen. Fordere einfach einen neuen an.';
+    return e.badCode;
   }
-  if (/different from the old|same password/i.test(message)) return 'Nimm ein anderes Passwort als bisher.';
-  if (/password/i.test(message)) return `Das Passwort braucht mindestens ${MIN_PASSWORD} Zeichen.`;
-  if (/rate|too many/i.test(message)) return 'Zu viele Versuche. Warte kurz und probier es dann nochmal.';
-  if (/network|fetch/i.test(message)) return 'Keine Verbindung zum Server. Bist du online?';
+  if (/different from the old|same password/i.test(message)) return e.samePassword;
+  if (/password/i.test(message)) return fmt(e.passwordTooShort, { min: MIN_PASSWORD });
+  if (/rate|too many/i.test(message)) return e.tooManyAttempts;
+  if (/network|fetch/i.test(message)) return t.common.errors.network;
   return message;
 }
 
 export default function Login() {
+  const t = useT();
+  const l = t.auth.login;
   const insets = useSafeAreaInsets();
   const [mode, setMode] = useState<'signup' | 'signin' | 'reset'>('signup');
   const [email, setEmail] = useState('');
@@ -40,6 +44,8 @@ export default function Login() {
   const emailValid = /^\S+@\S+\.\S+$/.test(cleanEmail);
   const valid = emailValid && password.length >= MIN_PASSWORD;
   const codeValid = /^\d{6,10}$/.test(code);
+  // Satz mit antippbarem Link in der Mitte: an {link} aufteilen, damit der Satz als Ganzes übersetzbar bleibt.
+  const [noCodeBefore, noCodeAfter = ''] = l.noCode.split('{link}');
 
   const startReset = () => {
     setMode('reset');
@@ -52,7 +58,7 @@ export default function Login() {
     setBusy(true);
     const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail);
     setBusy(false);
-    if (error) showError('Code konnte nicht gesendet werden', loginError(error.message));
+    if (error) showError(l.codeNotSent, loginError(error.message, t));
     else setCodeSent(true);
   };
 
@@ -61,14 +67,14 @@ export default function Login() {
     const { error } = await supabase.auth.verifyOtp({ email: cleanEmail, token: code, type: 'recovery' });
     if (error) {
       setBusy(false);
-      showError('Das hat nicht geklappt', loginError(error.message));
+      showError(t.common.failed, loginError(error.message, t));
       return;
     }
     // Nach dem Code ist man angemeldet – jetzt das neue Passwort speichern.
     const { error: updateError } = await supabase.auth.updateUser({ password });
     setBusy(false);
     if (updateError) {
-      showError('Passwort nicht geändert', `${loginError(updateError.message)} Du bist trotzdem angemeldet.`);
+      showError(l.passwordNotChanged, fmt(l.passwordNotChangedText, { error: loginError(updateError.message, t) }));
     }
   };
 
@@ -77,16 +83,16 @@ export default function Login() {
     if (mode === 'signup') {
       const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
       setBusy(false);
-      if (error) showError('Konto konnte nicht erstellt werden', loginError(error.message));
+      if (error) showError(l.accountNotCreated, loginError(error.message, t));
       // Ohne Sitzung verlangt Supabase noch eine E-Mail-Bestätigung (Einstellung „Confirm email“).
       else if (!data.session) {
-        showError('Fast geschafft', 'Bitte bestätige deine E-Mail über den Link, den du bekommen hast.');
+        showError(l.almostDone, l.confirmEmail);
       }
       return;
     }
     const { error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
     setBusy(false);
-    if (error) showError('Anmeldung fehlgeschlagen', loginError(error.message));
+    if (error) showError(l.signInFailed, loginError(error.message, t));
   };
 
   return (
@@ -100,15 +106,13 @@ export default function Login() {
           <View style={styles.hero}>
             <Text style={styles.emoji}>🏠🏠</Text>
             <Text style={styles.title}>Zwei Zuhause</Text>
-            <Text style={styles.subtitle}>
-              Umgang, Kosten und Absprachen fürs Kind – sachlich, nachvollziehbar, an einem Ort.
-            </Text>
+            <Text style={styles.subtitle}>{l.subtitle}</Text>
           </View>
 
           <View style={styles.switch}>
-            <Chip label="Neu hier" selected={mode === 'signup'} onPress={() => setMode('signup')} />
+            <Chip label={l.newHere} selected={mode === 'signup'} onPress={() => setMode('signup')} />
             <Chip
-              label="Ich habe ein Konto"
+              label={l.haveAccount}
               tint="accent"
               selected={mode === 'signin'}
               onPress={() => setMode('signin')}
@@ -117,12 +121,12 @@ export default function Login() {
 
           {mode === 'reset' ? (
             <Card style={styles.card}>
-              <Text style={styles.cardTitle}>Passwort vergessen</Text>
+              <Text style={styles.cardTitle}>{l.forgotTitle}</Text>
               <Field
-                label="Deine E-Mail"
+                label={l.email}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="name@beispiel.de"
+                placeholder={l.emailPlaceholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -133,9 +137,9 @@ export default function Login() {
               {codeSent ? (
                 <>
                   <Field
-                    label="Code aus der E-Mail"
+                    label={l.codeFromEmail}
                     value={code}
-                    onChangeText={(t) => setCode(t.replace(/\D/g, ''))}
+                    onChangeText={(text) => setCode(text.replace(/\D/g, ''))}
                     placeholder="123456"
                     keyboardType="number-pad"
                     textContentType="oneTimeCode"
@@ -143,7 +147,7 @@ export default function Login() {
                     maxLength={10}
                   />
                   <Field
-                    label={`Neues Passwort (mind. ${MIN_PASSWORD} Zeichen)`}
+                    label={fmt(l.newPassword, { min: MIN_PASSWORD })}
                     value={password}
                     onChangeText={setPassword}
                     placeholder="••••••••"
@@ -153,41 +157,41 @@ export default function Login() {
                     textContentType="newPassword"
                   />
                   <PrimaryButton
-                    title={busy ? 'Einen Moment…' : 'Passwort ändern'}
+                    title={busy ? l.oneMoment : l.changePassword}
                     icon="key"
                     disabled={busy || !codeValid || password.length < MIN_PASSWORD}
                     onPress={resetPassword}
                   />
                   <Text style={styles.hint}>
-                    Kein Code da? Schau im Spam-Ordner nach oder{' '}
+                    {noCodeBefore}
                     <Text style={styles.link} onPress={() => !busy && sendCode()}>
-                      schick ihn nochmal
+                      {l.resendLink}
                     </Text>
-                    .
+                    {noCodeAfter}
                   </Text>
                 </>
               ) : (
                 <>
                   <PrimaryButton
-                    title={busy ? 'Einen Moment…' : 'Code per E-Mail senden'}
+                    title={busy ? l.oneMoment : l.sendCode}
                     icon="mail"
                     disabled={busy || !emailValid}
                     onPress={sendCode}
                   />
-                  <Text style={styles.hint}>Wir schicken dir einen Code, mit dem du ein neues Passwort festlegst.</Text>
+                  <Text style={styles.hint}>{l.sendCodeHint}</Text>
                 </>
               )}
               <Pressable accessibilityRole="button" onPress={() => setMode('signin')} hitSlop={8}>
-                <Text style={[styles.hint, styles.link]}>Zurück zur Anmeldung</Text>
+                <Text style={[styles.hint, styles.link]}>{l.backToSignIn}</Text>
               </Pressable>
             </Card>
           ) : (
             <Card style={styles.card}>
               <Field
-                label="Deine E-Mail"
+                label={l.email}
                 value={email}
                 onChangeText={setEmail}
-                placeholder="name@beispiel.de"
+                placeholder={l.emailPlaceholder}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoComplete="email"
@@ -195,7 +199,7 @@ export default function Login() {
                 autoCorrect={false}
               />
               <Field
-                label={mode === 'signup' ? `Passwort (mind. ${MIN_PASSWORD} Zeichen)` : 'Passwort'}
+                label={mode === 'signup' ? fmt(l.passwordWithMin, { min: MIN_PASSWORD }) : l.password}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -206,19 +210,17 @@ export default function Login() {
                 onSubmitEditing={() => valid && !busy && submit()}
               />
               <PrimaryButton
-                title={busy ? 'Einen Moment…' : mode === 'signup' ? 'Konto erstellen' : 'Anmelden'}
+                title={busy ? l.oneMoment : mode === 'signup' ? l.createAccount : l.signIn}
                 icon="arrow-forward"
                 disabled={busy || !valid}
                 onPress={submit}
               />
               <Text style={styles.hint}>
-                {mode === 'signup'
-                  ? 'Jeder Elternteil hat ein eigenes Konto. Danach verbindet ihr euch mit einem Code – oder du startest erst einmal allein.'
-                  : 'Mit derselben E-Mail und demselben Passwort kommst du auch auf einem neuen Handy an deine Daten.'}
+                {mode === 'signup' ? l.signupHint : l.signinHint}
               </Text>
               {mode === 'signin' ? (
                 <Pressable accessibilityRole="button" onPress={startReset} hitSlop={8}>
-                  <Text style={[styles.hint, styles.link]}>Passwort vergessen?</Text>
+                  <Text style={[styles.hint, styles.link]}>{l.forgotLink}</Text>
                 </Pressable>
               ) : null}
             </Card>

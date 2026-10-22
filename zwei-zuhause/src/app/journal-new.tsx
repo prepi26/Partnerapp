@@ -4,11 +4,13 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 're
 import { DateField } from '@/components/DateField';
 import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
+import { useT } from '@/i18n';
 import { toISO, today } from '@/lib/dates';
 import { close } from '@/lib/nav';
 import { colors, spacing } from '@/theme';
 
 export default function JournalNew() {
+  const t = useT();
   const { addJournal } = useFamily();
   const [day, setDay] = useState(toISO(today()));
   const [text, setText] = useState('');
@@ -24,20 +26,18 @@ export default function JournalNew() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DateField label="Wann war es?" value={day} onChange={setDay} maximumDate={today()} />
+        <DateField label={t.messages.journalNew.when} value={day} onChange={setDay} maximumDate={today()} />
         <Field
-          label="Was ist passiert?"
+          label={t.messages.journalNew.what}
           value={text}
           onChangeText={setText}
-          placeholder="z. B. Übergabe 30 Minuten zu spät, Mia war danach sehr still."
+          placeholder={t.messages.journalNew.placeholder}
           multiline
           maxLength={8000}
           style={{ minHeight: 180 }}
         />
-        <PrimaryButton title={busy ? 'Speichere…' : 'Speichern'} icon="lock-closed" disabled={busy || !text.trim()} onPress={save} />
-        <Text style={styles.hint}>
-          Tipp: Beschreibe, was du gesehen und gehört hast – nicht, was du vermutest. Das macht deine Notizen glaubwürdig.
-        </Text>
+        <PrimaryButton title={busy ? t.common.saving : t.common.save} icon="lock-closed" disabled={busy || !text.trim()} onPress={save} />
+        <Text style={styles.hint}>{t.messages.journalNew.tip}</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );

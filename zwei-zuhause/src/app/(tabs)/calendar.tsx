@@ -7,11 +7,13 @@ import { parentColor, ParentTag } from '@/components/ParentTag';
 import { Card, GradientHeader, HeaderIcon, SecondaryButton, tap } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { ISODate, ScheduleChange } from '@/data/types';
-import { formatTimestamp, formatWeekday, MONTHS, toISO, today, WEEKDAYS_SHORT } from '@/lib/dates';
-import { acceptedChanges, dayInfo, handoverWhere, MODELS } from '@/lib/schedule';
+import { fmt, useT } from '@/i18n';
+import { formatMonth, formatTimestamp, formatWeekday, toISO, today } from '@/lib/dates';
+import { acceptedChanges, dayInfo, handoverWhere, models } from '@/lib/schedule';
 import { colors, radius, spacing } from '@/theme';
 
 export default function Calendar() {
+  const t = useT();
   const { family, me, nameOf, schedule_changes, userId, otherJoined, answerChange, withdrawChange } = useFamily();
   const now = today();
   const [month, setMonth] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
@@ -42,33 +44,31 @@ export default function Calendar() {
     .sort((x, y) => (y.answered_at ?? '').localeCompare(x.answered_at ?? ''))
     .slice(0, 10);
 
-  const model = MODELS.find((m) => m.key === family.schedule_model);
+  const model = models(t).find((m) => m.key === family.schedule_model)?.title;
   const todayIso = toISO(now);
 
   return (
     <View style={{ flex: 1 }}>
       <GradientHeader
-        title="Kalender"
-        subtitle={model?.title}
-        right={<HeaderIcon icon="options-outline" label="Umgangsplan" onPress={() => router.push('/schedule')} />}
+        title={t.calendar.calendar.title}
+        subtitle={model}
+        right={<HeaderIcon icon="options-outline" label={t.calendar.calendar.scheduleButton} onPress={() => router.push('/schedule')} />}
       />
       <ScrollView contentContainerStyle={styles.content}>
         <Card style={{ gap: spacing.sm }}>
           <View style={styles.monthRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Voriger Monat"
+              accessibilityLabel={t.calendar.calendar.prevMonth}
               hitSlop={10}
               onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}
             >
               <Ionicons name="chevron-back" size={24} color={colors.primary} />
             </Pressable>
-            <Text style={styles.monthTitle}>
-              {MONTHS[month.getMonth()]} {month.getFullYear()}
-            </Text>
+            <Text style={styles.monthTitle}>{formatMonth(month, t)}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Nächster Monat"
+              accessibilityLabel={t.calendar.calendar.nextMonth}
               hitSlop={10}
               onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}
             >
@@ -76,7 +76,7 @@ export default function Calendar() {
             </Pressable>
           </View>
           <View style={styles.week}>
-            {WEEKDAYS_SHORT.map((d) => (
+            {t.common.dates.weekdaysShort.map((d) => (
               <Text key={d} style={styles.weekday}>
                 {d}
               </Text>
@@ -93,7 +93,10 @@ export default function Calendar() {
                   <Pressable
                     key={j}
                     accessibilityRole="button"
-                    accessibilityLabel={`${formatWeekday(day)}: ${info.parent ? nameOf(info.parent) : 'nicht eingetragen'}`}
+                    accessibilityLabel={fmt(t.calendar.calendar.dayA11y, {
+                      date: formatWeekday(day, t),
+                      who: info.parent ? nameOf(info.parent) : t.calendar.calendar.notEntered,
+                    })}
                     onPress={() => {
                       tap();
                       router.push({ pathname: '/change-new', params: { day: iso } });
@@ -120,31 +123,35 @@ export default function Calendar() {
             <ParentTag parent="b" name={nameOf('b')} />
           </View>
           {handoverWhere(family) ? (
-            <Text style={styles.where}>Übergabe: {handoverWhere(family)}</Text>
+            <Text style={styles.where}>{fmt(t.calendar.calendar.handoverWhere, { where: handoverWhere(family) })}</Text>
           ) : null}
-          <Text style={styles.hint}>
-            Tipp auf einen Tag, um einen Tausch vorzuschlagen. Punkt = vereinbarte Ausnahme, Rahmen = offener Vorschlag.
-          </Text>
+          <Text style={styles.hint}>{t.calendar.calendar.hint}</Text>
         </Card>
 
-        {open.length ? <Text style={styles.section}>Offene Vorschläge</Text> : null}
+        {open.length ? <Text style={styles.section}>{t.calendar.calendar.openSection}</Text> : null}
         {open.map((c) => {
           const mine = c.created_by === userId;
           const canAnswer = !mine || !otherJoined;
           return (
             <Card key={c.id} style={styles.item}>
-              <Text style={styles.itemTitle}>{formatWeekday(c.day)}</Text>
+              <Text style={styles.itemTitle}>{formatWeekday(c.day, t)}</Text>
               <Text style={styles.itemText}>
-                {mine ? 'Du schlägst vor' : 'Vorschlag'}: Kind bei {c.parent === me ? 'dir' : nameOf(c.parent)}
-                {c.note ? ` – „${c.note}“` : ''}
+                {c.parent === me
+                  ? mine
+                    ? t.calendar.calendar.proposalMineAtYou
+                    : t.calendar.calendar.proposalOtherAtYou
+                  : fmt(mine ? t.calendar.calendar.proposalMine : t.calendar.calendar.proposalOther, {
+                      name: nameOf(c.parent),
+                    })}
+                {c.note ? ` – ${fmt(t.calendar.quote, { text: c.note })}` : ''}
               </Text>
-              <Text style={styles.meta}>Gestellt am {formatTimestamp(c.created_at)}</Text>
+              <Text style={styles.meta}>{fmt(t.calendar.calendar.createdAt, { date: formatTimestamp(c.created_at) })}</Text>
               <View style={styles.buttons}>
                 {canAnswer ? (
                   <>
                     <View style={{ flex: 1 }}>
                       <SecondaryButton
-                        title="Annehmen"
+                        title={t.calendar.calendar.accept}
                         icon="checkmark"
                         onPress={() => attempt(() => answerChange(c.id, true))}
                       />
@@ -152,7 +159,7 @@ export default function Calendar() {
                     {!mine ? (
                       <View style={{ flex: 1 }}>
                         <SecondaryButton
-                          title="Ablehnen"
+                          title={t.calendar.calendar.decline}
                           icon="close"
                           danger
                           onPress={() => attempt(() => answerChange(c.id, false))}
@@ -164,7 +171,7 @@ export default function Calendar() {
                 {mine ? (
                   <View style={{ flex: 1 }}>
                     <SecondaryButton
-                      title="Zurückziehen"
+                      title={t.calendar.calendar.withdraw}
                       icon="arrow-undo"
                       danger
                       onPress={() => attempt(() => withdrawChange(c.id))}
@@ -176,7 +183,7 @@ export default function Calendar() {
           );
         })}
 
-        {answered.length ? <Text style={styles.section}>Zuletzt beantwortet</Text> : null}
+        {answered.length ? <Text style={styles.section}>{t.calendar.calendar.answeredSection}</Text> : null}
         {answered.map((c) => (
           <View key={c.id} style={styles.row}>
             <Ionicons
@@ -185,7 +192,10 @@ export default function Calendar() {
               color={c.status === 'accepted' ? colors.primary : colors.danger}
             />
             <Text style={styles.rowText}>
-              {formatWeekday(c.day)}: bei {nameOf(c.parent)} – {c.status === 'accepted' ? 'angenommen' : 'abgelehnt'}
+              {fmt(c.status === 'accepted' ? t.calendar.calendar.answeredAccepted : t.calendar.calendar.answeredDeclined, {
+                date: formatWeekday(c.day, t),
+                name: nameOf(c.parent),
+              })}
             </Text>
           </View>
         ))}

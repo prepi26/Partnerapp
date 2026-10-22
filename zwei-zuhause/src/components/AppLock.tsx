@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { AppState, Image, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui';
+import { useT } from '@/i18n';
 import { loadAppLock, LOCK_AFTER_MS, unlock } from '@/lib/appLock';
 import { colors, gradient, spacing } from '@/theme';
 
@@ -11,6 +12,7 @@ import { colors, gradient, spacing } from '@/theme';
  * Sobald die App in den Hintergrund geht, wird sie verdeckt – auch in der App-Übersicht des Handys.
  */
 export function AppLock({ children }: { children: ReactNode }) {
+  const t = useT();
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [locked, setLocked] = useState(true);
   const [covered, setCovered] = useState(false);
@@ -78,8 +80,8 @@ export function AppLock({ children }: { children: ReactNode }) {
           <Text style={styles.title}>Zwei Zuhause</Text>
           {locked ? (
             <View style={styles.button}>
-              <Text style={styles.text}>Gesperrt – nur du kannst die App öffnen.</Text>
-              <PrimaryButton title="Entsperren" icon="lock-open-outline" onPress={tryUnlock} />
+              <Text style={styles.text}>{t.auth.appLock.locked}</Text>
+              <PrimaryButton title={t.auth.appLock.unlock} icon="lock-open-outline" onPress={tryUnlock} />
             </View>
           ) : null}
         </LinearGradient>

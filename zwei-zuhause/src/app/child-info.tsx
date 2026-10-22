@@ -3,22 +3,21 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Fab } from '@/components/ui';
 import { useFamily } from '@/data/store';
+import { fmt, useT } from '@/i18n';
+import { infoCategories } from '@/lib/childInfo';
 import { formatTimestamp } from '@/lib/dates';
-import { INFO_CATEGORIES } from '@/lib/childInfo';
 import { colors, spacing } from '@/theme';
 
 export default function ChildInfoScreen() {
+  const t = useT();
   const { child_info, family, userId, otherName } = useFamily();
   const kids = family.children.trim();
 
   return (
     <View style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.intro}>
-          Alles Wichtige über {kids || 'euer Kind'} an einem Ort – beide sehen und pflegen dieselben Angaben. Bei jeder
-          Änderung steht, wer sie gemacht hat.
-        </Text>
-        {INFO_CATEGORIES.map((cat) => {
+        <Text style={styles.intro}>{fmt(t.family.childInfo.intro, { kids: kids || t.family.childInfo.yourChild })}</Text>
+        {infoCategories(t).map((cat) => {
           const items = child_info.filter((i) => i.category === cat.key);
           return (
             <View key={cat.key} style={{ gap: spacing.xs }}>
@@ -37,7 +36,7 @@ export default function ChildInfoScreen() {
                       <Text style={styles.label}>{i.label}</Text>
                       <Text style={styles.value}>{i.value || '–'}</Text>
                       <Text style={styles.meta}>
-                        {i.updated_by === userId ? 'Du' : otherName} · {formatTimestamp(i.updated_at)}
+                        {i.updated_by === userId ? t.common.youCap : otherName} · {formatTimestamp(i.updated_at)}
                       </Text>
                     </Pressable>
                   ))}
@@ -47,16 +46,14 @@ export default function ChildInfoScreen() {
                 accessibilityRole="button"
                 onPress={() => router.push({ pathname: '/child-info-edit', params: { category: cat.key } })}
               >
-                <Text style={styles.add}>+ {cat.label} ergänzen</Text>
+                <Text style={styles.add}>+ {fmt(t.family.childInfo.add, { category: cat.label })}</Text>
               </Pressable>
             </View>
           );
         })}
-        <Text style={styles.privacy}>
-          🔒 Gesundheitsangaben sind besonders geschützte Daten. Trag nur ein, was ihr beide im Alltag wirklich braucht.
-        </Text>
+        <Text style={styles.privacy}>🔒 {t.family.childInfo.privacy}</Text>
       </ScrollView>
-      <Fab label="Info hinzufügen" onPress={() => router.push('/child-info-edit')} />
+      <Fab label={t.family.childInfo.fab} onPress={() => router.push('/child-info-edit')} />
     </View>
   );
 }
