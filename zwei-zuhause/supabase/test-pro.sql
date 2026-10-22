@@ -4,25 +4,26 @@ create or replace function public.as_user(u text) returns void language sql as $
 grant execute on function public.as_user(text) to authenticated;
 set role authenticated;
 select as_user('00000000-0000-0000-0000-00000000000a');
-select create_family('Sandra','Thomas','Mia') as code \gset
-insert into agreements (content) values ('{"rhythmus":"7/7"}');
+select create_family('Sandra','Thomas','Mia') as fam \gset
+select my_invite_code(:'fam') as code \gset
+insert into agreements (family_id, content) values (:'fam', '{"rhythmus":"7/7"}');
 select version, accepted_a_at is not null as a_ok, accepted_b_at is not null as b_ok, length(hash) from agreements;
 select as_user('00000000-0000-0000-0000-00000000000b');
 select join_family(:'code');
 select accept_agreement((select id from agreements));
 update agreements set content = '{"x":1}';
-insert into agreements (content) values ('{"rhythmus":"2-2-5-5"}');
+insert into agreements (family_id, content) values (:'fam', '{"rhythmus":"2-2-5-5"}');
 select version, accepted_a_at is not null as a_ok, accepted_b_at is not null as b_ok from agreements order by version;
 select as_user('00000000-0000-0000-0000-00000000000a');
 select accept_agreement((select id from agreements where version = 1));
-select create_professional_invite('Jugendamt Musterstadt', 30) as pcode \gset
+select create_professional_invite(:'fam', 'Jugendamt Musterstadt', 30) as pcode \gset
 select as_user('00000000-0000-0000-0000-00000000000f');
 select join_as_professional(:'pcode');
 select count(*) as before_approval from messages;
 select count(*) as fam_before from families;
 select as_user('00000000-0000-0000-0000-00000000000b');
-insert into messages (text) values ('Hallo');
-insert into journal (day, text) values ('2026-10-10','privat');
+insert into messages (family_id, text) values (:'fam', 'Hallo');
+insert into journal (family_id, day, text) values (:'fam', '2026-10-10','privat');
 select approve_professional((select id from professional_access));
 select as_user('00000000-0000-0000-0000-00000000000f');
 select count(*) as msgs_after from messages; select count(*) as journal_seen from journal; select count(*) as agreements_seen from agreements;

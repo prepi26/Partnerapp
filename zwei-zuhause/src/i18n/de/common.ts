@@ -54,6 +54,7 @@ export const common = {
     is_parent: 'Dieses Konto gehört zu einer Familie. Für den Fachkraft-Zugang brauchst du ein eigenes Konto.',
     network: 'Keine Verbindung zum Server. Bist du online?',
     already_redeemed: 'Eure Familie hat schon einen Gutscheincode eingelöst.',
+    too_many_families: 'Mehr als 5 Familien passen nicht in ein Konto.',
   },
   subscription: {
     /** Fehlermeldung, wenn nach der Testzeit ohne Abo geschrieben wird */

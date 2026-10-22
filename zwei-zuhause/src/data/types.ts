@@ -25,6 +25,8 @@ export interface Family {
   read_receipts_b: boolean;
   /** Familien-Abo bis (vom Server gesetzt) */
   plus_until: string | null;
+  /** Wessen Abo diese Familie freischaltet (vom Server gesetzt). */
+  plus_payer: string | null;
   /** Beitritt des zweiten Elternteils – ab da laufen die Testtage. */
   joined_at: string | null;
   /** Region der Schule für die Ferien, z. B. „DE-NW“; leer = keine. */

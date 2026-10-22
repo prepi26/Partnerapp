@@ -30,6 +30,7 @@ export const settings = {
     packing: 'Packliste',
     holidays: 'Schulferien',
     calendarSync: 'Im Handy-Kalender',
+    familyNew: 'Familie hinzufügen',
   },
   root: {
     offlineTitle: 'Keine Verbindung',

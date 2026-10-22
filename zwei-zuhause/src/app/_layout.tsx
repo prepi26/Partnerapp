@@ -15,7 +15,7 @@ import { LanguageProvider, useT } from '@/i18n';
 import { AuthProvider, useAuth } from '@/data/auth';
 import { PlusProvider } from '@/data/plus';
 import { StoreProvider, useStore } from '@/data/store';
-import { registerForPush, urlFromResponse } from '@/lib/push';
+import { familyFromResponse, registerForPush, urlFromResponse } from '@/lib/push';
 import { colors, spacing } from '@/theme';
 
 export default function RootLayout() {
@@ -82,6 +82,8 @@ function SignedIn() {
 /** Meldet das Handy für Mitteilungen an und öffnet beim Antippen einer Mitteilung den passenden Bildschirm. */
 function PushSetup() {
   const response = Notifications.useLastNotificationResponse();
+  const { families, switchFamily } = useStore();
+  const hasFamilies = families.length > 0;
 
   useEffect(() => {
     registerForPush();
@@ -90,11 +92,18 @@ function PushSetup() {
   useEffect(() => {
     const url = urlFromResponse(response);
     if (!url) return;
-    try {
-      router.navigate(url as Parameters<typeof router.navigate>[0]);
-    } catch {
-      // Navigation noch nicht bereit – dann bleibt die Startseite offen.
-    }
+    // Mitteilung aus einer anderen Familie: erst dorthin wechseln, dann den Bildschirm öffnen.
+    const family = familyFromResponse(response);
+    (async () => {
+      if (family && hasFamilies) await switchFamily(family).catch(() => {});
+      try {
+        router.navigate(url as Parameters<typeof router.navigate>[0]);
+      } catch {
+        // Navigation noch nicht bereit – dann bleibt die Startseite offen.
+      }
+    })();
+    // Nur bei einer neuen Mitteilung – nicht, wenn sich die Familienliste ändert.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [response]);
 
   return null;
@@ -165,6 +174,7 @@ function RootStack({
         <Stack.Screen name="packing" options={{ headerShown: true, title: titles.packing }} />
         <Stack.Screen name="holidays" options={{ headerShown: true, title: titles.holidays }} />
         <Stack.Screen name="calendar-sync" options={{ headerShown: true, title: titles.calendarSync }} />
+        <Stack.Screen name="family-new" options={modal(titles.familyNew)} />
       </Stack.Protected>
     </Stack>
   );

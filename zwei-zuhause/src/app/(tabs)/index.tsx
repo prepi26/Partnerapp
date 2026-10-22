@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { FamiliesOverview, FamilySwitcher } from '@/components/FamilySwitcher';
 import { InviteCard } from '@/components/InviteCard';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { parentColor } from '@/components/ParentTag';
@@ -75,6 +76,7 @@ export default function Home() {
         right={<HeaderIcon icon="settings-outline" label={t.home.today.settings} onPress={() => router.push('/settings')} />}
       />
       <ScrollView contentContainerStyle={styles.content}>
+        <FamilySwitcher />
         <SubscriptionBanner />
         <Card style={[styles.today, { backgroundColor: todayColor.pale }]}>
           <Text style={styles.todayLabel}>{t.home.today.label}</Text>
@@ -128,6 +130,8 @@ export default function Home() {
         ) : null}
 
         {!otherJoined ? <InviteCard code={family.invite_code} otherName={otherName} /> : null}
+
+        <FamiliesOverview />
 
         {nextHoliday && holidayIn > 0 && holidayIn <= 56 ? (
           <Pressable

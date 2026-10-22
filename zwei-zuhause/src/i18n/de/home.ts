@@ -85,6 +85,23 @@ export const home = {
     calendarSync: 'Im Handy-Kalender',
     calendarSyncText: 'Umgangsplan in iPhone-, Google- oder Outlook-Kalender',
   },
+  families: {
+    /** Auswahl oben auf der Startseite. {children} Kinder, {name} anderer Elternteil */
+    label: '{children} · mit {name}',
+    switchTitle: 'Familie wechseln',
+    add: 'Familie hinzufügen',
+    addText: 'Kinder mit einem anderen Elternteil',
+    addIntro:
+      'Für Kinder mit einem anderen Elternteil legst du eine eigene Familie an. Die Familien sind streng getrennt: Niemand sieht etwas aus einer anderen Familie – nur du siehst alle.',
+    overviewTitle: 'Alle Kinder heute',
+    /** {name} Elternteil */
+    at: 'bei {name}',
+    atYou: 'bei dir',
+    noPlan: 'kein Plan',
+    /** {n} Anzahl offener Punkte */
+    open: '{n} offen',
+    locked: 'nur lesen',
+  },
   invite: {
     /** {code} Einladungscode */
     shareMessage:

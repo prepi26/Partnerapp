@@ -7,8 +7,9 @@ import { supabase } from '@/lib/supabase';
 
 import { useStore } from './store';
 
-/** Name der Berechtigung in RevenueCat (Entitlements → Identifier). */
+/** Berechtigungen in RevenueCat (Entitlements → Identifier): eine Familie bzw. bis zu drei Familien. */
 const ENTITLEMENT = 'plus';
+const ENTITLEMENT_MULTI = 'plus_multi';
 /** Testzeit ab dem Beitritt des anderen Elternteils (muss zu family_active() in supabase/schema.sql passen). */
 export const TRIAL_DAYS = 14;
 /** Solange man allein ist: kostenlos höchstens so lange ab Anlegen der Familie. */
@@ -24,6 +25,12 @@ let configured = false;
 interface Plus {
   /** Familien-Abo aktiv – egal, welcher Elternteil zahlt. */
   active: boolean;
+  /** Eigenes Abo: 'multi' (bis zu 3 Familien), 'single' (1 Familie) oder null. */
+  myPlan: 'multi' | 'single' | null;
+  /** Mein Abo gilt für eine andere meiner Familien, nicht für die geöffnete: Name des anderen Elternteils dort. */
+  coveredElsewhere: string | null;
+  /** Das eigene Abo auf die geöffnete Familie legen (bei „Plus“ für eine Familie). */
+  moveHere(): Promise<void>;
   /** Kostenlose Zeit läuft noch (allein oder Testtage nach dem Beitritt). */
   inTrial: boolean;
   /** Der andere ist noch nie beigetreten – die 14 Testtage haben noch nicht begonnen. */
@@ -41,20 +48,24 @@ interface Plus {
 
 const PlusContext = createContext<Plus | null>(null);
 
-function hasEntitlement(info: CustomerInfo) {
-  return info.entitlements.active[ENTITLEMENT] !== undefined;
+function planOf(info: CustomerInfo): 'multi' | 'single' | null {
+  if (info.entitlements.active[ENTITLEMENT_MULTI]) return 'multi';
+  return info.entitlements.active[ENTITLEMENT] ? 'single' : null;
 }
 
-/** Server informieren: er prüft den Kauf bei RevenueCat und schaltet das Abo für die ganze Familie frei. */
-async function syncWithServer() {
-  await supabase.functions.invoke('plus').catch(() => {});
+/**
+ * Server informieren: er prüft den Kauf bei RevenueCat und schaltet das Abo frei – zuerst für die geöffnete Familie,
+ * bei Plus Mehrfamilie auch für bis zu zwei weitere.
+ */
+async function syncWithServer(familyId: string | undefined) {
+  await supabase.functions.invoke('plus', { body: { family: familyId } }).catch(() => {});
 }
 
 export function PlusProvider({ children }: { children: ReactNode }) {
-  const { userId, family, refresh } = useStore();
+  const { userId, family, families, refresh } = useStore();
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
-  // Eigener Kauf, bevor der Server ihn bestätigt hat.
-  const [ownEntitlement, setOwnEntitlement] = useState(false);
+  // Eigenes Abo laut Store (der Server entscheidet, für welche Familien es gilt).
+  const [myPlan, setMyPlan] = useState<'multi' | 'single' | null>(null);
   // „Jetzt“ für Testzeit und Abo-Ende – stündlich neu, damit eine offene App die Grenze mitbekommt.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -65,7 +76,7 @@ export function PlusProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!purchasesAvailable) return;
     let cancelled = false;
-    const listener = (info: CustomerInfo) => setOwnEntitlement(hasEntitlement(info));
+    const listener = (info: CustomerInfo) => setMyPlan(planOf(info));
     (async () => {
       try {
         // Die Supabase-Nutzer-ID ist die RevenueCat-ID – so ordnet der Server Käufe der Familie zu.
@@ -78,7 +89,7 @@ export function PlusProvider({ children }: { children: ReactNode }) {
         Purchases.addCustomerInfoUpdateListener(listener);
         const [info, offerings] = await Promise.all([Purchases.getCustomerInfo(), Purchases.getOfferings()]);
         if (cancelled) return;
-        setOwnEntitlement(hasEntitlement(info));
+        setMyPlan(planOf(info));
         setPackages(offerings.current?.availablePackages ?? []);
       } catch {
         // Store nicht erreichbar: es gilt, was der Server sagt.
@@ -104,29 +115,43 @@ export function PlusProvider({ children }: { children: ReactNode }) {
   const inTrial = freeEnd > now;
   const trialDaysLeft = inTrial ? Math.floor((freeEnd - now) / DAY_MS) : 0;
 
-  // Eigenes Abo, aber Server weiß noch nichts davon (z. B. Kauf auf anderem Gerät): nachziehen.
+  // Wofür gilt mein Abo gerade? (vom Server gesetzt)
+  const coveredByMe = families.filter(
+    (f) => f.plus_payer === userId && !!f.plus_until && new Date(f.plus_until).getTime() > now,
+  );
+  const elsewhere = family && !serverActive ? coveredByMe.find((f) => f.id !== family.id) : undefined;
+  const coveredElsewhere = elsewhere ? (elsewhere.parent_a === userId ? elsewhere.name_b : elsewhere.name_a) : null;
+
+  // Eigenes Abo, aber der Server weiß noch von keiner Familie (z. B. Kauf auf anderem Gerät): nachziehen.
   const familyId = family?.id;
+  const noneCovered = coveredByMe.length === 0;
   useEffect(() => {
-    if (ownEntitlement && familyId && !serverActive) syncWithServer().then(refresh, () => {});
-  }, [ownEntitlement, familyId, serverActive, refresh]);
+    if (myPlan && familyId && noneCovered) syncWithServer(familyId).then(refresh, () => {});
+  }, [myPlan, familyId, noneCovered, refresh]);
 
   const afterPurchase = useCallback(
     async (info: CustomerInfo) => {
-      const ok = hasEntitlement(info);
-      setOwnEntitlement(ok);
-      if (ok) {
-        await syncWithServer();
+      const plan = planOf(info);
+      setMyPlan(plan);
+      if (plan) {
+        await syncWithServer(familyId);
         await refresh().catch(() => {});
       }
-      return ok;
+      return !!plan;
     },
-    [refresh],
+    [familyId, refresh],
   );
 
   const value = useMemo<Plus>(() => {
-    const active = serverActive || ownEntitlement;
+    const active = serverActive;
     return {
       active,
+      myPlan,
+      coveredElsewhere,
+      moveHere: async () => {
+        await syncWithServer(familyId);
+        await refresh().catch(() => {});
+      },
       inTrial,
       solo: solo && !promoActive,
       promoUntil: promoActive ? new Date(promoEnd) : null,
@@ -144,7 +169,20 @@ export function PlusProvider({ children }: { children: ReactNode }) {
       },
       restore: async () => afterPurchase(await Purchases.restorePurchases()),
     };
-  }, [afterPurchase, inTrial, ownEntitlement, packages, promoActive, promoEnd, serverActive, solo, trialDaysLeft]);
+  }, [
+    afterPurchase,
+    coveredElsewhere,
+    familyId,
+    inTrial,
+    myPlan,
+    packages,
+    promoActive,
+    promoEnd,
+    refresh,
+    serverActive,
+    solo,
+    trialDaysLeft,
+  ]);
 
   return <PlusContext.Provider value={value}>{children}</PlusContext.Provider>;
 }

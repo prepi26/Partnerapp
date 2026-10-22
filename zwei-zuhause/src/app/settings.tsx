@@ -10,7 +10,7 @@ import { attempt, useFamily } from '@/data/store';
 import { fmt, Lang, LANGUAGES, useLanguage, useT } from '@/i18n';
 import { loadAppLock, lockAvailable, saveAppLock, unlock } from '@/lib/appLock';
 import { close } from '@/lib/nav';
-import { loadHandoverReminder, refreshHandoverReminders, saveHandoverReminder } from '@/lib/reminders';
+import { loadHandoverReminder, saveHandoverReminder } from '@/lib/reminders';
 import { colors, spacing } from '@/theme';
 
 const SHARES = [50, 60, 70, 80, 100, 40, 30, 20, 0];
@@ -24,8 +24,6 @@ export default function Settings() {
     me,
     otherJoined,
     otherName,
-    nameOf,
-    schedule_changes,
     updateFamily,
     signOut,
     deleteAccount,
@@ -55,8 +53,8 @@ export default function Settings() {
 
   const toggleReminder = async (on: boolean) => {
     setReminderOn(on);
+    // Neu geplant wird in HandoverReminders – für alle Familien.
     await saveHandoverReminder(on);
-    await refreshHandoverReminders({ family, changes: schedule_changes, me, nameOf });
   };
   const [nameA, setNameA] = useState(family.name_a);
   const [nameB, setNameB] = useState(family.name_b);

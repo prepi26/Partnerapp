@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DateField } from '@/components/DateField';
+import { familyLabel } from '@/components/FamilySwitcher';
 import { WriteGate } from '@/components/SubscriptionBanner';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { usePlus } from '@/data/plus';
@@ -19,7 +20,7 @@ import { colors, radius, spacing } from '@/theme';
 
 export default function ExpenseNew() {
   const t = useT();
-  const { family, me, otherName, otherJoined, addExpense } = useFamily();
+  const { family, families, userId, me, otherName, otherJoined, addExpense, addExpenseTo } = useFamily();
   const { canWrite: plus } = usePlus();
   const [kind, setKind] = useState<ExpenseKind>('expense');
   const [title, setTitle] = useState('');
@@ -33,6 +34,10 @@ export default function ExpenseNew() {
   const [need, setNeed] = useState<NeedType>('regular');
   const [receipt, setReceipt] = useState<NewPhoto | null>(null);
   const [busy, setBusy] = useState(false);
+  // Ausgabe für Kinder aus mehreren Familien (z. B. Urlaub mit allen Kindern): gleich aufteilen.
+  const others = families.filter((f) => f.id !== family.id);
+  const [splitWith, setSplitWith] = useState<string[]>([]);
+  const splitting = kind === 'expense' && paidBy === me && splitWith.length > 0;
 
   const cents = parseMoney(amount);
   const shares = [...new Set([50, defaultMine, 100 - defaultMine, 0, 100])];
@@ -60,19 +65,37 @@ export default function ExpenseNew() {
   const save = async () => {
     if (!cents) return;
     setBusy(true);
-    const ok = await attempt(() =>
-      addExpense({
+    const baseTitle = title.trim() || (kind === 'payment' ? t.money.new.defaultPayment : t.money.new.defaultExpense);
+    const parts = splitting ? splitAmount(cents, splitWith.length + 1) : [cents];
+    const ok = await attempt(async () => {
+      await addExpense({
         kind,
-        title: title.trim() || (kind === 'payment' ? t.money.new.defaultPayment : t.money.new.defaultExpense),
+        title: splitting ? `${baseTitle} – ${t.money.new.splitSuffix}`.slice(0, 200) : baseTitle,
         category: kind === 'payment' ? 'ausgleich' : category,
-        amount_cents: cents,
+        amount_cents: parts[0],
         day,
         paid_by: paidBy,
         share_a: me === 'a' ? myShare : 100 - myShare,
         need: kind === 'payment' ? 'regular' : need,
         receipt: receipt ?? undefined,
-      }),
-    );
+      });
+      // Die anderen Familien bekommen nur ihren Anteil – ohne Beleg, der die anderen Kinder zeigen könnte.
+      for (const [i, id] of splitWith.entries()) {
+        const f = others.find((o) => o.id === id);
+        if (!f) continue;
+        const myKey: ParentKey = f.parent_b === userId ? 'b' : 'a';
+        await addExpenseTo(id, {
+          kind: 'expense',
+          title: `${baseTitle} – ${t.money.new.splitSuffix}`.slice(0, 200),
+          category,
+          amount_cents: parts[i + 1],
+          day,
+          paid_by: myKey,
+          share_a: f.default_share_a,
+          need,
+        });
+      }
+    });
     if (ok) close();
     else setBusy(false);
   };
@@ -138,6 +161,34 @@ export default function ExpenseNew() {
                     })
                   : t.money.new.shareDefaultHint}
               </Text>
+
+              {others.length && paidBy === me ? (
+                <>
+                  <Label>{t.money.new.splitTitle}</Label>
+                  <View style={styles.chips}>
+                    {others.map((f) => (
+                      <Chip
+                        key={f.id}
+                        label={familyLabel(f, f.parent_b === userId ? 'b' : 'a', t)}
+                        tint="accent"
+                        selected={splitWith.includes(f.id)}
+                        onPress={() =>
+                          setSplitWith((list) => (list.includes(f.id) ? list.filter((x) => x !== f.id) : [...list, f.id]))
+                        }
+                      />
+                    ))}
+                  </View>
+                  {splitting && cents ? (
+                    <Text style={styles.hint}>
+                      {fmt(t.money.new.splitHint, {
+                        amount: formatMoney(cents),
+                        n: splitWith.length + 1,
+                        part: formatMoney(splitAmount(cents, splitWith.length + 1)[0]),
+                      })}
+                    </Text>
+                  ) : null}
+                </>
+              ) : null}
 
               <Label>{t.money.new.category}</Label>
               <View style={styles.chips}>
@@ -212,3 +263,9 @@ const styles = StyleSheet.create({
   },
   receiptText: { fontSize: 15, fontWeight: '600', color: colors.primary },
 });
+
+/** Betrag gleichmäßig aufteilen; übrige Cent bekommt der erste Anteil. */
+function splitAmount(cents: number, n: number): number[] {
+  const part = Math.floor(cents / n);
+  return Array.from({ length: n }, (_, i) => (i === 0 ? cents - part * (n - 1) : part));
+}

@@ -4,16 +4,17 @@ create or replace function public.as_user(u text) returns void language sql as $
 grant execute on function public.as_user(text) to authenticated;
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000f1');
-select create_family('Anna','Ben','Mia, Leo') as code \gset
+select create_family('Anna','Ben','Mia, Leo') as fam \gset
+select my_invite_code(:'fam') as code \gset
 select as_user('00000000-0000-0000-0000-0000000000f2');
 select join_family(:'code') is not null as joined;
 
 -- Unterhalt: Ben (b) zahlt 400 € ab Oktober
-insert into maintenance_terms (payer, amount_cents, valid_from, basis) values ('b', 40000, '2026-10-01', 'Jugendamtsurkunde');
+insert into maintenance_terms (family_id, payer, amount_cents, valid_from, basis) values (:'fam', 'b', 40000, '2026-10-01', 'Jugendamtsurkunde');
 -- ERROR 1: Soll nur ab Monatsanfang
-insert into maintenance_terms (payer, amount_cents, valid_from) values ('b', 40000, '2026-10-15');
+insert into maintenance_terms (family_id, payer, amount_cents, valid_from) values (:'fam', 'b', 40000, '2026-10-15');
 -- Ben trägt seine Zahlung ein → offen
-insert into maintenance_payments (payer, month, amount_cents, paid_on, status) values ('b', '2026-10-01', 40000, '2026-10-01', 'confirmed');
+insert into maintenance_payments (family_id, payer, month, amount_cents, paid_on, status) values (:'fam', 'b', '2026-10-01', 40000, '2026-10-01', 'confirmed');
 select status as own_payment_status from maintenance_payments;
 -- ERROR 2: selbst bestätigen geht nicht
 select answer_maintenance((select id from maintenance_payments limit 1), true);
@@ -25,19 +26,19 @@ select as_user('00000000-0000-0000-0000-0000000000f1');
 select answer_maintenance((select id from maintenance_payments limit 1), true);
 select status as after_confirm from maintenance_payments;
 -- Anna trägt Erhalt für November ein → gleich bestätigt
-insert into maintenance_payments (payer, month, amount_cents, paid_on) values ('b', '2026-11-01', 20000, '2026-11-03');
+insert into maintenance_payments (family_id, payer, month, amount_cents, paid_on) values (:'fam', 'b', '2026-11-01', 20000, '2026-11-03');
 select month, status from maintenance_payments order by month;
 -- Bestätigte Einträge lassen sich nicht löschen
 delete from maintenance_payments;
 select count(*) as payments_kept from maintenance_payments;
 
 -- Packliste
-insert into packing_items (label, recurring) values ('Asthmaspray', true), ('Schwimmsachen', false), ('Turnbeutel', false);
+insert into packing_items (family_id, label, recurring) values (:'fam', 'Asthmaspray', true), (:'fam', 'Schwimmsachen', false), (:'fam', 'Turnbeutel', false);
 update packing_items set packed = true where label in ('Asthmaspray', 'Schwimmsachen');
 update packing_items set holder = 'b' where label = 'Turnbeutel';
 select as_user('00000000-0000-0000-0000-0000000000f2');
 select count(*) as other_sees_items from packing_items;
-select reset_packing();
+select reset_packing(:'fam');
 select label, packed, holder from packing_items order by label;
 
 -- Kalender-Abo

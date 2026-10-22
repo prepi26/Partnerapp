@@ -69,3 +69,9 @@ export function urlFromResponse(response: Notifications.NotificationResponse | n
   const url = response?.notification.request.content.data?.url;
   return typeof url === 'string' && url.startsWith('/') ? url : null;
 }
+
+/** Zu welcher Familie die Mitteilung gehört (bei mehreren Familien wird vorher gewechselt). */
+export function familyFromResponse(response: Notifications.NotificationResponse | null | undefined) {
+  const family = response?.notification.request.content.data?.family;
+  return typeof family === 'string' ? family : null;
+}

@@ -104,6 +104,8 @@ Hinweis: ohne gerichtliche Billigung (§ 156 Abs. 2 FamFG) nicht vollstreckbar.
 | Kalender-Abo (iPhone, Google, Outlook) | ✅ gebaut |
 | Packliste / Sachen des Kindes bei Übergaben | ✅ gebaut |
 | Solo-Start: Testzeit erst ab Beitritt des anderen | ✅ gebaut |
+| Mehrere Familien pro Konto (Kinder mit verschiedenen Eltern), strikt getrennt, „Plus Mehrfamilie“ | ✅ gebaut |
+| Gutscheincodes für Beratungsstellen, Fachkraft-Zugang im Browser | ✅ gebaut |
 | Gemeinsames Fotoalbum | ⏸ offen (Nutzen unklar) |
 | Gewaltschutz-Modus | ⏳ Phase 2 – mit Fachkräften gestalten |
 

@@ -89,6 +89,11 @@ export const money = {
     confirmHint: '{name} kann den Eintrag bestätigen oder ablehnen. Bestätigte Einträge lassen sich nicht mehr löschen.',
     /** {name} anderer Elternteil */
     notJoinedHint: 'Sobald {name} verbunden ist, kann er/sie deine Einträge bestätigen.',
+    splitTitle: 'Auch für Kinder aus deinen anderen Familien?',
+    /** {amount} Gesamtbetrag, {n} Anzahl Familien, {part} Betrag je Familie */
+    splitHint: '{amount} wird auf {n} Familien aufgeteilt – je {part}. Jede Familie sieht nur ihren Anteil.',
+    /** Hinter dem Titel jedes Anteils */
+    splitSuffix: 'Anteil an einer Ausgabe für mehrere Kinder',
   },
   plus: {
     benefits: {
@@ -136,6 +141,12 @@ export const money = {
     trialSolo: 'Die 14 Testtage starten, wenn {name} beitritt. Allein ist die App noch {n} Tage kostenlos.',
     trialOver: 'Die kostenlose Testzeit ist vorbei. Ohne Abo könnt ihr alles lesen, aber nichts Neues eintragen.',
     unavailable: 'Käufe sind nur in der iOS- und Android-App möglich.',
+    tierSingle: 'Für 1 Familie',
+    tierMulti: 'Plus Mehrfamilie – für bis zu 3 Familien',
+    multiHint: 'Kinder mit verschiedenen Eltern? Plus Mehrfamilie gilt für bis zu 3 deiner Familien – du zahlst nur einmal.',
+    /** Eigenes Abo gilt für eine andere Familie. {name} anderer Elternteil dort */
+    coveredElsewhere: 'Dein Abo gilt für die Familie mit {name}. Für mehrere Familien brauchst du Plus Mehrfamilie.',
+    moveHere: 'Abo stattdessen für diese Familie verwenden',
     busy: 'Einen Moment…',
     unlock: 'Abo abschließen',
     terms:

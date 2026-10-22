@@ -1,5 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { showError } from '@/components/ui';
@@ -99,8 +100,11 @@ const emptyData: Data = {
   packing_items: [],
 };
 
-async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
+/** Einträge einer Familie. Ohne Familie (Fachkraft): alles, was die Zugriffsregeln erlauben. */
+async function fetchTable<T extends Table>(table: T, familyId: string | null): Promise<Data[T]> {
   let query = supabase.from(table).select('*');
+  // Die Regeln liefern Einträge aller eigenen Familien – angezeigt wird immer nur die geöffnete.
+  if (familyId) query = query.eq('family_id', familyId);
   if (table === 'messages') query = query.order('seq', { ascending: true });
   if (table === 'expenses') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
   if (table === 'journal') query = query.order('day', { ascending: false }).order('created_at', { ascending: false });
@@ -116,15 +120,36 @@ async function fetchTable<T extends Table>(table: T): Promise<Data[T]> {
   return must(await query) as Data[T];
 }
 
-/** Die Familie, in der der Nutzer Elternteil ist – nicht die, die er als Fachkraft lesen darf. */
-async function fetchFamily(userId: string): Promise<Family | null> {
+/** Alle Familien, in denen der Nutzer Elternteil ist – nicht die, die er als Fachkraft lesen darf. */
+async function fetchFamilies(userId: string): Promise<Family[]> {
   const rows = must(
-    await supabase.from('families').select(FAMILY_COLUMNS).or(`parent_a.eq.${userId},parent_b.eq.${userId}`).limit(1),
+    await supabase
+      .from('families')
+      .select(FAMILY_COLUMNS)
+      .or(`parent_a.eq.${userId},parent_b.eq.${userId}`)
+      .order('created_at'),
   ) as Omit<Family, 'invite_code'>[];
-  if (!rows[0]) return null;
-  // Den Einladungscode gibt der Server nur Eltern heraus, nicht über die Tabelle.
-  const code = must(await supabase.rpc('my_invite_code')) as string | null;
-  return { ...rows[0], invite_code: code ?? '' };
+  // Den Einladungscode gibt der Server nur Eltern heraus, nicht über die Tabelle – gebraucht nur, solange einer fehlt.
+  return Promise.all(
+    rows.map(async (f) => {
+      const code = f.parent_a && f.parent_b ? null : (must(await supabase.rpc('my_invite_code', { p_family: f.id })) as string | null);
+      return { ...f, invite_code: code ?? '' };
+    }),
+  );
+}
+
+/** Zuletzt geöffnete Familie je Konto (auf diesem Gerät). */
+const activeKey = (userId: string) => `zz.family.${userId}`;
+
+export interface FamilyOverview {
+  family_id: string;
+  my_key: ParentKey;
+  name_a: string;
+  name_b: string;
+  children: string;
+  today_parent: ParentKey | null;
+  open_items: number;
+  active: boolean;
 }
 
 const ERROR_KEYS = [
@@ -136,6 +161,7 @@ const ERROR_KEYS = [
   'is_professional',
   'is_parent',
   'already_redeemed',
+  'too_many_families',
 ] as const;
 
 /** Übersetzt Server-Fehler in verständliche Sätze. */
@@ -209,7 +235,13 @@ interface Store extends Data {
   loadFailed: boolean;
   retry(): Promise<void>;
   userId: string;
+  /** Die geöffnete Familie. */
   family: Family | null;
+  /** Alle Familien des Kontos (Kinder mit verschiedenen Eltern) – streng getrennt, immer eine ist geöffnet. */
+  families: Family[];
+  /** Kurzüberblick über alle Familien (nur bei mehr als einer geladen). */
+  overview: FamilyOverview[];
+  switchFamily(id: string): Promise<void>;
   me: ParentKey;
   otherKey: ParentKey;
   myName: string;
@@ -219,7 +251,9 @@ interface Store extends Data {
   otherJoined: boolean;
   receiptUrls: Record<string, string>;
   refresh(): Promise<void>;
+  /** Legt eine Familie an und öffnet sie. */
   createFamily(myName: string, otherName: string, children: string): Promise<void>;
+  /** Tritt einer Familie bei und öffnet sie. */
   joinFamily(code: string): Promise<void>;
   updateFamily(patch: FamilyPatch): Promise<void>;
   /** Ein oder mehrere Tage (z. B. Ferien) auf einmal vorschlagen. */
@@ -227,6 +261,8 @@ interface Store extends Data {
   answerChange(id: string, accept: boolean): Promise<void>;
   withdrawChange(id: string): Promise<void>;
   addExpense(expense: NewExpense): Promise<void>;
+  /** Ausgabe in einer anderen eigenen Familie eintragen (Anteil einer Ausgabe für mehrere Kinder, ohne Beleg). */
+  addExpenseTo(familyId: string, expense: Omit<NewExpense, 'receipt'>): Promise<void>;
   answerExpense(id: string, confirm: boolean): Promise<void>;
   removeExpense(expense: Expense): Promise<void>;
   sendMessage(text: string): Promise<void>;
@@ -289,33 +325,81 @@ const StoreContext = createContext<Store | null>(null);
 export function StoreProvider({ userId, children }: { userId: string; children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [family, setFamily] = useState<Family | null>(null);
+  const [families, setFamilies] = useState<Family[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [overview, setOverview] = useState<FamilyOverview[]>([]);
   const [data, setData] = useState<Data>(emptyData);
   const [receiptUrls, setReceiptUrls] = useState<Record<string, string>>({});
+  // Die geöffnete Familie auch für laufende Ladevorgänge: Antworten für eine andere Familie werden verworfen,
+  // damit beim Wechseln nie Einträge zweier Familien gemischt angezeigt werden.
+  const activeRef = useRef<string | null>(null);
+  const familiesRef = useRef<Family[]>([]);
+  useEffect(() => {
+    familiesRef.current = families;
+  }, [families]);
+  const family = families.find((f) => f.id === activeId) ?? null;
 
-  const reload = useCallback(async (table: Table) => {
-    const rows = await fetchTable(table);
-    setData((d) => ({ ...d, [table]: rows }));
-    if (table === 'expenses') {
-      const paths = (rows as Expense[]).map((e) => e.receipt_path).filter((p): p is string => !!p);
-      const urls = await signedReceiptUrls(paths);
-      setReceiptUrls((old) => ({ ...old, ...urls }));
-    }
+  const signReceipts = useCallback(async (rows: Expense[]) => {
+    const paths = rows.map((e) => e.receipt_path).filter((p): p is string => !!p);
+    const urls = await signedReceiptUrls(paths);
+    setReceiptUrls((old) => ({ ...old, ...urls }));
   }, []);
 
+  const reload = useCallback(
+    async (table: Table) => {
+      const familyId = activeRef.current;
+      const rows = await fetchTable(table, familyId);
+      if (activeRef.current !== familyId) return;
+      setData((d) => ({ ...d, [table]: rows }));
+      if (table === 'expenses') await signReceipts(rows as Expense[]);
+    },
+    [signReceipts],
+  );
+
+  const loadFamilyData = useCallback(
+    async (familyId: string | null) => {
+      if (!familyId) {
+        // Ohne Familie: nur ggf. Fachkraft-Zugänge.
+        const professional_access = await fetchTable('professional_access', null);
+        if (activeRef.current === null) setData({ ...emptyData, professional_access });
+        return;
+      }
+      const rows = await Promise.all(TABLES.map((table) => fetchTable(table, familyId)));
+      if (activeRef.current !== familyId) return;
+      setData(Object.fromEntries(TABLES.map((table, i) => [table, rows[i]])) as unknown as Data);
+      await signReceipts(rows[TABLES.indexOf('expenses')] as Expense[]);
+    },
+    [signReceipts],
+  );
+
+  const loadOverview = useCallback(async (count: number) => {
+    setOverview(count > 1 ? ((must(await supabase.rpc('my_families_overview')) as FamilyOverview[]) ?? []) : []);
+  }, []);
+
+  /** Familien neu laden und die geöffnete Familie (sonst die zuletzt gewählte, sonst die erste) anzeigen. */
   const refresh = useCallback(async () => {
-    const f = await fetchFamily(userId);
-    setFamily(f);
-    // Ohne Familie: nur das eigene Tagebuch und ggf. Fachkraft-Zugänge.
-    if (f) await Promise.all(TABLES.map(reload));
-    else {
-      const [journal, professional_access] = await Promise.all([
-        fetchTable('journal'),
-        fetchTable('professional_access'),
-      ]);
-      setData({ ...emptyData, journal, professional_access });
-    }
-  }, [reload, userId]);
+    const list = await fetchFamilies(userId);
+    const stored = await AsyncStorage.getItem(activeKey(userId)).catch(() => null);
+    const id =
+      list.find((f) => f.id === activeRef.current)?.id ?? list.find((f) => f.id === stored)?.id ?? list[0]?.id ?? null;
+    activeRef.current = id;
+    setFamilies(list);
+    setActiveId(id);
+    await Promise.all([loadFamilyData(id), loadOverview(list.length)]);
+  }, [loadFamilyData, loadOverview, userId]);
+
+  const switchFamily = useCallback(
+    async (id: string) => {
+      // Nur eigene Familien (z. B. aus einer Mitteilung) – alles andere ignorieren.
+      if (id === activeRef.current || !familiesRef.current.some((f) => f.id === id)) return;
+      activeRef.current = id;
+      setActiveId(id);
+      setData(emptyData);
+      AsyncStorage.setItem(activeKey(userId), id).catch(() => {});
+      await loadFamilyData(id);
+    },
+    [loadFamilyData, userId],
+  );
 
   useEffect(() => {
     const initialLoad = async () => {
@@ -357,8 +441,8 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       'postgres_changes',
       { event: '*', schema: 'public', table: 'families', filter: `id=eq.${familyId}` },
       () => {
-        fetchFamily(userId)
-          .then(setFamily)
+        fetchFamilies(userId)
+          .then(setFamilies)
           .catch(() => {});
       },
     );
@@ -377,6 +461,15 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
     const after = async (table: Table, result: { error: { message: string } | null }) => {
       must({ data: null, error: result.error });
       await reload(table);
+    };
+    // Jeder neue Eintrag nennt seine Familie ausdrücklich – die Datenbank prüft, dass sie mir gehört.
+    const fid = family?.id ?? '';
+    const reloadFamilies = async () => setFamilies(await fetchFamilies(userId));
+    // Nach dem Anlegen oder Beitreten die neue Familie öffnen.
+    const openFamily = async (id: string) => {
+      activeRef.current = id;
+      AsyncStorage.setItem(activeKey(userId), id).catch(() => {});
+      await refresh();
     };
 
     const cleanUp = async () => {
@@ -401,6 +494,9 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       },
       userId,
       family,
+      families,
+      overview,
+      switchFamily,
       me,
       otherKey,
       myName: nameOf(me),
@@ -410,23 +506,26 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       receiptUrls,
       refresh,
       createFamily: async (myName, otherName, kids) => {
-        must(await supabase.rpc('create_family', { p_name_a: myName, p_name_b: otherName, p_children: kids }));
-        await refresh();
+        const id = must(
+          await supabase.rpc('create_family', { p_name_a: myName, p_name_b: otherName, p_children: kids }),
+        ) as string;
+        await openFamily(id);
       },
       joinFamily: async (code) => {
         // Falscher Code: der Server liefert null (statt Fehler), damit der Versuch gezählt bleibt.
-        if (!must(await supabase.rpc('join_family', { p_code: code }))) throw new Error('invalid_code');
-        await refresh();
+        const id = must(await supabase.rpc('join_family', { p_code: code })) as string | null;
+        if (!id) throw new Error('invalid_code');
+        await openFamily(id);
       },
       updateFamily: async (patch) => {
         if (!family) return;
         must(await supabase.from('families').update(patch).eq('id', family.id));
-        setFamily(await fetchFamily(userId));
+        await reloadFamilies();
       },
       proposeChanges: async ({ days, parent, note }) =>
         after(
           'schedule_changes',
-          await supabase.from('schedule_changes').insert(days.map((day) => ({ day, parent, note }))),
+          await supabase.from('schedule_changes').insert(days.map((day) => ({ family_id: fid, day, parent, note }))),
         ),
       answerChange: async (id, accept) =>
         after('schedule_changes', await supabase.rpc('answer_schedule_change', { p_id: id, p_accept: accept })),
@@ -435,7 +534,10 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       addExpense: async ({ receipt, ...expense }) => {
         if (!family) return;
         const receipt_path = receipt ? await uploadReceipt(family.id, receipt.uri, receipt.mimeType) : null;
-        await after('expenses', await supabase.from('expenses').insert({ ...expense, receipt_path }));
+        await after('expenses', await supabase.from('expenses').insert({ ...expense, receipt_path, family_id: fid }));
+      },
+      addExpenseTo: async (familyId, expense) => {
+        must(await supabase.from('expenses').insert({ ...expense, receipt_path: null, family_id: familyId }));
       },
       answerExpense: async (id, confirm) =>
         after('expenses', await supabase.rpc('answer_expense', { p_id: id, p_confirm: confirm })),
@@ -443,41 +545,45 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await after('expenses', await supabase.from('expenses').delete().eq('id', expense.id));
         await deleteReceipt(expense.receipt_path);
       },
-      sendMessage: async (text) => after('messages', await supabase.from('messages').insert({ text })),
+      sendMessage: async (text) => after('messages', await supabase.from('messages').insert({ family_id: fid, text })),
       setReadReceipts: async (on) => {
-        must(await supabase.rpc('set_read_receipts', { p_on: on }));
-        setFamily(await fetchFamily(userId));
+        must(await supabase.rpc('set_read_receipts', { p_family: fid, p_on: on }));
+        await reloadFamilies();
       },
       readReceiptsVisible: !!family?.read_receipts_a && !!family?.read_receipts_b,
       markRead: async () => {
         const mine = me === 'a' ? family?.read_receipts_a : family?.read_receipts_b;
         if (!mine) return;
         const unread = data.messages.some((m) => m.sender_key !== me && !m.read_at);
-        if (unread) await after('messages', await supabase.rpc('mark_messages_read'));
+        if (unread) await after('messages', await supabase.rpc('mark_messages_read', { p_family: fid }));
       },
-      addJournal: async (entry) => after('journal', await supabase.from('journal').insert(entry)),
+      addJournal: async (entry) => after('journal', await supabase.from('journal').insert({ ...entry, family_id: fid })),
       removeJournal: async (id) => after('journal', await supabase.from('journal').delete().eq('id', id)),
       saveChildInfo: async ({ id, ...info }) =>
         after(
           'child_info',
           id
             ? await supabase.from('child_info').update(info).eq('id', id)
-            : await supabase.from('child_info').insert(info),
+            : await supabase.from('child_info').insert({ ...info, family_id: fid }),
         ),
       removeChildInfo: async (id) => after('child_info', await supabase.from('child_info').delete().eq('id', id)),
-      addDecision: async (decision) => after('decisions', await supabase.from('decisions').insert(decision)),
+      addDecision: async (decision) =>
+        after('decisions', await supabase.from('decisions').insert({ ...decision, family_id: fid })),
       answerDecision: async (id, agree, note) =>
         after('decisions', await supabase.rpc('answer_decision', { p_id: id, p_agree: agree, p_note: note })),
       withdrawDecision: async (id) => after('decisions', await supabase.from('decisions').delete().eq('id', id)),
-      addHandover: async (handover) => after('handovers', await supabase.from('handovers').insert(handover)),
+      addHandover: async (handover) =>
+        after('handovers', await supabase.from('handovers').insert({ ...handover, family_id: fid })),
       replyHandover: async (id, confirm, note) =>
         after('handovers', await supabase.rpc('reply_handover', { p_id: id, p_confirm: confirm, p_note: note })),
-      saveAgreement: async (content) => after('agreements', await supabase.from('agreements').insert({ content })),
+      saveAgreement: async (content) =>
+        after('agreements', await supabase.from('agreements').insert({ family_id: fid, content })),
       acceptAgreement: async (id) => after('agreements', await supabase.rpc('accept_agreement', { p_id: id })),
       addDocument: async ({ file, title, category, doc_date, healthConsent }) => {
         if (!family) return;
         const file_path = await uploadDocument(family.id, file);
         const result = await supabase.from('documents').insert({
+          family_id: fid,
           title,
           category,
           doc_date,
@@ -495,32 +601,35 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await deleteDocumentFile(doc.file_path);
       },
       setMaintenance: async (term) =>
-        after('maintenance_terms', await supabase.from('maintenance_terms').insert(term)),
+        after('maintenance_terms', await supabase.from('maintenance_terms').insert({ ...term, family_id: fid })),
       addMaintenancePayment: async (payment) =>
-        after('maintenance_payments', await supabase.from('maintenance_payments').insert(payment)),
+        after('maintenance_payments', await supabase.from('maintenance_payments').insert({ ...payment, family_id: fid })),
       answerMaintenance: async (id, confirm) =>
         after('maintenance_payments', await supabase.rpc('answer_maintenance', { p_id: id, p_confirm: confirm })),
       removeMaintenancePayment: async (id) =>
         after('maintenance_payments', await supabase.from('maintenance_payments').delete().eq('id', id)),
-      addPackingItem: async (item) => after('packing_items', await supabase.from('packing_items').insert(item)),
+      addPackingItem: async (item) =>
+        after('packing_items', await supabase.from('packing_items').insert({ ...item, family_id: fid })),
       updatePackingItem: async (id, patch) =>
         after('packing_items', await supabase.from('packing_items').update(patch).eq('id', id)),
       removePackingItem: async (id) => after('packing_items', await supabase.from('packing_items').delete().eq('id', id)),
-      resetPacking: async () => after('packing_items', await supabase.rpc('reset_packing')),
+      resetPacking: async () => after('packing_items', await supabase.rpc('reset_packing', { p_family: fid })),
       calendarToken: async (lang, renew = false) =>
         must(await supabase.rpc('my_calendar_token', { p_lang: lang, p_new: renew })) as string,
       redeemPromo: async (code) => {
         // Falscher Code: der Server liefert null (statt Fehler), damit der Versuch gezählt bleibt.
-        const until = must(await supabase.rpc('redeem_promo_code', { p_code: code })) as string | null;
+        const until = must(await supabase.rpc('redeem_promo_code', { p_family: fid, p_code: code })) as string | null;
         if (!until) throw new Error('invalid_code');
-        setFamily(await fetchFamily(userId));
+        await reloadFamilies();
         return until;
       },
       stopCalendarFeed: async () => {
         must(await supabase.rpc('stop_calendar_feed'));
       },
       inviteProfessional: async (label, days) => {
-        const code = must(await supabase.rpc('create_professional_invite', { p_label: label, p_days: days })) as string;
+        const code = must(
+          await supabase.rpc('create_professional_invite', { p_family: fid, p_label: label, p_days: days }),
+        ) as string;
         await reload('professional_access');
         return code;
       },
@@ -534,17 +643,18 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await refresh();
       },
       deleteAccount: async () => {
-        // Bin ich der letzte in der Familie, verschwinden mit ihr auch die Belege.
-        if (family && !otherJoined) {
-          await deleteAllReceipts(family.id);
-          await deleteAllDocumentFiles(family.id);
+        // Bin ich in einer Familie der letzte, verschwinden mit ihr auch die Belege und Dokumente.
+        for (const f of families) {
+          if (f.parent_a && f.parent_b) continue;
+          await deleteAllReceipts(f.id);
+          await deleteAllDocumentFiles(f.id);
         }
         must(await supabase.rpc('delete_my_account'));
         await cleanUp();
       },
       signOut: cleanUp,
     };
-  }, [data, family, loadFailed, loading, receiptUrls, refresh, reload, userId]);
+  }, [data, families, family, loadFailed, loading, overview, receiptUrls, refresh, reload, switchFamily, userId]);
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
 
-import { IconName, PrimaryButton, showError } from '@/components/ui';
+import { IconName, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
 import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { errorMessage, useFamily } from '@/data/store';
@@ -40,8 +40,20 @@ function perMonth(pkg: PurchasesPackage, t: Dict) {
 
 export default function PlusScreen() {
   const t = useT();
-  const { active, inTrial, solo, promoUntil, trialDaysLeft, packages, purchase, restore } = usePlus();
-  const { otherName, family, redeemPromo } = useFamily();
+  const {
+    active,
+    inTrial,
+    solo,
+    promoUntil,
+    trialDaysLeft,
+    packages,
+    purchase,
+    restore,
+    myPlan,
+    coveredElsewhere,
+    moveHere,
+  } = usePlus();
+  const { otherName, family, families, redeemPromo } = useFamily();
   const p = t.money.plus;
   const [promo, setPromo] = useState('');
   const trialText = !inTrial
@@ -49,20 +61,25 @@ export default function PlusScreen() {
     : promoUntil
       ? fmt(p.promoActive, { date: formatDate(toISO(promoUntil), t) })
       : solo
-      ? fmt(p.trialSolo, { name: otherName, n: trialDaysLeft })
-    : trialDaysLeft === 0
-      ? p.trialLastDay
-      : trialDaysLeft === 1
-        ? p.trialLeftOne
-        : fmt(p.trialLeftOther, { n: trialDaysLeft });
+        ? fmt(p.trialSolo, { name: otherName, n: trialDaysLeft })
+        : trialDaysLeft === 0
+          ? p.trialLastDay
+          : trialDaysLeft === 1
+            ? p.trialLeftOne
+            : fmt(p.trialLeftOther, { n: trialDaysLeft });
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Jahresabo vorauswählen – es ist das beste Angebot.
+  // Plus Mehrfamilie nur zeigen, wenn es passt: mehrere Familien oder schon „Plus“ für eine Familie.
+  const multiFamily = families.length > 1;
+  const singles = packages.filter((pkg) => !isMulti(pkg));
+  const multis = multiFamily || myPlan === 'single' ? packages.filter(isMulti) : [];
+  const shown = [...singles, ...multis];
+  // Jahresabo vorauswählen – bei mehreren Familien das für mehrere Familien.
   const chosen =
-    packages.find((p) => p.identifier === selected) ??
-    packages.find((p) => p.packageType === PACKAGE_TYPE.ANNUAL) ??
-    packages[0];
+    shown.find((pkg) => pkg.identifier === selected) ??
+    (multiFamily ? multis : singles).find((pkg) => pkg.packageType === PACKAGE_TYPE.ANNUAL) ??
+    shown[0];
 
   const redeem = async () => {
     setBusy(true);
@@ -108,7 +125,14 @@ export default function PlusScreen() {
           <View style={styles.promoRow}>
             <TextInput
               value={promo}
-              onChangeText={(text) => setPromo(text.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20))}
+              onChangeText={(text) =>
+                setPromo(
+                  text
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9-]/g, '')
+                    .slice(0, 20),
+                )
+              }
               placeholder={p.promoPlaceholder}
               placeholderTextColor={colors.textMuted}
               autoCapitalize="characters"
@@ -153,40 +177,62 @@ export default function PlusScreen() {
         <ActivityIndicator color={colors.primary} />
       ) : (
         <>
-          <View style={{ gap: spacing.sm }}>
-            {packages.map((pkg) => {
-              const isChosen = pkg.identifier === chosen?.identifier;
-              const hint = perMonth(pkg, t);
-              return (
-                <Pressable
-                  key={pkg.identifier}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: isChosen }}
-                  onPress={() => setSelected(pkg.identifier)}
-                  style={[styles.option, isChosen && styles.optionChosen]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.optionTitle}>{period(t)[pkg.packageType] ?? pkg.product.title}</Text>
-                    {pkg.product.introPrice ? (
-                      <Text style={styles.trial}>
-                        {pkg.product.introPrice.price === 0
-                          ? trial(pkg.product.introPrice.periodNumberOfUnits, pkg.product.introPrice.periodUnit, t)
-                          : fmt(t.money.plus.introPrice, { price: pkg.product.introPrice.priceString })}
-                      </Text>
-                    ) : hint ? (
-                      <Text style={styles.trial}>{hint}</Text>
-                    ) : null}
-                  </View>
-                  <Text style={styles.price}>{pkg.product.priceString}</Text>
-                  <Ionicons
-                    name={isChosen ? 'radio-button-on' : 'radio-button-off'}
-                    size={22}
-                    color={isChosen ? colors.primary : colors.textMuted}
-                  />
-                </Pressable>
-              );
-            })}
-          </View>
+          {coveredElsewhere ? (
+            <View style={styles.promo}>
+              <Text style={styles.small}>{fmt(p.coveredElsewhere, { name: coveredElsewhere })}</Text>
+              {myPlan === 'single' ? (
+                <SecondaryButton
+                  title={p.moveHere}
+                  icon="swap-horizontal"
+                  onPress={() => !busy && run(async () => (await moveHere(), true), '')}
+                />
+              ) : null}
+            </View>
+          ) : multiFamily ? (
+            <Text style={styles.small}>{p.multiHint}</Text>
+          ) : null}
+          {[
+            { title: multis.length ? p.tierSingle : null, list: singles },
+            { title: p.tierMulti, list: multis },
+          ]
+            .filter((g) => g.list.length)
+            .map((g) => (
+              <View key={g.title ?? 'single'} style={{ gap: spacing.sm }}>
+                {g.title ? <Text style={styles.tier}>{g.title}</Text> : null}
+                {g.list.map((pkg) => {
+                  const isChosen = pkg.identifier === chosen?.identifier;
+                  const hint = perMonth(pkg, t);
+                  return (
+                    <Pressable
+                      key={pkg.identifier}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: isChosen }}
+                      onPress={() => setSelected(pkg.identifier)}
+                      style={[styles.option, isChosen && styles.optionChosen]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.optionTitle}>{period(t)[pkg.packageType] ?? pkg.product.title}</Text>
+                        {pkg.product.introPrice ? (
+                          <Text style={styles.trial}>
+                            {pkg.product.introPrice.price === 0
+                              ? trial(pkg.product.introPrice.periodNumberOfUnits, pkg.product.introPrice.periodUnit, t)
+                              : fmt(t.money.plus.introPrice, { price: pkg.product.introPrice.priceString })}
+                          </Text>
+                        ) : hint ? (
+                          <Text style={styles.trial}>{hint}</Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.price}>{pkg.product.priceString}</Text>
+                      <Ionicons
+                        name={isChosen ? 'radio-button-on' : 'radio-button-off'}
+                        size={22}
+                        color={isChosen ? colors.primary : colors.textMuted}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ))}
 
           <PrimaryButton
             title={busy ? t.money.plus.busy : t.money.plus.unlock}
@@ -200,11 +246,7 @@ export default function PlusScreen() {
 
       {purchasesAvailable && !active ? (
         <View style={styles.links}>
-          <Pressable
-            accessibilityRole="button"
-            disabled={busy}
-            onPress={() => run(restore, t.money.plus.noPurchase)}
-          >
+          <Pressable accessibilityRole="button" disabled={busy} onPress={() => run(restore, t.money.plus.noPurchase)}>
             <Text style={styles.link}>{t.money.plus.restore}</Text>
           </Pressable>
           {TERMS_URL ? (
@@ -221,6 +263,11 @@ export default function PlusScreen() {
       ) : null}
     </ScrollView>
   );
+}
+
+/** Pakete für Plus Mehrfamilie erkennt die App am Namen (z. B. „plus_multi_yearly“ in App Store und RevenueCat). */
+function isMulti(pkg: PurchasesPackage) {
+  return /multi/i.test(pkg.identifier) || /multi/i.test(pkg.product.identifier);
 }
 
 function trial(n: number, u: string, t: Dict) {
@@ -274,6 +321,7 @@ const styles = StyleSheet.create({
   activeBox: { backgroundColor: colors.primaryPale, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
   activeTitle: { fontSize: 18, fontWeight: '800', color: colors.text, textAlign: 'center' },
   small: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 17 },
+  tier: { fontSize: 13, fontWeight: '800', color: colors.textMuted, textTransform: 'uppercase', marginTop: spacing.xs },
   promo: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
   promoTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
   promoRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },

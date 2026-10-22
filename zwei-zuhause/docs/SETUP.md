@@ -36,19 +36,25 @@ Danach testen: `npx expo start` und mit der Kamera den QR-Code scannen.
 
 ## 3. Abo „Zwei Zuhause Plus“ – ca. 60 Minuten
 
-**Modell:** Ein Abo für die **ganze Familie** – einer zahlt, beide Eltern nutzen alles. **14 Tage kostenlos** ab dem
+**Modell:** Ein Abo für die **ganze Familie** – einer zahlt, beide Eltern nutzen alles. Wer Kinder mit verschiedenen
+Eltern hat, legt mehrere Familien an (streng getrennt); jede Familie braucht ihr Abo – oder der Elternteil nimmt
+„Plus Mehrfamilie“ für bis zu 3 eigene Familien. Welche Familien ein Abo abdeckt, legt `apply_plus()` fest. **14 Tage kostenlos** ab dem
 Beitritt des zweiten Elternteils; wer allein startet, kann die App bis zu 30 Tage kostenlos nutzen. Danach ohne Abo
 **nur noch lesen** (Lesen, Export, eigene Einträge löschen und Konto löschen
 gehen immer – DSGVO). Die Sperre setzt die Datenbank durch (`family_active()` in `schema.sql`), nicht nur die App.
 Fachkräfte zahlen nie.
 
 1. **App Store Connect** → App anlegen (Bundle-ID `de.zweizuhause.app`) → *Monetarisierung → Abonnements* →
-   Gruppe „Zwei Zuhause Plus“ → zwei Abos: `plus_monthly` (**7,99 €**) und `plus_yearly` (**59,99 €**).
+   Gruppe „Zwei Zuhause Plus“ → vier Abos in **derselben** Gruppe (dann ist der Wechsel ein Upgrade):
+   `plus_monthly` (**7,99 €**), `plus_yearly` (**59,99 €**) – für 1 Familie – und `plus_multi_monthly` (**11,99 €**),
+   `plus_multi_yearly` (**89,99 €**) – „Plus Mehrfamilie“ für bis zu 3 Familien (Kinder mit verschiedenen Eltern).
+   Die App erkennt Mehrfamilie am Wort `multi` im Namen.
    **Kein** Einführungsangebot einstellen – die 14 Tage laufen bereits in der App. Vertrag für kostenpflichtige Apps
    muss aktiv sein.
 2. **RevenueCat** (kostenlos bis 2.500 $ Monatsumsatz): Projekt anlegen → App Store App verbinden
-   (In-App-Purchase-Key aus App Store Connect) → *Entitlement* mit Identifier **`plus`** → beide Produkte zuordnen →
-   *Offering* „default“ mit beiden Paketen (Monthly, Annual).
+   (In-App-Purchase-Key aus App Store Connect) → *Entitlement* **`plus`** (die beiden 1-Familien-Produkte) und
+   *Entitlement* **`plus_multi`** (die beiden Mehrfamilie-Produkte) → *Offering* „default“ mit vier Paketen: Monthly,
+   Annual und zwei eigene Pakete `multi_monthly`, `multi_annual`.
 3. Öffentlichen RevenueCat-Key (`appl_…`) in `.env` als `EXPO_PUBLIC_REVENUECAT_IOS_KEY` eintragen.
 4. **Edge Function anlegen** (damit ein Kauf für beide Eltern gilt): Supabase → *Edge Functions* → *Deploy a new
    function* → Name `plus` → Inhalt von `supabase/functions/plus/index.ts` einfügen → **Verify JWT aus**.

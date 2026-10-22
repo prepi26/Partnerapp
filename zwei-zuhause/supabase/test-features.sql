@@ -5,16 +5,17 @@ grant execute on function public.as_user(text) to authenticated;
 insert into push_tokens values ('ExpoPushToken[a]','00000000-0000-0000-0000-00000000000a');
 set role authenticated;
 select as_user('00000000-0000-0000-0000-00000000000a');
-select create_family('Sandra','Thomas','Mia') as code \gset
+select create_family('Sandra','Thomas','Mia') as fam \gset
+select my_invite_code(:'fam') as code \gset
 select as_user('00000000-0000-0000-0000-00000000000b');
 select join_family(:'code');
-insert into messages (text) values ('Hi');
-insert into child_info (category, label, value) values ('gesundheit','Kinderarzt','Dr. X');
+insert into messages (family_id, text) values (:'fam', 'Hi');
+insert into child_info (family_id, category, label, value) values (:'fam', 'gesundheit','Kinderarzt','Dr. X');
 update child_info set value='Dr. Y';
 select label, value, updated_by is not null as has_by from child_info;
-insert into decisions (title) values ('Klassenfahrt Italien');
+insert into decisions (family_id, title) values (:'fam', 'Klassenfahrt Italien');
 select answer_decision((select id from decisions), true, '');
-insert into handovers (day, status, minutes_late) values ('2026-10-10','late',30);
+insert into handovers (family_id, day, status, minutes_late) values (:'fam', '2026-10-10','late',30);
 update handovers set status='on_time';
 delete from handovers;
 select as_user('00000000-0000-0000-0000-00000000000a');
@@ -24,9 +25,9 @@ select status, answer_note from decisions; select status, reply, reply_note from
 
 -- Lesebestätigungen ausschalten: B liest, ohne dass es markiert wird
 select as_user('00000000-0000-0000-0000-00000000000a');
-insert into messages (text) values ('Noch eine');
+insert into messages (family_id, text) values (:'fam', 'Noch eine');
 select as_user('00000000-0000-0000-0000-00000000000b');
-select set_read_receipts(false);
-select mark_messages_read();
+select set_read_receipts(:'fam', false);
+select mark_messages_read(:'fam');
 select count(*) filter (where read_at is null and text = 'Noch eine') as stays_unread from messages;
 select read_receipts_a, read_receipts_b from families;

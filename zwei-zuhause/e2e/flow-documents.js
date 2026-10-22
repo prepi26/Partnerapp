@@ -89,7 +89,7 @@ async function signup(page, email, intro) {
   const file = path.join(tmp, download.suggestedFilename());
   await download.saveAs(file);
   const exported = JSON.parse(fs.readFileSync(file, 'utf8'));
-  console.log('export', download.suggestedFilename(), 'dokumente:', exported.dokumente.length, 'invite code leaked:', JSON.stringify(exported).includes(code));
+  console.log('export', download.suggestedFilename(), 'dokumente:', exported.familien[0].dokumente.length, 'invite code leaked:', JSON.stringify(exported).includes(code));
 
   console.log('ERRORS:\n' + errors.join('\n'));
   await browser.close();

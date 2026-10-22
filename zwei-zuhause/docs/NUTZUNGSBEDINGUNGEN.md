@@ -41,6 +41,9 @@ entscheidet diese selbst. Die Aufzeichnungen belegen Zeitpunkt und Inhalt, nicht
   Elternteil dabei ist, ist die App bis zu **30 Tage ab Anlegen der Familie** kostenlos.
 - Danach braucht die Familie das Abo „Zwei Zuhause Plus“ (7,99 € monatlich oder 59,99 € jährlich, Preise laut Store).
   Es gilt für **beide Elternteile der Familie**, unabhängig davon, wer es abschließt.
+- Wer Kinder mit verschiedenen Elternteilen hat, führt dafür getrennte Familien. Das Abo gilt je Familie;
+  „Zwei Zuhause Plus Mehrfamilie“ (11,99 € monatlich oder 89,99 € jährlich) gilt für bis zu drei Familien des Elternteils,
+  der es abschließt.
 - Ohne Abo können alle Einträge weiterhin gelesen, exportiert und eigene Einträge gelöscht werden; Neues eintragen ist
   nicht möglich. Fachkraft-Zugänge sind immer kostenlos.
 - Kauf, Verlängerung, Kündigung und Erstattung laufen über **Apple App Store bzw. Google Play** nach deren Bedingungen.

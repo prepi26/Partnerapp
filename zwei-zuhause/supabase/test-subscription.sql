@@ -5,45 +5,46 @@ create or replace function public.as_user(u text) returns void language sql as $
 grant execute on function public.as_user(text) to authenticated;
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e1');
-select create_family('Sandra','Thomas','Mia') as code \gset
-insert into messages (text) values ('allein');
-insert into journal (day, text) values ('2026-10-10', 'Notiz');
-select family_active() as active_alone;
+select create_family('Sandra','Thomas','Mia') as fam \gset
+select my_invite_code(:'fam') as code \gset
+insert into messages (family_id, text) values (:'fam', 'allein');
+insert into journal (family_id, day, text) values (:'fam', '2026-10-10', 'Notiz');
+select family_active(:'fam') as active_alone;
 -- Allein, 20 Tage später: noch frei
 reset role;
 update families set created_at = now() - interval '20 days';
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e1');
-select family_active() as active_alone_day20;
+select family_active(:'fam') as active_alone_day20;
 -- Allein, 31 Tage später: nur lesen
 reset role;
 update families set created_at = now() - interval '31 days';
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e1');
-select family_active() as active_alone_day31;
-insert into messages (text) values ('nach 31 Tagen allein');
-insert into expenses (title, amount_cents, day, paid_by) values ('Jacke', 1000, '2026-10-10', 'a');
+select family_active(:'fam') as active_alone_day31;
+insert into messages (family_id, text) values (:'fam', 'nach 31 Tagen allein');
+insert into expenses (family_id, title, amount_cents, day, paid_by) values (:'fam', 'Jacke', 1000, '2026-10-10', 'a');
 update families set children = 'X';
 select count(*) as can_still_read from messages;
 delete from journal; select count(*) as journal_deleted_left from journal;
 -- Der andere tritt bei: 14 Testtage ab jetzt
 select as_user('00000000-0000-0000-0000-0000000000e2');
 select join_family(:'code') is not null as joined;
-select family_active() as active_after_join;
-insert into messages (text) values ('nach Beitritt');
+select family_active(:'fam') as active_after_join;
+insert into messages (family_id, text) values (:'fam', 'nach Beitritt');
 -- 15 Tage nach dem Beitritt: nur lesen
 reset role;
 update families set joined_at = now() - interval '15 days';
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e2');
-select family_active() as active_after_trial;
-insert into messages (text) values ('nach der Testzeit');
-insert into maintenance_payments (payer, month, amount_cents, paid_on) values ('a', '2026-10-01', 1000, '2026-10-02');
-insert into packing_items (label) values ('Jacke');
+select family_active(:'fam') as active_after_trial;
+insert into messages (family_id, text) values (:'fam', 'nach der Testzeit');
+insert into maintenance_payments (family_id, payer, month, amount_cents, paid_on) values (:'fam', 'a', '2026-10-01', 1000, '2026-10-02');
+insert into packing_items (family_id, label) values (:'fam', 'Jacke');
 -- Abo der Familie: beide dürfen wieder schreiben
 reset role;
 update families set plus_until = now() + interval '1 month';
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e1');
-insert into messages (text) values ('mit Abo');
+insert into messages (family_id, text) values (:'fam', 'mit Abo');
 select count(*) as msgs_now from messages;

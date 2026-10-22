@@ -1,28 +1,67 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { useFamily } from '@/data/store';
+import { useStore } from '@/data/store';
+import { Family, ParentKey, ScheduleChange } from '@/data/types';
 import { registerForPush } from '@/lib/push';
-import { refreshHandoverReminders } from '@/lib/reminders';
+import { onHandoverReminderChange, refreshHandoverReminders } from '@/lib/reminders';
+import { supabase } from '@/lib/supabase';
 
-/** Plant die Erinnerungen am Vorabend jeder Übergabe – neu, sobald sich Plan oder Tausch ändern. */
+/**
+ * Plant die Erinnerungen am Vorabend jeder Übergabe – für alle eigenen Familien (Kinder mit verschiedenen Eltern).
+ * Neu, sobald sich Plan oder Tausch ändern.
+ */
 export function HandoverReminders() {
-  const { family, schedule_changes, me, nameOf } = useFamily();
-  const { schedule_model, schedule_start, schedule_first, handover_time, handover_place, children, name_a, name_b } =
-    family;
+  const { families, schedule_changes, userId } = useStore();
+  // Erinnerungen in den Einstellungen ein- oder ausgeschaltet: neu planen.
+  const [setting, setSetting] = useState(0);
+  useEffect(() => onHandoverReminderChange(() => setSetting((n) => n + 1)), []);
+  // Plan-Angaben aller Familien als Abhängigkeit – nicht jede neue Nachricht soll neu planen.
+  const plans = families
+    .map((f) =>
+      [
+        f.id,
+        f.schedule_model,
+        f.schedule_start,
+        f.schedule_first,
+        f.handover_time,
+        f.handover_place,
+        f.children,
+        f.name_a,
+        f.name_b,
+      ].join('|'),
+    )
+    .join(';');
 
   useEffect(() => {
     let cancelled = false;
-    // Erst nach der Mitteilungs-Erlaubnis planen.
-    registerForPush().then(() => {
+    (async () => {
+      // Erst nach der Mitteilungs-Erlaubnis planen.
+      await registerForPush();
+      // Bestätigte Tausche aller Familien – die geöffnete hat sie schon, die anderen holen wir kurz nach.
+      const { data } = await supabase
+        .from('schedule_changes')
+        .select('*')
+        .eq('status', 'accepted')
+        .in('family_id', families.map((f) => f.id));
       if (cancelled) return;
-      refreshHandoverReminders({ family, changes: schedule_changes, me, nameOf });
-    });
+      const changes = (data ?? []) as ScheduleChange[];
+      await refreshHandoverReminders(
+        families.map((family: Family) => {
+          const me: ParentKey = family.parent_b === userId ? 'b' : 'a';
+          return {
+            family,
+            changes: changes.filter((c) => c.family_id === family.id),
+            me,
+            nameOf: (k: ParentKey) => (k === 'a' ? family.name_a : family.name_b),
+          };
+        }),
+      );
+    })().catch(() => {});
     return () => {
       cancelled = true;
     };
-    // Nur bei Änderungen, die die Erinnerungen betreffen – nicht bei jeder neuen Nachricht.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schedule_model, schedule_start, schedule_first, handover_time, handover_place, children, name_a, name_b, schedule_changes, me]);
+  }, [plans, schedule_changes, setting, userId]);
 
   return null;
 }

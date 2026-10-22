@@ -52,8 +52,13 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 Server in Frankfurt (EU). Keine Werbung, kein Tracking, keine verkauften Daten. Eigene Daten jederzeit exportieren,
 Konto löschen mit einem Tipp.
 
+**KINDER MIT VERSCHIEDENEN ELTERN?**
+• Mehrere Familien in einem Konto – streng getrennt: Jeder sieht nur seine eigene
+• „Alle Kinder heute“: wer ist gerade wo, auf einen Blick
+• Ausgaben für mehrere Kinder fair auf die Familien aufteilen
+
 **14 TAGE KOSTENLOS TESTEN** – ab dem Tag, an dem ihr beide dabei seid. Danach ein Abo für die ganze Familie: Zwei Zuhause Plus für 7,99 € im Monat oder
-59,99 € im Jahr. Einer zahlt, beide Eltern nutzen alles. Ohne Abo bleiben alle Einträge lesbar und exportierbar.
+59,99 € im Jahr. Einer zahlt, beide Eltern nutzen alles. Plus Mehrfamilie für bis zu 3 Familien: 11,99 € im Monat oder 89,99 € im Jahr. Ohne Abo bleiben alle Einträge lesbar und exportierbar.
 
 Zwei Zuhause ersetzt keine Rechtsberatung. Bei Fragen zu Sorge, Umgang und Unterhalt helfen Jugendamt,
 Beratungsstellen und Fachanwälte für Familienrecht.

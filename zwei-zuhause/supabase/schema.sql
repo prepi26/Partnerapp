@@ -41,8 +41,10 @@ alter table public.families add constraint families_handover_place_check check (
 alter table public.families add column if not exists read_receipts_a boolean not null default true;
 alter table public.families add column if not exists read_receipts_b boolean not null default true;
 
--- Abo „Zwei Zuhause Plus“ gilt für die ganze Familie. plus_until setzt nur die Edge Function (service_role).
+-- Abo „Zwei Zuhause Plus“ gilt für die ganze Familie. plus_until und plus_payer setzt nur die Edge Function
+-- (service_role) über apply_plus(): „Plus“ deckt eine Familie ab, „Plus Mehrfamilie“ bis zu drei Familien des Zahlenden.
 alter table public.families add column if not exists plus_until timestamptz;
+alter table public.families add column if not exists plus_payer uuid references auth.users (id) on delete set null;
 
 -- Wann der zweite Elternteil beigetreten ist: Ab da laufen die 14 Testtage (nur beim ersten Beitritt gesetzt).
 alter table public.families add column if not exists joined_at timestamptz;
@@ -57,37 +59,50 @@ alter table public.families drop constraint if exists families_school_state_chec
 alter table public.families add constraint families_school_state_check
   check (school_state = '' or school_state ~ '^(DE|AT)-[A-Z0-9]{1,2}$');
 
-create unique index if not exists families_parent_a_key on public.families (parent_a);
-create unique index if not exists families_parent_b_key on public.families (parent_b);
+-- Ein Konto kann Elternteil in mehreren Familien sein (z. B. Kinder mit verschiedenen Vätern). Die Familien bleiben
+-- streng getrennt: Jede Zeile gehört zu genau einer Familie, und jede Regel prüft genau diese Familie.
+drop index if exists public.families_parent_a_key;
+drop index if exists public.families_parent_b_key;
+create index if not exists families_parent_a on public.families (parent_a);
+create index if not exists families_parent_b on public.families (parent_b);
 
-create or replace function public.my_family_id()
-returns uuid
+-- Alle Familien, in denen der eingeloggte Nutzer Elternteil ist.
+create or replace function public.my_family_ids()
+returns setof uuid
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select id from public.families
-  where parent_a = auth.uid() or parent_b = auth.uid()
-  limit 1
+  select id from public.families where parent_a = auth.uid() or parent_b = auth.uid()
 $$;
 
--- 'a' oder 'b' – welcher Elternteil der eingeloggte Nutzer ist.
-create or replace function public.my_parent_key()
+create or replace function public.is_my_family(p_family uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.families where id = p_family and (parent_a = auth.uid() or parent_b = auth.uid())
+  )
+$$;
+
+-- 'a' oder 'b' – welcher Elternteil der eingeloggte Nutzer in dieser Familie ist (null = keiner).
+create or replace function public.parent_key(p_family uuid)
 returns text
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select case when parent_a = auth.uid() then 'a' else 'b' end
-  from public.families
-  where parent_a = auth.uid() or parent_b = auth.uid()
-  limit 1
+  select case when parent_a = auth.uid() then 'a' when parent_b = auth.uid() then 'b' end
+  from public.families where id = p_family
 $$;
 
 -- Ist der andere Elternteil (noch) dabei? Sonst darf man eigene Vorschläge selbst bestätigen.
-create or replace function public.other_parent_present()
+create or replace function public.other_present(p_family uuid)
 returns boolean
 language sql
 stable
@@ -95,16 +110,14 @@ security definer
 set search_path = public
 as $$
   select case when parent_a = auth.uid() then parent_b is not null else parent_a is not null end
-  from public.families
-  where parent_a = auth.uid() or parent_b = auth.uid()
-  limit 1
+  from public.families where id = p_family
 $$;
 
--- Darf die Familie gerade schreiben? Allein höchstens 30 Tage ab Anlegen kostenlos; sobald der andere Elternteil
--- beitritt, 14 Testtage ab dem Beitritt. Danach nur mit Abo – sonst nur lesen.
+-- Darf diese Familie gerade schreiben? Allein höchstens 30 Tage ab Anlegen kostenlos; sobald der andere Elternteil
+-- beitritt, 14 Testtage ab dem Beitritt; ein Gutschein verlängert. Danach nur mit Abo – sonst nur lesen.
 -- Lesen, Exportieren, eigene Einträge löschen und das Konto löschen gehen immer (DSGVO).
 -- Muss zu src/data/plus.tsx (SOLO_DAYS, TRIAL_DAYS) passen.
-create or replace function public.family_active()
+create or replace function public.family_active(p_family uuid)
 returns boolean
 language sql
 stable
@@ -113,12 +126,40 @@ set search_path = public
 as $$
   select exists (
     select 1 from public.families
-     where id = public.my_family_id()
+     where id = p_family
        and (plus_until > now()
             or promo_until > now()
             or (joined_at is null and created_at + interval '30 days' > now())
             or joined_at + interval '14 days' > now())
   )
+$$;
+
+-- Prüft vor einer Antwort: Eintrag gehört zu meiner Familie, und die Familie darf schreiben.
+create or replace function public.require_active(p_family uuid)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if p_family is null or not public.is_my_family(p_family) then
+    raise exception 'not_allowed';
+  end if;
+  if not public.family_active(p_family) then
+    raise exception 'subscription_required';
+  end if;
+end;
+$$;
+
+-- Familie aus einem Speicherpfad „<familie>/datei“ (null, wenn der Pfad nicht so aussieht).
+create or replace function public.folder_family(p_name text)
+returns uuid
+language sql
+immutable
+as $$
+  select case when split_part(p_name, '/', 1) ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+              then split_part(p_name, '/', 1)::uuid end
 $$;
 
 -- Neuer, noch unbenutzter Einladungscode (6 Großbuchstaben ohne I und O).
@@ -168,28 +209,41 @@ $$;
 revoke execute on function public.new_invite_code() from public, anon, authenticated;
 revoke execute on function public.count_code_attempt() from public, anon, authenticated;
 
+-- Höchstens so viele Familien pro Konto (Plus Mehrfamilie deckt bis zu 3 ab; mehr wäre ein Sonderfall).
+create or replace function public.too_many_families()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select (select count(*) from public.my_family_ids()) >= 5
+$$;
+
+-- Liefert die ID der neuen Familie.
+drop function if exists public.create_family(text, text, text);
 create or replace function public.create_family(p_name_a text, p_name_b text, p_children text)
-returns text
+returns uuid
 language plpgsql
 security definer
 set search_path = public
 as $$
 declare
-  v_code text;
+  v_id uuid;
 begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
-  if public.my_family_id() is not null then
-    raise exception 'already_in_family';
+  if public.too_many_families() then
+    raise exception 'too_many_families';
   end if;
   if public.is_professional() then
     raise exception 'is_professional';
   end if;
-  v_code := public.new_invite_code();
   insert into public.families (parent_a, name_a, name_b, children, invite_code)
-  values (auth.uid(), p_name_a, p_name_b, coalesce(p_children, ''), v_code);
-  return v_code;
+  values (auth.uid(), p_name_a, p_name_b, coalesce(p_children, ''), public.new_invite_code())
+  returning id into v_id;
+  return v_id;
 end;
 $$;
 
@@ -205,8 +259,8 @@ begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
-  if public.my_family_id() is not null then
-    raise exception 'already_in_family';
+  if public.too_many_families() then
+    raise exception 'too_many_families';
   end if;
   if public.is_professional() then
     raise exception 'is_professional';
@@ -234,27 +288,29 @@ create policy families_select on public.families
 drop policy if exists families_update on public.families;
 create policy families_update on public.families
   for update using (parent_a = auth.uid() or parent_b = auth.uid())
-  with check ((parent_a = auth.uid() or parent_b = auth.uid()) and public.family_active());
+  with check ((parent_a = auth.uid() or parent_b = auth.uid()) and public.family_active(id));
 
 -- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
 revoke select on public.families from authenticated;
 grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
               default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, plus_until, joined_at,
-              school_state, promo_until, created_at)
+              school_state, promo_until, plus_payer, created_at)
   on public.families to authenticated;
 
-create or replace function public.my_invite_code()
+drop function if exists public.my_invite_code();
+create or replace function public.my_invite_code(p_family uuid)
 returns text
 language sql
 stable
 security definer
 set search_path = public
 as $$
-  select invite_code from public.families where parent_a = auth.uid() or parent_b = auth.uid() limit 1
+  select invite_code from public.families where id = p_family and (parent_a = auth.uid() or parent_b = auth.uid())
 $$;
 
 -- Jeder schaltet nur seine eigenen Lesebestätigungen.
-create or replace function public.set_read_receipts(p_on boolean)
+drop function if exists public.set_read_receipts(boolean);
+create or replace function public.set_read_receipts(p_family uuid, p_on boolean)
 returns void
 language sql
 security definer
@@ -263,7 +319,7 @@ as $$
   update public.families
      set read_receipts_a = case when parent_a = auth.uid() then p_on else read_receipts_a end,
          read_receipts_b = case when parent_b = auth.uid() then p_on else read_receipts_b end
-   where parent_a = auth.uid() or parent_b = auth.uid()
+   where id = p_family and (parent_a = auth.uid() or parent_b = auth.uid())
 $$;
 
 -- Wer zur Familie gehört und der Code sind tabu; Namen, Kinder und Umgangsplan dürfen beide ändern.
@@ -277,7 +333,7 @@ grant update (name_a, name_b, children, schedule_model, schedule_start, schedule
 
 create table if not exists public.schedule_changes (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   day date not null,
   parent text not null check (parent in ('a', 'b')),
   note text not null default '' check (length(note) <= 500),
@@ -290,11 +346,11 @@ create table if not exists public.schedule_changes (
 alter table public.schedule_changes enable row level security;
 drop policy if exists schedule_changes_select on public.schedule_changes;
 create policy schedule_changes_select on public.schedule_changes
-  for select using (family_id = public.my_family_id());
+  for select using (public.is_my_family(family_id));
 drop policy if exists schedule_changes_insert on public.schedule_changes;
 create policy schedule_changes_insert on public.schedule_changes
   for insert with check (
-    family_id = public.my_family_id() and created_by = auth.uid() and status = 'proposed' and public.family_active()
+    public.is_my_family(family_id) and created_by = auth.uid() and status = 'proposed' and public.family_active(family_id)
   );
 -- Nur offene, eigene Vorschläge darf man zurückziehen.
 drop policy if exists schedule_changes_delete on public.schedule_changes;
@@ -308,16 +364,14 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
+  perform public.require_active((select family_id from public.schedule_changes where id = p_id));
   update public.schedule_changes
      set status = case when p_accept then 'accepted' else 'declined' end,
          answered_at = now()
    where id = p_id
-     and family_id = public.my_family_id()
+     and public.is_my_family(family_id)
      and status = 'proposed'
-     and (created_by is distinct from auth.uid() or not public.other_parent_present());
+     and (created_by is distinct from auth.uid() or not public.other_present(family_id));
   if not found then
     raise exception 'not_allowed';
   end if;
@@ -330,7 +384,7 @@ $$;
 
 create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   kind text not null default 'expense' check (kind in ('expense', 'payment')),
   title text not null check (length(title) between 1 and 200),
   category text not null default 'sonstiges',
@@ -352,11 +406,11 @@ alter table public.expenses add constraint expenses_need_check check (need in ('
 
 alter table public.expenses enable row level security;
 drop policy if exists expenses_select on public.expenses;
-create policy expenses_select on public.expenses for select using (family_id = public.my_family_id());
+create policy expenses_select on public.expenses for select using (public.is_my_family(family_id));
 drop policy if exists expenses_insert on public.expenses;
 create policy expenses_insert on public.expenses
   for insert with check (
-    family_id = public.my_family_id() and created_by = auth.uid() and status = 'open' and public.family_active()
+    public.is_my_family(family_id) and created_by = auth.uid() and status = 'open' and public.family_active(family_id)
   );
 -- Bestätigte Kosten bleiben stehen; nur Offenes oder Abgelehntes darf der Verfasser löschen.
 drop policy if exists expenses_delete on public.expenses;
@@ -370,14 +424,12 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
+  perform public.require_active((select family_id from public.expenses where id = p_id));
   update public.expenses
      set status = case when p_confirm then 'confirmed' else 'disputed' end,
          answered_at = now()
    where id = p_id
-     and family_id = public.my_family_id()
+     and public.is_my_family(family_id)
      and status = 'open'
      and created_by is distinct from auth.uid();
   if not found then
@@ -393,7 +445,7 @@ $$;
 create table if not exists public.messages (
   id uuid primary key default gen_random_uuid(),
   seq bigserial,
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   sender uuid default auth.uid() references auth.users (id) on delete set null,
   sender_key text not null default 'a' check (sender_key in ('a', 'b')),
   text text not null check (length(text) between 1 and 4000),
@@ -419,7 +471,7 @@ begin
   -- Reihenfolge erst nach der Sperre vergeben – sonst passt die Prüfsummen-Kette nicht zur Anzeige.
   new.seq := nextval(pg_get_serial_sequence('public.messages', 'seq'));
   new.sender := auth.uid();
-  new.sender_key := public.my_parent_key();
+  new.sender_key := public.parent_key(new.family_id);
   new.created_at := now();
   new.read_at := null;
   select hash into v_prev from public.messages
@@ -441,16 +493,17 @@ create trigger messages_before_insert before insert on public.messages
 
 alter table public.messages enable row level security;
 drop policy if exists messages_select on public.messages;
-create policy messages_select on public.messages for select using (family_id = public.my_family_id());
+create policy messages_select on public.messages for select using (public.is_my_family(family_id));
 drop policy if exists messages_insert on public.messages;
 create policy messages_insert on public.messages
-  for insert with check (family_id = public.my_family_id() and public.family_active());
+  for insert with check (public.is_my_family(family_id) and public.family_active(family_id));
 revoke insert, update, delete on public.messages from authenticated;
--- Nur der Text kommt vom Gerät; Absender, Zeit, Reihenfolge und Prüfsumme setzt der Server.
-grant insert (text) on public.messages to authenticated;
+-- Nur Familie und Text kommen vom Gerät; Absender, Zeit, Reihenfolge und Prüfsumme setzt der Server.
+grant insert (family_id, text) on public.messages to authenticated;
 
 -- Gelesen-Markierung setzt nur der Empfänger, nur einmal – und nur, wenn er Lesebestätigungen eingeschaltet hat.
-create or replace function public.mark_messages_read()
+drop function if exists public.mark_messages_read();
+create or replace function public.mark_messages_read(p_family uuid)
 returns void
 language sql
 security definer
@@ -458,12 +511,13 @@ set search_path = public
 as $$
   update public.messages
      set read_at = now()
-   where family_id = public.my_family_id()
-     and sender_key <> public.my_parent_key()
+   where family_id = p_family
+     and public.is_my_family(p_family)
+     and sender_key <> public.parent_key(p_family)
      and read_at is null
      and exists (
        select 1 from public.families f
-        where f.id = public.my_family_id()
+        where f.id = p_family
           and case when f.parent_a = auth.uid() then f.read_receipts_a else f.read_receipts_b end
      )
 $$;
@@ -479,13 +533,21 @@ create table if not exists public.journal (
   created_at timestamptz not null default now()
 );
 
+-- Jede Notiz gehört zu einer Familie: Wer Kinder mit verschiedenen Eltern hat, trennt so auch die Notizen
+-- (ein Bericht für die eine Familie enthält nie Notizen über die andere).
+alter table public.journal add column if not exists family_id uuid references public.families (id) on delete cascade;
+update public.journal j
+   set family_id = (select f.id from public.families f where f.parent_a = j.user_id or f.parent_b = j.user_id
+                     order by f.created_at limit 1)
+ where family_id is null;
+
 alter table public.journal enable row level security;
 drop policy if exists journal_own on public.journal;
 drop policy if exists journal_select on public.journal;
 create policy journal_select on public.journal for select using (user_id = auth.uid());
 drop policy if exists journal_insert on public.journal;
 create policy journal_insert on public.journal
-  for insert with check (user_id = auth.uid() and public.family_active());
+  for insert with check (user_id = auth.uid() and public.is_my_family(family_id) and public.family_active(family_id));
 drop policy if exists journal_delete on public.journal;
 create policy journal_delete on public.journal for delete using (user_id = auth.uid());
 
@@ -515,7 +577,7 @@ begin
     new.answered_at := null;
   elsif tg_table_name = 'maintenance_payments' then
     -- Trägt der Empfänger ein, hat er das Geld erhalten; trägt der Zahlende ein, bestätigt der andere.
-    if new.payer = public.my_parent_key() then
+    if new.payer = public.parent_key(new.family_id) then
       new.status := 'open';
       new.answered_at := null;
     else
@@ -532,7 +594,7 @@ $$;
 
 create table if not exists public.child_info (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   category text not null default 'sonstiges',
   label text not null check (length(label) between 1 and 100),
   value text not null default '' check (length(value) <= 2000),
@@ -543,7 +605,7 @@ create table if not exists public.child_info (
 alter table public.child_info enable row level security;
 drop policy if exists child_info_family on public.child_info;
 create policy child_info_family on public.child_info for all
-  using (family_id = public.my_family_id()) with check (family_id = public.my_family_id() and public.family_active());
+  using (public.is_my_family(family_id)) with check (public.is_my_family(family_id) and public.family_active(family_id));
 
 create or replace function public.child_info_touch()
 returns trigger
@@ -566,7 +628,7 @@ create trigger child_info_touch before insert or update on public.child_info
 
 create table if not exists public.decisions (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   category text not null default 'sonstiges',
   title text not null check (length(title) between 1 and 200),
   details text not null default '' check (length(details) <= 4000),
@@ -580,11 +642,11 @@ create table if not exists public.decisions (
 
 alter table public.decisions enable row level security;
 drop policy if exists decisions_select on public.decisions;
-create policy decisions_select on public.decisions for select using (family_id = public.my_family_id());
+create policy decisions_select on public.decisions for select using (public.is_my_family(family_id));
 drop policy if exists decisions_insert on public.decisions;
 create policy decisions_insert on public.decisions
   for insert with check (
-    family_id = public.my_family_id() and created_by = auth.uid() and status = 'proposed' and public.family_active()
+    public.is_my_family(family_id) and created_by = auth.uid() and status = 'proposed' and public.family_active(family_id)
   );
 drop policy if exists decisions_delete on public.decisions;
 create policy decisions_delete on public.decisions
@@ -597,15 +659,13 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
+  perform public.require_active((select family_id from public.decisions where id = p_id));
   update public.decisions
      set status = case when p_agree then 'agreed' else 'rejected' end,
          answer_note = left(coalesce(p_note, ''), 2000),
          answered_at = now()
    where id = p_id
-     and family_id = public.my_family_id()
+     and public.is_my_family(family_id)
      and status = 'proposed'
      and created_by is distinct from auth.uid();
   if not found then
@@ -619,7 +679,7 @@ $$;
 
 create table if not exists public.handovers (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   day date not null,
   status text not null check (status in ('on_time', 'late', 'missed')),
   minutes_late int not null default 0 check (minutes_late between 0 and 1440),
@@ -633,11 +693,11 @@ create table if not exists public.handovers (
 
 alter table public.handovers enable row level security;
 drop policy if exists handovers_select on public.handovers;
-create policy handovers_select on public.handovers for select using (family_id = public.my_family_id());
+create policy handovers_select on public.handovers for select using (public.is_my_family(family_id));
 drop policy if exists handovers_insert on public.handovers;
 create policy handovers_insert on public.handovers
   for insert with check (
-    family_id = public.my_family_id() and created_by = auth.uid() and reply is null and public.family_active()
+    public.is_my_family(family_id) and created_by = auth.uid() and reply is null and public.family_active(family_id)
   );
 -- Nachweise bleiben: kein Bearbeiten und kein Löschen.
 
@@ -648,15 +708,13 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
+  perform public.require_active((select family_id from public.handovers where id = p_id));
   update public.handovers
      set reply = case when p_confirm then 'confirmed' else 'disputed' end,
          reply_note = left(coalesce(p_note, ''), 1000),
          replied_at = now()
    where id = p_id
-     and family_id = public.my_family_id()
+     and public.is_my_family(family_id)
      and reply is null
      and created_by is distinct from auth.uid();
   if not found then
@@ -684,7 +742,7 @@ $$;
 
 create table if not exists public.agreements (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   version int not null default 1,
   content jsonb not null,
   hash text not null default '',
@@ -705,8 +763,8 @@ begin
   new.created_by := auth.uid();
   new.created_at := now();
   new.version := coalesce((select max(version) from public.agreements where family_id = new.family_id), 0) + 1;
-  new.accepted_a_at := case when public.my_parent_key() = 'a' then now() end;
-  new.accepted_b_at := case when public.my_parent_key() = 'b' then now() end;
+  new.accepted_a_at := case when public.parent_key(new.family_id) = 'a' then now() end;
+  new.accepted_b_at := case when public.parent_key(new.family_id) = 'b' then now() end;
   new.hash := encode(extensions.digest(new.content::text, 'sha256'), 'hex');
   return new;
 end;
@@ -718,10 +776,10 @@ create trigger agreements_before_insert before insert on public.agreements
 
 alter table public.agreements enable row level security;
 drop policy if exists agreements_select on public.agreements;
-create policy agreements_select on public.agreements for select using (family_id = public.my_family_id());
+create policy agreements_select on public.agreements for select using (public.is_my_family(family_id));
 drop policy if exists agreements_insert on public.agreements;
 create policy agreements_insert on public.agreements
-  for insert with check (family_id = public.my_family_id() and public.family_active());
+  for insert with check (public.is_my_family(family_id) and public.family_active(family_id));
 revoke update, delete on public.agreements from authenticated;
 
 create or replace function public.accept_agreement(p_id uuid)
@@ -731,17 +789,16 @@ security definer
 set search_path = public
 as $$
 declare
-  v_key text := public.my_parent_key();
+  v_family uuid := (select family_id from public.agreements where id = p_id);
+  v_key text := public.parent_key(v_family);
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
+  perform public.require_active(v_family);
   -- Zustimmen geht nur zur neuesten Version.
   update public.agreements a
      set accepted_a_at = case when v_key = 'a' then coalesce(accepted_a_at, now()) else accepted_a_at end,
          accepted_b_at = case when v_key = 'b' then coalesce(accepted_b_at, now()) else accepted_b_at end
    where a.id = p_id
-     and a.family_id = public.my_family_id()
+     and public.is_my_family(a.family_id)
      and a.version = (select max(version) from public.agreements where family_id = a.family_id);
   if not found then
     raise exception 'not_allowed';
@@ -756,7 +813,7 @@ $$;
 
 create table if not exists public.professional_access (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   label text not null check (length(label) between 1 and 200),
   code text not null unique,
   invited_by uuid default auth.uid() references auth.users (id) on delete set null,
@@ -774,7 +831,7 @@ create index if not exists professional_access_professional on public.profession
 alter table public.professional_access enable row level security;
 drop policy if exists professional_access_select on public.professional_access;
 create policy professional_access_select on public.professional_access
-  for select using (family_id = public.my_family_id() or professional = auth.uid());
+  for select using (public.is_my_family(family_id) or professional = auth.uid());
 revoke insert, update, delete on public.professional_access from authenticated;
 
 -- Familien, die der eingeloggte Nutzer als Fachkraft gerade lesen darf.
@@ -806,7 +863,8 @@ as $$
   select exists (select 1 from public.professional_access where professional = auth.uid())
 $$;
 
-create or replace function public.create_professional_invite(p_label text, p_days int)
+drop function if exists public.create_professional_invite(text, int);
+create or replace function public.create_professional_invite(p_family uuid, p_label text, p_days int)
 returns text
 language plpgsql
 security definer
@@ -814,9 +872,9 @@ set search_path = public
 as $$
 declare
   v_code text;
-  v_family uuid := public.my_family_id();
+  v_family uuid := p_family;
 begin
-  if v_family is null then
+  if v_family is null or not public.is_my_family(v_family) then
     raise exception 'not_allowed';
   end if;
   loop
@@ -827,7 +885,7 @@ begin
     exit when not exists (select 1 from public.professional_access where code = v_code);
   end loop;
   insert into public.professional_access (family_id, label, code, invited_key, expires_at)
-  values (v_family, left(trim(p_label), 200), v_code, public.my_parent_key(),
+  values (v_family, left(trim(p_label), 200), v_code, public.parent_key(v_family),
           now() + make_interval(days => least(greatest(coalesce(p_days, 30), 1), 365)));
   return v_code;
 end;
@@ -843,8 +901,8 @@ begin
   update public.professional_access
      set other_approved_at = now()
    where id = p_id
-     and family_id = public.my_family_id()
-     and invited_key <> public.my_parent_key()
+     and public.is_my_family(family_id)
+     and invited_key <> public.parent_key(family_id)
      and other_approved_at is null
      and revoked_at is null;
   if not found then
@@ -863,7 +921,7 @@ begin
   update public.professional_access
      set revoked_at = now()
    where id = p_id
-     and (family_id = public.my_family_id() or professional = auth.uid())
+     and (public.is_my_family(family_id) or professional = auth.uid())
      and revoked_at is null;
   if not found then
     raise exception 'not_allowed';
@@ -883,7 +941,7 @@ begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
-  if public.my_family_id() is not null then
+  if exists (select 1 from public.my_family_ids()) then
     raise exception 'is_parent';
   end if;
   perform public.count_code_attempt();
@@ -933,7 +991,7 @@ $$;
 
 create table if not exists public.documents (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   title text not null check (length(title) between 1 and 200),
   category text not null default 'sonstiges' check (category in ('gesundheit', 'schule', 'behoerde', 'sonstiges')),
   doc_date date,
@@ -948,14 +1006,14 @@ create table if not exists public.documents (
 
 alter table public.documents enable row level security;
 drop policy if exists documents_select on public.documents;
-create policy documents_select on public.documents for select using (family_id = public.my_family_id());
+create policy documents_select on public.documents for select using (public.is_my_family(family_id));
 drop policy if exists documents_insert on public.documents;
 create policy documents_insert on public.documents
   for insert with check (
-    family_id = public.my_family_id()
+    public.is_my_family(family_id)
     and created_by = auth.uid()
-    and public.storage_folder(file_path) = public.my_family_id()::text
-    and public.family_active()
+    and public.storage_folder(file_path) = family_id::text
+    and public.family_active(family_id)
   );
 drop policy if exists documents_delete on public.documents;
 create policy documents_delete on public.documents for delete using (created_by = auth.uid());
@@ -993,19 +1051,19 @@ on conflict (id) do nothing;
 drop policy if exists receipts_family on storage.objects;
 drop policy if exists receipts_select on storage.objects;
 create policy receipts_select on storage.objects for select
-  using (bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text);
+  using (bucket_id = 'receipts' and public.is_my_family(public.folder_family(name)));
 drop policy if exists receipts_insert on storage.objects;
 create policy receipts_insert on storage.objects for insert
   with check (
-    bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text and public.family_active()
+    bucket_id = 'receipts' and public.is_my_family(public.folder_family(name)) and public.family_active(public.folder_family(name))
   );
 drop policy if exists receipts_delete on storage.objects;
 create policy receipts_delete on storage.objects for delete
   using (
     bucket_id = 'receipts'
-    and (storage.foldername(name))[1] = public.my_family_id()::text
+    and public.is_my_family(public.folder_family(name))
     and (
-      not public.other_parent_present()
+      not public.other_present(public.folder_family(name))
       or (owner_id = auth.uid()::text
           and not exists (select 1 from public.expenses e where e.receipt_path = name and e.status = 'confirmed'))
     )
@@ -1022,18 +1080,18 @@ update storage.buckets
 
 drop policy if exists documents_files_select on storage.objects;
 create policy documents_files_select on storage.objects for select
-  using (bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text);
+  using (bucket_id = 'documents' and public.is_my_family(public.folder_family(name)));
 drop policy if exists documents_files_insert on storage.objects;
 create policy documents_files_insert on storage.objects for insert
   with check (
-    bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text and public.family_active()
+    bucket_id = 'documents' and public.is_my_family(public.folder_family(name)) and public.family_active(public.folder_family(name))
   );
 drop policy if exists documents_files_delete on storage.objects;
 create policy documents_files_delete on storage.objects for delete
   using (
     bucket_id = 'documents'
-    and (storage.foldername(name))[1] = public.my_family_id()::text
-    and (owner_id = auth.uid()::text or not public.other_parent_present())
+    and public.is_my_family(public.folder_family(name))
+    and (owner_id = auth.uid()::text or not public.other_present(public.folder_family(name)))
   );
 drop policy if exists documents_files_professional on storage.objects;
 create policy documents_files_professional on storage.objects for select
@@ -1050,7 +1108,7 @@ create policy receipts_professional on storage.objects for select
 
 create table if not exists public.maintenance_terms (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   payer text not null check (payer in ('a', 'b')),
   amount_cents int not null check (amount_cents between 0 and 10000000),
   valid_from date not null check (extract(day from valid_from) = 1),
@@ -1061,15 +1119,15 @@ create table if not exists public.maintenance_terms (
 
 alter table public.maintenance_terms enable row level security;
 drop policy if exists maintenance_terms_select on public.maintenance_terms;
-create policy maintenance_terms_select on public.maintenance_terms for select using (family_id = public.my_family_id());
+create policy maintenance_terms_select on public.maintenance_terms for select using (public.is_my_family(family_id));
 drop policy if exists maintenance_terms_insert on public.maintenance_terms;
 create policy maintenance_terms_insert on public.maintenance_terms
-  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and public.family_active());
+  for insert with check (public.is_my_family(family_id) and created_by = auth.uid() and public.family_active(family_id));
 -- Nachweis: kein Bearbeiten und kein Löschen – korrigiert wird mit einem neuen Eintrag.
 
 create table if not exists public.maintenance_payments (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   payer text not null check (payer in ('a', 'b')),
   month date not null check (extract(day from month) = 1),
   amount_cents int not null check (amount_cents > 0 and amount_cents <= 10000000),
@@ -1085,10 +1143,10 @@ create index if not exists maintenance_payments_family on public.maintenance_pay
 alter table public.maintenance_payments enable row level security;
 drop policy if exists maintenance_payments_select on public.maintenance_payments;
 create policy maintenance_payments_select on public.maintenance_payments
-  for select using (family_id = public.my_family_id());
+  for select using (public.is_my_family(family_id));
 drop policy if exists maintenance_payments_insert on public.maintenance_payments;
 create policy maintenance_payments_insert on public.maintenance_payments
-  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and public.family_active());
+  for insert with check (public.is_my_family(family_id) and created_by = auth.uid() and public.family_active(family_id));
 -- Nur eigene, noch unbestätigte Einträge darf man zurücknehmen.
 drop policy if exists maintenance_payments_delete on public.maintenance_payments;
 create policy maintenance_payments_delete on public.maintenance_payments
@@ -1101,14 +1159,12 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
+  perform public.require_active((select family_id from public.maintenance_payments where id = p_id));
   update public.maintenance_payments
      set status = case when p_confirm then 'confirmed' else 'disputed' end,
          answered_at = now()
    where id = p_id
-     and family_id = public.my_family_id()
+     and public.is_my_family(family_id)
      and status = 'open'
      and created_by is distinct from auth.uid();
   if not found then
@@ -1140,7 +1196,7 @@ $$;
 
 create table if not exists public.packing_items (
   id uuid primary key default gen_random_uuid(),
-  family_id uuid not null default public.my_family_id() references public.families (id) on delete cascade,
+  family_id uuid not null references public.families (id) on delete cascade,
   label text not null check (length(label) between 1 and 100),
   recurring boolean not null default false,
   packed boolean not null default false,
@@ -1152,25 +1208,24 @@ create table if not exists public.packing_items (
 alter table public.packing_items enable row level security;
 drop policy if exists packing_items_family on public.packing_items;
 create policy packing_items_family on public.packing_items for all
-  using (family_id = public.my_family_id()) with check (family_id = public.my_family_id() and public.family_active());
+  using (public.is_my_family(family_id)) with check (public.is_my_family(family_id) and public.family_active(family_id));
 
 drop trigger if exists packing_items_touch on public.packing_items;
 create trigger packing_items_touch before insert or update on public.packing_items
   for each row execute function public.child_info_touch();
 
 -- Nach der Übergabe: alles wieder auspacken, Einmal-Sachen, die mitgingen, entfernen.
-create or replace function public.reset_packing()
+drop function if exists public.reset_packing();
+create or replace function public.reset_packing(p_family uuid)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $$
 begin
-  if not public.family_active() then
-    raise exception 'subscription_required';
-  end if;
-  delete from public.packing_items where family_id = public.my_family_id() and packed and not recurring;
-  update public.packing_items set packed = false where family_id = public.my_family_id() and packed;
+  perform public.require_active(p_family);
+  delete from public.packing_items where family_id = p_family and packed and not recurring;
+  update public.packing_items set packed = false where family_id = p_family and packed;
 end;
 $$;
 
@@ -1196,7 +1251,7 @@ as $$
 declare
   v_token text := replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '');
 begin
-  if public.my_family_id() is null then
+  if not exists (select 1 from public.my_family_ids()) then
     raise exception 'not_allowed';
   end if;
   insert into public.calendar_feeds (user_id, token, lang)
@@ -1294,55 +1349,59 @@ begin
   if not found then
     return null;
   end if;
-  select * into v_family from public.families where parent_a = v_feed.user_id or parent_b = v_feed.user_id limit 1;
-  if not found then
-    return null;
-  end if;
-  v_kids := coalesce(nullif(trim(v_family.children), ''), public.push_text(v_feed.lang, 'calChild', '{}'));
-
-  -- Ein Eintrag je zusammenhängendem Zeitraum („Mia bei Anna“), dazu die Übergaben mit Uhrzeit und Ort.
-  -- Der Tag nach dem Zeitraum (null) schließt den letzten Zeitraum ab.
-  for r in
-    select d.day, d.parent from public.calendar_days(v_family.id, v_from, current_date + 365) d
-    union all select current_date + 366, null
-    order by 1
+  -- Alle Familien des Elternteils in einem Kalender (Kinder mit verschiedenen Eltern) – jede mit eigenen Einträgen.
+  for v_family in
+    select * from public.families where parent_a = v_feed.user_id or parent_b = v_feed.user_id order by created_at
   loop
-    if r.parent is distinct from v_run_parent then
-      if v_run_parent is not null then
-        v_lines := v_lines || array[
-          'BEGIN:VEVENT',
-          'UID:' || v_family.id || '-' || to_char(v_run_start, 'YYYYMMDD') || '@zweizuhause',
-          'DTSTAMP:' || v_stamp,
-          'DTSTART;VALUE=DATE:' || to_char(v_run_start, 'YYYYMMDD'),
-          'DTEND;VALUE=DATE:' || to_char(r.day, 'YYYYMMDD'),
-          'SUMMARY:' || public.ics_text(public.push_text(v_feed.lang, 'calStay', jsonb_build_object(
-            'children', v_kids,
-            'name', case v_run_parent when 'a' then v_family.name_a else v_family.name_b end))),
-          'TRANSP:TRANSPARENT',
-          'END:VEVENT'
-        ];
+    v_run_start := null;
+    v_run_parent := null;
+    v_prev := null;
+    v_kids := coalesce(nullif(trim(v_family.children), ''), public.push_text(v_feed.lang, 'calChild', '{}'));
+
+    -- Ein Eintrag je zusammenhängendem Zeitraum („Mia bei Anna“), dazu die Übergaben mit Uhrzeit und Ort.
+    -- Der Tag nach dem Zeitraum (null) schließt den letzten Zeitraum ab.
+    for r in
+      select d.day, d.parent from public.calendar_days(v_family.id, v_from, current_date + 365) d
+      union all select current_date + 366, null
+      order by 1
+    loop
+      if r.parent is distinct from v_run_parent then
+        if v_run_parent is not null then
+          v_lines := v_lines || array[
+            'BEGIN:VEVENT',
+            'UID:' || v_family.id || '-' || to_char(v_run_start, 'YYYYMMDD') || '@zweizuhause',
+            'DTSTAMP:' || v_stamp,
+            'DTSTART;VALUE=DATE:' || to_char(v_run_start, 'YYYYMMDD'),
+            'DTEND;VALUE=DATE:' || to_char(r.day, 'YYYYMMDD'),
+            'SUMMARY:' || public.ics_text(public.push_text(v_feed.lang, 'calStay', jsonb_build_object(
+              'children', v_kids,
+              'name', case v_run_parent when 'a' then v_family.name_a else v_family.name_b end))),
+            'TRANSP:TRANSPARENT',
+            'END:VEVENT'
+          ];
+        end if;
+        -- Übergabe: nur mit festgelegter Uhrzeit, sonst zeigt der Zeitraum den Wechsel schon.
+        if v_prev is not null and r.parent is not null and v_family.handover_time <> '' then
+          v_lines := v_lines || array[
+            'BEGIN:VEVENT',
+            'UID:' || v_family.id || '-h' || to_char(r.day, 'YYYYMMDD') || '@zweizuhause',
+            'DTSTAMP:' || v_stamp,
+            'DTSTART:' || to_char(r.day, 'YYYYMMDD') || 'T' || replace(v_family.handover_time, ':', '') || '00',
+            'DURATION:PT30M',
+            'SUMMARY:' || public.ics_text(public.push_text(v_feed.lang, 'calHandover', jsonb_build_object(
+              'children', v_kids,
+              'name', case r.parent when 'a' then v_family.name_a else v_family.name_b end)))
+          ] || case when v_family.handover_place <> ''
+                    then array['LOCATION:' || public.ics_text(v_family.handover_place)] else array[]::text[] end
+            || array['END:VEVENT'];
+        end if;
+        v_run_start := r.day;
+        v_run_parent := r.parent;
       end if;
-      -- Übergabe: nur mit festgelegter Uhrzeit, sonst zeigt der Zeitraum den Wechsel schon.
-      if v_prev is not null and r.parent is not null and v_family.handover_time <> '' then
-        v_lines := v_lines || array[
-          'BEGIN:VEVENT',
-          'UID:' || v_family.id || '-h' || to_char(r.day, 'YYYYMMDD') || '@zweizuhause',
-          'DTSTAMP:' || v_stamp,
-          'DTSTART:' || to_char(r.day, 'YYYYMMDD') || 'T' || replace(v_family.handover_time, ':', '') || '00',
-          'DURATION:PT30M',
-          'SUMMARY:' || public.ics_text(public.push_text(v_feed.lang, 'calHandover', jsonb_build_object(
-            'children', v_kids,
-            'name', case r.parent when 'a' then v_family.name_a else v_family.name_b end)))
-        ] || case when v_family.handover_place <> ''
-                  then array['LOCATION:' || public.ics_text(v_family.handover_place)] else array[]::text[] end
-          || array['END:VEVENT'];
+      if r.parent is not null then
+        v_prev := r.parent;
       end if;
-      v_run_start := r.day;
-      v_run_parent := r.parent;
-    end if;
-    if r.parent is not null then
-      v_prev := r.parent;
-    end if;
+    end loop;
   end loop;
 
   return array_to_string(v_lines || array['END:VCALENDAR'], chr(13) || chr(10)) || chr(13) || chr(10);
@@ -1406,7 +1465,8 @@ revoke all on public.promo_stats from public, anon, authenticated;
 
 -- Löst einen Code für die eigene Familie ein. Liefert das neue „kostenlos bis“ – oder null bei falschem Code
 -- (statt Fehler, damit der Versuch für die Sperre gegen Durchprobieren gezählt bleibt).
-create or replace function public.redeem_promo_code(p_code text)
+drop function if exists public.redeem_promo_code(text);
+create or replace function public.redeem_promo_code(p_family uuid, p_code text)
 returns timestamptz
 language plpgsql
 security definer
@@ -1417,7 +1477,7 @@ declare
   v_promo public.promo_codes;
   v_until timestamptz;
 begin
-  select * into v_family from public.families where id = public.my_family_id();
+  select * into v_family from public.families where id = p_family and public.is_my_family(p_family);
   if not found then
     raise exception 'not_allowed';
   end if;
@@ -1445,6 +1505,85 @@ begin
 end;
 $$;
 
+-- ───────────── Abo auf Familien verteilen ─────────────
+-- Ruft nur die Edge Function „plus“ (service_role) auf, nachdem sie den Kauf bei RevenueCat geprüft hat.
+-- p_capacity: 0 = kein Abo, 1 = Plus, 3 = Plus Mehrfamilie. p_family: die Familie, für die gerade gekauft wurde
+-- (bekommt das Abo zuerst). Danach behalten bereits abgedeckte Familien ihren Platz, der Rest nach Alter.
+-- Familien, die schon das Abo des anderen Elternteils haben, kommen zuletzt (doppelt zahlen bringt nichts).
+create or replace function public.apply_plus(p_user uuid, p_until timestamptz, p_capacity int, p_family uuid default null)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_covered uuid[];
+begin
+  v_covered := array(
+    select f.id from public.families f
+     where (f.parent_a = p_user or f.parent_b = p_user)
+       and p_until > now()
+     order by (f.id = p_family) desc nulls last,
+              (f.plus_payer is not null and f.plus_payer <> p_user and f.plus_until > now()) asc,
+              (f.plus_payer = p_user) desc nulls last,
+              f.created_at
+     limit greatest(p_capacity, 0)
+  );
+  update public.families
+     set plus_until = p_until, plus_payer = p_user
+   where id = any(v_covered);
+  -- Nicht mehr abgedeckt (Abo beendet oder kleineres Abo): Freischaltung durch diesen Zahler endet.
+  update public.families
+     set plus_until = least(plus_until, now()), plus_payer = null
+   where plus_payer = p_user and not (id = any(v_covered));
+  return coalesce(array_length(v_covered, 1), 0);
+end;
+$$;
+revoke execute on function public.apply_plus(uuid, timestamptz, int, uuid) from public, anon, authenticated;
+
+-- ───────────── Übersicht über alle eigenen Familien ─────────────
+-- Für Eltern mit Kindern aus mehreren Familien: wer ist heute wo, und wo wartet etwas. Liefert nur die eigenen
+-- Familien und nur Zahlen – keine Inhalte der anderen Familie.
+create or replace function public.my_families_overview()
+returns table (
+  family_id uuid,
+  my_key text,
+  name_a text,
+  name_b text,
+  children text,
+  today_parent text,
+  open_items int,
+  active boolean
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select f.id,
+         public.parent_key(f.id),
+         f.name_a,
+         f.name_b,
+         f.children,
+         (select d.parent from public.calendar_days(f.id, current_date, current_date) d),
+         (
+           (select count(*) from public.messages m
+             where m.family_id = f.id and m.sender_key <> public.parent_key(f.id) and m.read_at is null)
+           + (select count(*) from public.schedule_changes c
+               where c.family_id = f.id and c.status = 'proposed' and c.created_by is distinct from auth.uid())
+           + (select count(*) from public.expenses e
+               where e.family_id = f.id and e.status = 'open' and e.created_by is distinct from auth.uid())
+           + (select count(*) from public.decisions d
+               where d.family_id = f.id and d.status = 'proposed' and d.created_by is distinct from auth.uid())
+           + (select count(*) from public.maintenance_payments p
+               where p.family_id = f.id and p.status = 'open' and p.created_by is distinct from auth.uid())
+         )::int,
+         public.family_active(f.id)
+    from public.families f
+   where f.parent_a = auth.uid() or f.parent_b = auth.uid()
+   order by f.created_at
+$$;
+
 -- ───────────── Konto löschen (Pflicht für den App Store) ─────────────
 -- Löscht das eigene Konto und das eigene Tagebuch. Die gemeinsame Familie (Kalender, Kosten,
 -- Nachrichten) bleibt für den anderen Elternteil erhalten – sie ist auch seine Dokumentation.
@@ -1457,16 +1596,14 @@ security definer
 set search_path = public
 as $$
 declare
-  v_family uuid := public.my_family_id();
+  v_families uuid[] := array(select public.my_family_ids());
 begin
   if auth.uid() is null then
     raise exception 'not_authenticated';
   end if;
   update public.professional_access set revoked_at = now() where professional = auth.uid() and revoked_at is null;
   delete from auth.users where id = auth.uid();
-  if v_family is not null then
-    delete from public.families where id = v_family and parent_a is null and parent_b is null;
-  end if;
+  delete from public.families where id = any(v_families) and parent_a is null and parent_b is null;
 end;
 $$;
 
@@ -1476,11 +1613,12 @@ declare
 begin
   foreach f in array array[
     'create_family(text, text, text)', 'join_family(text)', 'answer_schedule_change(uuid, boolean)',
-    'answer_expense(uuid, boolean)', 'mark_messages_read()', 'delete_my_account()',
+    'answer_expense(uuid, boolean)', 'mark_messages_read(uuid)', 'delete_my_account()',
     'answer_decision(uuid, boolean, text)', 'reply_handover(uuid, boolean, text)', 'accept_agreement(uuid)',
-    'create_professional_invite(text, int)', 'approve_professional(uuid)', 'revoke_professional(uuid)',
-    'join_as_professional(text)', 'my_invite_code()', 'set_read_receipts(boolean)',
-    'answer_maintenance(uuid, boolean)', 'reset_packing()', 'redeem_promo_code(text)', 'my_calendar_token(text, boolean)', 'stop_calendar_feed()'
+    'create_professional_invite(uuid, text, int)', 'approve_professional(uuid)', 'revoke_professional(uuid)',
+    'join_as_professional(text)', 'my_invite_code(uuid)', 'set_read_receipts(uuid, boolean)',
+    'answer_maintenance(uuid, boolean)', 'reset_packing(uuid)', 'redeem_promo_code(uuid, text)', 'my_calendar_token(text, boolean)', 'stop_calendar_feed()',
+    'my_families_overview()'
   ] loop
     execute format('revoke execute on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);
@@ -1603,7 +1741,7 @@ begin
                         coalesce(nullif(trim(v_name), ''), public.push_text(t.lang, 'otherParent', '{}'::jsonb)))),
            'body', public.push_text(t.lang, p_body_key, p_vars),
            'sound', 'default',
-           'data', jsonb_build_object('url', p_url)))
+           'data', jsonb_build_object('url', p_url, 'family', p_family)))
     into v_messages
     from public.push_tokens t
    where t.user_id = v_other;
@@ -2061,3 +2199,23 @@ insert into public.push_texts (lang, key, text) values
   ('fr', 'otherParent', 'L’autre parent')
 on conflict (lang, key) do update set text = excluded.text;
 -- PUSH_TEXTS_END
+
+-- ───────────── Umstellung auf mehrere Familien pro Konto ─────────────
+-- Neue Einträge nennen ihre Familie immer ausdrücklich (kein Standardwert mehr). Die alten Funktionen, die von genau
+-- einer Familie ausgingen, gibt es nicht mehr – erst hier löschen, nachdem alle Regeln neu angelegt sind.
+do $$
+declare
+  t text;
+begin
+  foreach t in array array[
+    'schedule_changes', 'expenses', 'messages', 'child_info', 'decisions', 'handovers', 'agreements',
+    'professional_access', 'documents', 'maintenance_terms', 'maintenance_payments', 'packing_items'
+  ] loop
+    execute format('alter table public.%I alter column family_id drop default', t);
+  end loop;
+end;
+$$;
+drop function if exists public.family_active();
+drop function if exists public.other_parent_present();
+drop function if exists public.my_parent_key();
+drop function if exists public.my_family_id();

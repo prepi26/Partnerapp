@@ -41,6 +41,12 @@ gespeichert, wenn ihr sie selbst eintragt. Mit dem Eintragen willigst du ausdrü
 lassen sich nur hochladen, nachdem du ausdrücklich eingewilligt hast; der Zeitpunkt der Einwilligung wird gespeichert.
 Dokumente liegen in einem privaten Speicher und sind nur über kurzlebige Links abrufbar (höchstens 10 MB, PDF und Bilder).
 
+**Mehrere Familien:** Hat ein Elternteil Kinder mit verschiedenen anderen Elternteilen, führt die App dafür getrennte
+Familien. Jeder andere Elternteil sieht ausschließlich die Einträge seiner eigenen Familie – keine Namen, Nachrichten,
+Kosten oder Notizen aus einer anderen Familie. Nur der Elternteil, der zu mehreren Familien gehört, sieht alle seine
+Familien; eine Ausgabe für mehrere Kinder wird dabei in Anteile je Familie aufgeteilt, ohne Beleg und ohne die anderen
+Kinder zu nennen.
+
 **Kalender-Abo:** Schaltest du es ein, erzeugt die App eine geheime Adresse. Darüber holt dein Kalender (iPhone,
 Google, Outlook) den Umgangsplan mit den Namen von Eltern und Kindern sowie Übergabezeit und -ort ab; ab dann
 verarbeitet auch dein Kalender-Anbieter diese Angaben nach seinen eigenen Bedingungen. Du kannst die Adresse jederzeit

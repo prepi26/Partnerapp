@@ -4,7 +4,8 @@
 Code, Umgangsplan, Nachricht, Ausgabe + Bestätigung, Entscheidung + Antwort, Übergabe + Widerspruch, Kind-Info,
 Elternvereinbarung + Zustimmung, Einführung, Dokumente (PDF, Gesundheit nur mit Einwilligung), Datenexport, Fachkraft einladen → zustimmen → Fachkraft liest → Kurzbericht, Tagebuch, Hilfe,
 Allein-Start-Hinweis, Unterhalt (Betrag, Zahlung, Bestätigung), Packliste (abhaken, zurücksetzen), Schulferien
-(Bundesland, Aufteilung vorschlagen). Kalender-Abo: Inhalt (ICS) per SQL-Test und Kalender-Parser geprüft.
+(Bundesland, Aufteilung vorschlagen), Gutscheincode, Fachkraft-Link im Browser, mehrere Familien (Wechsler,
+Übersicht, strikte Trennung der Nachrichten und Kosten, geteilte Ausgabe). Kalender-Abo: Inhalt (ICS) per SQL-Test und Kalender-Parser geprüft.
 Datenbankregeln: `supabase/test-*.sql`.
 
 **Nur auf echten Geräten prüfbar** – bitte einmal durchgehen:
@@ -31,3 +32,6 @@ Datenbankregeln: `supabase/test-*.sql`.
 | 18 | Kalender-Abo iPhone: Mehr → Im Handy-Kalender → Kalender abonnieren | Kalender „Zwei Zuhause“ mit „Mia bei …“ und Übergaben; nach Tausch spätestens nach einigen Stunden aktualisiert |
 | 19 | Kalender-Abo Google: Link teilen → calendar.google.com → Per URL | Kalender erscheint; „Neuen Link erzeugen“ → alter Link liefert nichts mehr |
 | 20 | Unterhalt: B trägt Zahlung ein, A hat App geschlossen | A bekommt „💶 … hat eine Unterhaltszahlung eingetragen“; Tippen öffnet Unterhalt |
+| 21 | Plus kaufen in Familie 1, dann Familie 2 anlegen | Familie 2 nach der Testzeit gesperrt; Abo-Seite bietet „Plus Mehrfamilie“ und „Abo stattdessen für diese Familie verwenden“ |
+| 22 | Upgrade auf Plus Mehrfamilie (Sandbox) | beide Familien frei; der Store zeigt ein Upgrade, keinen zweiten Kauf |
+| 23 | Mitteilung aus Familie 2 antippen, während Familie 1 offen ist | App wechselt zu Familie 2 und öffnet die Nachricht |

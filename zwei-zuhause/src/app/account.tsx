@@ -5,7 +5,7 @@ import { Card, Field, PrimaryButton, SecondaryButton, showError } from '@/compon
 import { errorMessage, useFamily } from '@/data/store';
 import { fmt, useT } from '@/i18n';
 import { shareDataExport } from '@/lib/exportData';
-import { supabase } from '@/lib/supabase';
+import { must, supabase } from '@/lib/supabase';
 import { colors, spacing } from '@/theme';
 
 const MIN_PASSWORD = 8;
@@ -51,23 +51,46 @@ export default function Account() {
   const exportData = async () => {
     setBusy('export');
     try {
-      const { family, ...rest } = store;
+      // Alle eigenen Familien (bei Kindern mit verschiedenen Eltern) – je Familie mit ihren Einträgen.
+      const all = async (table: string) => must(await supabase.from(table).select('*')) as { family_id: string }[];
+      const tables = {
+        umgangsaenderungen: 'schedule_changes',
+        kosten: 'expenses',
+        nachrichten: 'messages',
+        entscheidungen: 'decisions',
+        uebergaben: 'handovers',
+        elternvereinbarung: 'agreements',
+        infos_zum_kind: 'child_info',
+        unterhalt_vereinbart: 'maintenance_terms',
+        unterhalt_zahlungen: 'maintenance_payments',
+        packliste: 'packing_items',
+        dokumente: 'documents',
+        fachkraft_zugaenge: 'professional_access',
+        mein_tagebuch: 'journal',
+      };
+      const rows = await Promise.all(Object.values(tables).map(all));
+      const byTable = Object.fromEntries(Object.keys(tables).map((key, i) => [key, rows[i]]));
       await shareDataExport({
-        konto: { id: store.userId, email, rolle: `Elternteil ${store.me.toUpperCase()}` },
-        familie: { ...family, invite_code: undefined },
-        umgangsaenderungen: rest.schedule_changes,
-        kosten: rest.expenses,
-        nachrichten: rest.messages,
-        entscheidungen: rest.decisions,
-        uebergaben: rest.handovers,
-        elternvereinbarung: rest.agreements,
-        infos_zum_kind: rest.child_info,
-        unterhalt_vereinbart: rest.maintenance_terms,
-        unterhalt_zahlungen: rest.maintenance_payments,
-        packliste: rest.packing_items,
-        dokumente: rest.documents.map((d) => ({ ...d, hinweis: 'Datei selbst in der App abrufbar' })),
-        fachkraft_zugaenge: rest.professional_access.map((p) => ({ ...p, code: undefined })),
-        mein_tagebuch: rest.journal,
+        konto: { id: store.userId, email },
+        familien: store.families.map((f) => ({
+          ...f,
+          invite_code: undefined,
+          meine_rolle: `Elternteil ${(f.parent_b === store.userId ? 'b' : 'a').toUpperCase()}`,
+          ...Object.fromEntries(
+            Object.entries(byTable).map(([key, list]) => [
+              key,
+              list
+                .filter((r) => r.family_id === f.id)
+                .map((r) =>
+                  key === 'dokumente'
+                    ? { ...r, hinweis: 'Datei selbst in der App abrufbar' }
+                    : key === 'fachkraft_zugaenge'
+                      ? { ...r, code: undefined }
+                      : r,
+                ),
+            ]),
+          ),
+        })),
       });
     } catch (e) {
       showError(a.exportFailed, errorMessage(e));

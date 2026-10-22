@@ -26,12 +26,23 @@ export async function loadHandoverReminder(): Promise<boolean> {
   }
 }
 
+const listeners = new Set<() => void>();
+
+/** Benachrichtigt, wenn Erinnerungen ein- oder ausgeschaltet werden (dann für alle Familien neu planen). */
+export function onHandoverReminderChange(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
 export async function saveHandoverReminder(on: boolean) {
   try {
     await AsyncStorage.setItem(SETTINGS_KEY, on ? 'on' : 'off');
   } catch {
     // Dann gilt beim nächsten Start wieder „an“.
   }
+  for (const listener of listeners) listener();
 }
 
 export async function cancelHandoverReminders() {
@@ -55,8 +66,8 @@ export interface ReminderInput {
   nameOf: (k: ParentKey) => string;
 }
 
-/** Plant die Erinnerungen neu (oder entfernt sie, wenn ausgeschaltet bzw. keine Erlaubnis). */
-export async function refreshHandoverReminders({ family, changes, me, nameOf }: ReminderInput) {
+/** Plant die Erinnerungen für alle Familien neu (oder entfernt sie, wenn ausgeschaltet bzw. keine Erlaubnis). */
+export async function refreshHandoverReminders(inputs: ReminderInput[]) {
   if (Platform.OS === 'web') return;
   await cancelHandoverReminders();
   if (!(await loadHandoverReminder())) return;
@@ -68,28 +79,30 @@ export async function refreshHandoverReminders({ family, changes, me, nameOf }: 
   }
 
   const t = currentT();
-  const kids = family.children.trim() || t.common.theChild;
-  const where = handoverWhere(family, t);
   const now = new Date();
-  const upcoming = handoversAhead(family, acceptedChanges(changes), today()).slice(0, MAX_AHEAD);
+  for (const { family, changes, me, nameOf } of inputs) {
+    const kids = family.children.trim() || t.common.theChild;
+    const where = handoverWhere(family, t);
+    const upcoming = handoversAhead(family, acceptedChanges(changes), today()).slice(0, MAX_AHEAD);
 
-  for (const h of upcoming) {
-    const eve = addDays(h.day, -1);
-    const when = new Date(eve.getFullYear(), eve.getMonth(), eve.getDate(), HOUR, 0);
-    if (when <= now) continue;
-    const to = h.to === me ? t.lib.reminder.toYou : fmt(t.lib.reminder.toOther, { name: nameOf(h.to) });
-    try {
-      await Notifications.scheduleNotificationAsync({
-        identifier: `${PREFIX}${h.day.getTime()}`,
-        content: {
-          title: t.lib.reminder.title,
-          body: fmt(t.lib.reminder.body, { kids, to, where: where ? ` · ${where}` : '' }),
-          data: { url: '/calendar' },
-        },
-        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
-      });
-    } catch {
-      // Einzelne Erinnerung fehlgeschlagen – die anderen trotzdem planen.
+    for (const h of upcoming) {
+      const eve = addDays(h.day, -1);
+      const when = new Date(eve.getFullYear(), eve.getMonth(), eve.getDate(), HOUR, 0);
+      if (when <= now) continue;
+      const to = h.to === me ? t.lib.reminder.toYou : fmt(t.lib.reminder.toOther, { name: nameOf(h.to) });
+      try {
+        await Notifications.scheduleNotificationAsync({
+          identifier: `${PREFIX}${family.id}-${h.day.getTime()}`,
+          content: {
+            title: t.lib.reminder.title,
+            body: fmt(t.lib.reminder.body, { kids, to, where: where ? ` · ${where}` : '' }),
+            data: { url: '/calendar', family: family.id },
+          },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when },
+        });
+      } catch {
+        // Einzelne Erinnerung fehlgeschlagen – die anderen trotzdem planen.
+      }
     }
   }
 }
