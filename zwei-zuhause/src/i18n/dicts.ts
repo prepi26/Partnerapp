@@ -1,5 +1,6 @@
 import type { Dict, Lang } from './index';
 import { de } from './de';
+import { sr } from './sr';
 import { tr } from './tr';
 import { sq } from './sq';
 import { pl } from './pl';
@@ -20,6 +21,6 @@ export const DICTS: Record<Lang, Dict> = {
   pl,
   sq,
   ro,
-  sr: de,
+  sr,
   fr,
 };
