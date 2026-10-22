@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useT } from '@/i18n';
+import { isProEntry } from '@/lib/proEntry';
 import { colors, gradient, radius, spacing } from '@/theme';
 
 const KEY = 'zweizuhause.introSeen';
@@ -61,9 +62,11 @@ export function Intro({ onDone }: { onDone: () => void }) {
 
 /** Zeigt die Einführung einmal beim allerersten Start, danach nie wieder (außer über die Einstellungen). */
 export function IntroGate({ children }: { children: ReactNode }) {
-  const [seen, setSeen] = useState<boolean | null>(null);
+  // Fachkräfte über den Browser-Link brauchen die Einführung für Eltern nicht.
+  const [seen, setSeen] = useState<boolean | null>(() => (isProEntry() ? true : null));
 
   useEffect(() => {
+    if (isProEntry()) return;
     AsyncStorage.getItem(KEY)
       .then((v) => setSeen(v === '1'))
       .catch(() => setSeen(true));

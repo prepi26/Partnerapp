@@ -3,6 +3,10 @@ export const auth = {
   login: {
     subtitle: 'Umgang, Kosten und Absprachen fürs Kind – sachlich, nachvollziehbar, an einem Ort.',
     newHere: 'Neu hier',
+    /** Im Browser über den Fachkraft-Link geöffnet */
+    proSubtitle:
+      'Zugang für Fachkräfte – kostenlos und nur lesend. Erstell ein Konto mit deiner Dienst-E-Mail, danach gibst du den Code der Familie ein.',
+    proIdle: 'Aus Sicherheitsgründen meldet dich der Browser nach 30 Minuten ohne Aktivität ab.',
     haveAccount: 'Ich habe ein Konto',
     forgotTitle: 'Passwort vergessen',
     email: 'Deine E-Mail',

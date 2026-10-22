@@ -49,6 +49,7 @@ export default function More() {
       title: t.home.more.support,
       items: [
         { icon: 'shield-checkmark', title: t.home.more.professionals, text: t.home.more.professionalsText, href: '/professionals', badge: proOpen },
+        { icon: 'pricetag', title: t.home.more.plus, text: t.home.more.plusText, href: '/plus' },
         { icon: 'phone-portrait', title: t.home.more.calendarSync, text: t.home.more.calendarSyncText, href: '/calendar-sync' },
         { icon: 'help-buoy', title: t.home.more.help, text: t.home.more.helpText, href: '/help' },
         { icon: 'settings', title: t.home.more.settings, text: t.home.more.settingsText, href: '/settings' },

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Chip, Field, PrimaryButton, SecondaryButton, showError } from '@/components/ui';
 import { errorMessage, useStore } from '@/data/store';
 import { useT } from '@/i18n';
+import { isProEntry } from '@/lib/proEntry';
 import { colors, gradient, spacing } from '@/theme';
 
 export default function Onboarding() {
@@ -13,7 +14,7 @@ export default function Onboarding() {
   const o = t.auth.onboarding;
   const { createFamily, joinFamily, joinAsProfessional, signOut } = useStore();
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<'create' | 'join' | 'pro'>('create');
+  const [mode, setMode] = useState<'create' | 'join' | 'pro'>(isProEntry() ? 'pro' : 'create');
   const [myName, setMyName] = useState('');
   const [otherName, setOtherName] = useState('');
   const [kids, setKids] = useState('');

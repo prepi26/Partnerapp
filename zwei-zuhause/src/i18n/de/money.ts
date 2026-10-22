@@ -142,6 +142,13 @@ export const money = {
       'Das Abo gilt für eure ganze Familie – für dich und den anderen Elternteil. Es verlängert sich automatisch, bis du es mindestens 24 Stunden vor Ablauf in den Einstellungen von App Store bzw. Google Play kündigst. Ohne Abo bleibt nach der Testzeit alles lesbar und exportierbar.',
     noPurchase: 'Zu deinem Konto gibt es keinen aktiven Kauf.',
     restore: 'Käufe wiederherstellen',
+    promoTitle: 'Gutscheincode',
+    promoHint: 'Von einer Beratungsstelle oder dem Jugendamt bekommen? Hier einlösen.',
+    promoPlaceholder: 'z. B. JA-AACHEN',
+    promoRedeem: 'Einlösen',
+    promoDoneTitle: 'Gutschein eingelöst ✓',
+    /** {date} Datum */
+    promoActive: 'Gutschein: kostenlos bis {date}',
     termsLink: 'Nutzungsbedingungen',
     privacyLink: 'Datenschutz',
   },

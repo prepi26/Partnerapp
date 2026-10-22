@@ -70,6 +70,30 @@ Fachkräfte zahlen nie.
 > darauf, dass vor dem Kauf klar steht, was nach der Testzeit passiert – das zeigt die Abo-Seite. Lehnt Apple ab,
 > ist die Alternative ein 14-tägiges **Einführungsangebot** direkt am Abo in App Store Connect.
 
+8. **Gutscheincodes** für Jugendämter und Beratungsstellen (z. B. 90 Tage kostenlos nach der Testzeit) legst nur du an –
+   im SQL Editor:
+   ```sql
+   insert into public.promo_codes (code, label, days) values ('JA-AACHEN', 'Jugendamt Aachen', 90);
+   -- optional begrenzt: max_uses (Anzahl Familien) und valid_until (Datum)
+   select * from public.promo_stats;  -- wie oft welcher Code eingelöst wurde
+   ```
+   Jede Familie kann einen Code einlösen (Mehr → Abo & Gutschein). Codes kann aus der App niemand auflisten.
+
+### Browser-Zugang für Fachkräfte
+
+Viele Jugendämter dürfen auf Dienstgeräten keine Apps installieren. Dieselbe App läuft im Browser:
+
+```bash
+npx expo export --platform web        # baut nach dist/ – mit den EXPO_PUBLIC_…-Werten aus .env
+npx eas-cli@latest deploy --prod      # veröffentlicht auf EAS Hosting, Adresse z. B. https://zwei-zuhause.expo.app
+```
+
+Den Fachkräften diesen Link geben: **`https://<deine-adresse>/?fachkraft`** – dann entfällt die Einführung für Eltern,
+die Anmeldung erklärt den Fachkraft-Zugang, und nach 30 Minuten ohne Aktivität meldet der Browser automatisch ab
+(geteilte Dienst-PCs). Eltern können den Browser auch nutzen, Push-Mitteilungen, App-Sperre und Erinnerungen gibt es dort
+aber nicht. *(Befehle aus `eas-cli` 25.3 gelesen; die Expo-Doku war beim Schreiben nicht erreichbar – beim ersten
+Mal kurz gegen https://docs.expo.dev/eas/hosting/get-started/ prüfen.)*
+
 ## 4. Pflichtseiten veröffentlichen
 
 Entwürfe liegen in `docs/` – **von einer Fachanwältin/einem Datenschutzberater prüfen lassen**, bevor es live geht.

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PACKAGE_TYPE, PurchasesPackage } from 'react-native-purchases';
 
 import { IconName, PrimaryButton, showError } from '@/components/ui';
@@ -9,6 +9,7 @@ import { PRIVACY_URL, TERMS_URL } from '@/config';
 import { purchasesAvailable, usePlus } from '@/data/plus';
 import { errorMessage, useFamily } from '@/data/store';
 import { Dict, fmt, useT } from '@/i18n';
+import { formatDate, toISO } from '@/lib/dates';
 import { close } from '@/lib/nav';
 import { colors, gradient, radius, shadow, spacing } from '@/theme';
 
@@ -39,12 +40,15 @@ function perMonth(pkg: PurchasesPackage, t: Dict) {
 
 export default function PlusScreen() {
   const t = useT();
-  const { active, inTrial, solo, trialDaysLeft, packages, purchase, restore } = usePlus();
-  const { otherName } = useFamily();
+  const { active, inTrial, solo, promoUntil, trialDaysLeft, packages, purchase, restore } = usePlus();
+  const { otherName, family, redeemPromo } = useFamily();
   const p = t.money.plus;
+  const [promo, setPromo] = useState('');
   const trialText = !inTrial
     ? p.trialOver
-    : solo
+    : promoUntil
+      ? fmt(p.promoActive, { date: formatDate(toISO(promoUntil), t) })
+      : solo
       ? fmt(p.trialSolo, { name: otherName, n: trialDaysLeft })
     : trialDaysLeft === 0
       ? p.trialLastDay
@@ -59,6 +63,18 @@ export default function PlusScreen() {
     packages.find((p) => p.identifier === selected) ??
     packages.find((p) => p.packageType === PACKAGE_TYPE.ANNUAL) ??
     packages[0];
+
+  const redeem = async () => {
+    setBusy(true);
+    try {
+      const until = await redeemPromo(promo);
+      setPromo('');
+      showError(p.promoDoneTitle, fmt(p.promoActive, { date: formatDate(toISO(new Date(until)), t) }));
+    } catch (e) {
+      showError(t.common.failed, errorMessage(e));
+    }
+    setBusy(false);
+  };
 
   const run = async (action: () => Promise<boolean>, failText: string) => {
     setBusy(true);
@@ -82,6 +98,33 @@ export default function PlusScreen() {
       {!active ? (
         <View style={[styles.trialBox, !inTrial && styles.trialOver]}>
           <Text style={styles.trialText}>{trialText}</Text>
+        </View>
+      ) : null}
+
+      {!active && !family.promo_until ? (
+        <View style={styles.promo}>
+          <Text style={styles.promoTitle}>{p.promoTitle}</Text>
+          <Text style={styles.small}>{p.promoHint}</Text>
+          <View style={styles.promoRow}>
+            <TextInput
+              value={promo}
+              onChangeText={(text) => setPromo(text.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 20))}
+              placeholder={p.promoPlaceholder}
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              autoComplete="off"
+              style={styles.promoInput}
+            />
+            <Pressable
+              accessibilityRole="button"
+              disabled={busy || promo.length < 4}
+              onPress={redeem}
+              style={[styles.promoButton, (busy || promo.length < 4) && { opacity: 0.45 }]}
+            >
+              <Text style={styles.promoButtonText}>{p.promoRedeem}</Text>
+            </Pressable>
+          </View>
         </View>
       ) : null}
 
@@ -231,6 +274,27 @@ const styles = StyleSheet.create({
   activeBox: { backgroundColor: colors.primaryPale, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
   activeTitle: { fontSize: 18, fontWeight: '800', color: colors.text, textAlign: 'center' },
   small: { fontSize: 12, color: colors.textMuted, textAlign: 'center', lineHeight: 17 },
+  promo: { backgroundColor: colors.card, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
+  promoTitle: { fontSize: 15, fontWeight: '800', color: colors.text },
+  promoRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  promoInput: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: colors.text,
+  },
+  promoButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+  },
+  promoButtonText: { color: colors.white, fontWeight: '800', fontSize: 15 },
   links: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.md },
   link: { fontSize: 13, color: colors.textMuted, textDecorationLine: 'underline' },
 });

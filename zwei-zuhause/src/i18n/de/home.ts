@@ -80,6 +80,8 @@ export const home = {
     packingText: 'Was zur nächsten Übergabe mit muss',
     holidays: 'Schulferien',
     holidaysText: 'Ferien im Kalender, Aufteilung absprechen',
+    plus: 'Abo & Gutschein',
+    plusText: 'Testzeit, Familien-Abo, Gutscheincode',
     calendarSync: 'Im Handy-Kalender',
     calendarSyncText: 'Umgangsplan in iPhone-, Google- oder Outlook-Kalender',
   },

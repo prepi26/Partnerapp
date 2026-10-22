@@ -135,6 +135,7 @@ const ERROR_KEYS = [
   'not_allowed',
   'is_professional',
   'is_parent',
+  'already_redeemed',
 ] as const;
 
 /** Übersetzt Server-Fehler in verständliche Sätze. */
@@ -270,6 +271,8 @@ interface Store extends Data {
   /** Geheime Adresse für das Kalender-Abo (neu = alte Adresse ungültig machen). */
   calendarToken(lang: string, renew?: boolean): Promise<string>;
   stopCalendarFeed(): Promise<void>;
+  /** Gutscheincode einlösen – liefert „kostenlos bis“. */
+  redeemPromo(code: string): Promise<string>;
   inviteProfessional(label: string, days: number): Promise<string>;
   approveProfessional(id: string): Promise<void>;
   revokeProfessional(id: string): Promise<void>;
@@ -506,6 +509,13 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
       resetPacking: async () => after('packing_items', await supabase.rpc('reset_packing')),
       calendarToken: async (lang, renew = false) =>
         must(await supabase.rpc('my_calendar_token', { p_lang: lang, p_new: renew })) as string,
+      redeemPromo: async (code) => {
+        // Falscher Code: der Server liefert null (statt Fehler), damit der Versuch gezählt bleibt.
+        const until = must(await supabase.rpc('redeem_promo_code', { p_code: code })) as string | null;
+        if (!until) throw new Error('invalid_code');
+        setFamily(await fetchFamily(userId));
+        return until;
+      },
       stopCalendarFeed: async () => {
         must(await supabase.rpc('stop_calendar_feed'));
       },

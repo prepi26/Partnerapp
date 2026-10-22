@@ -28,6 +28,8 @@ interface Plus {
   inTrial: boolean;
   /** Der andere ist noch nie beigetreten – die 14 Testtage haben noch nicht begonnen. */
   solo: boolean;
+  /** Kostenlos per Gutschein bis (nur solange er noch läuft). */
+  promoUntil: Date | null;
   /** Ganze Tage Testzeit, die noch übrig sind (0 = heute letzter Tag). */
   trialDaysLeft: number;
   /** Eintragen erlaubt (Abo oder Testzeit) – sonst nur lesen. Der Server prüft dasselbe. */
@@ -95,8 +97,12 @@ export function PlusProvider({ children }: { children: ReactNode }) {
     : family.joined_at
       ? new Date(family.joined_at).getTime() + TRIAL_DAYS * DAY_MS
       : new Date(family.created_at).getTime() + SOLO_DAYS * DAY_MS;
-  const inTrial = trialEnd > now;
-  const trialDaysLeft = inTrial ? Math.floor((trialEnd - now) / DAY_MS) : 0;
+  // Ein Gutschein verlängert die kostenlose Zeit (der Server rechnet ihn ab Ende der Testzeit).
+  const promoEnd = family?.promo_until ? new Date(family.promo_until).getTime() : 0;
+  const promoActive = promoEnd > now && promoEnd > trialEnd;
+  const freeEnd = Math.max(trialEnd, promoEnd);
+  const inTrial = freeEnd > now;
+  const trialDaysLeft = inTrial ? Math.floor((freeEnd - now) / DAY_MS) : 0;
 
   // Eigenes Abo, aber Server weiß noch nichts davon (z. B. Kauf auf anderem Gerät): nachziehen.
   const familyId = family?.id;
@@ -122,7 +128,8 @@ export function PlusProvider({ children }: { children: ReactNode }) {
     return {
       active,
       inTrial,
-      solo,
+      solo: solo && !promoActive,
+      promoUntil: promoActive ? new Date(promoEnd) : null,
       trialDaysLeft,
       canWrite: active || inTrial,
       packages,
@@ -137,7 +144,7 @@ export function PlusProvider({ children }: { children: ReactNode }) {
       },
       restore: async () => afterPurchase(await Purchases.restorePurchases()),
     };
-  }, [afterPurchase, inTrial, ownEntitlement, packages, serverActive, solo, trialDaysLeft]);
+  }, [afterPurchase, inTrial, ownEntitlement, packages, promoActive, promoEnd, serverActive, solo, trialDaysLeft]);
 
   return <PlusContext.Provider value={value}>{children}</PlusContext.Provider>;
 }

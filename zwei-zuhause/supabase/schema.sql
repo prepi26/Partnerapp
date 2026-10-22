@@ -48,6 +48,9 @@ alter table public.families add column if not exists plus_until timestamptz;
 alter table public.families add column if not exists joined_at timestamptz;
 update public.families set joined_at = created_at where parent_b is not null and joined_at is null;
 
+-- Gutschein (z. B. von einer Beratungsstelle): kostenlos bis. Setzt nur redeem_promo_code().
+alter table public.families add column if not exists promo_until timestamptz;
+
 -- Bundesland bzw. Region der Schule (z. B. 'DE-NW', 'AT-9') für die Schulferien im Kalender; leer = keine.
 alter table public.families add column if not exists school_state text not null default '';
 alter table public.families drop constraint if exists families_school_state_check;
@@ -112,6 +115,7 @@ as $$
     select 1 from public.families
      where id = public.my_family_id()
        and (plus_until > now()
+            or promo_until > now()
             or (joined_at is null and created_at + interval '30 days' > now())
             or joined_at + interval '14 days' > now())
   )
@@ -236,7 +240,7 @@ create policy families_update on public.families
 revoke select on public.families from authenticated;
 grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
               default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, plus_until, joined_at,
-              school_state, created_at)
+              school_state, promo_until, created_at)
   on public.families to authenticated;
 
 create or replace function public.my_invite_code()
@@ -1365,6 +1369,82 @@ begin
 end;
 $$;
 
+-- ───────────── Gutscheincodes für Beratungsstellen und Jugendämter ─────────────
+-- Codes legst nur du an (SQL Editor), z. B.:
+--   insert into public.promo_codes (code, label, days) values ('JA-AACHEN', 'Jugendamt Aachen', 90);
+-- Jede Familie kann einen Code einlösen; die freien Tage hängen sich an die Testzeit an.
+-- Wie oft welcher Code eingelöst wurde: select * from public.promo_stats;
+
+create table if not exists public.promo_codes (
+  code text primary key check (code ~ '^[A-Z0-9-]{4,20}$'),
+  label text not null default '',
+  days int not null check (days between 1 and 366),
+  -- Höchstens so viele Familien (leer = unbegrenzt) und nur bis zu diesem Tag (leer = unbefristet).
+  max_uses int check (max_uses > 0),
+  valid_until date,
+  created_at timestamptz not null default now()
+);
+-- Kein Zugriff aus der App: Codes kann niemand auflisten.
+alter table public.promo_codes enable row level security;
+
+create table if not exists public.promo_redemptions (
+  family_id uuid primary key references public.families (id) on delete cascade,
+  code text not null references public.promo_codes (code),
+  redeemed_by uuid references auth.users (id) on delete set null,
+  redeemed_at timestamptz not null default now()
+);
+create index if not exists promo_redemptions_code on public.promo_redemptions (code);
+alter table public.promo_redemptions enable row level security;
+
+create or replace view public.promo_stats as
+  select c.code, c.label, c.days, c.max_uses, c.valid_until,
+         count(r.family_id) as families, max(r.redeemed_at) as last_redeemed
+    from public.promo_codes c
+    left join public.promo_redemptions r on r.code = c.code
+   group by c.code;
+revoke all on public.promo_stats from public, anon, authenticated;
+
+-- Löst einen Code für die eigene Familie ein. Liefert das neue „kostenlos bis“ – oder null bei falschem Code
+-- (statt Fehler, damit der Versuch für die Sperre gegen Durchprobieren gezählt bleibt).
+create or replace function public.redeem_promo_code(p_code text)
+returns timestamptz
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_family public.families;
+  v_promo public.promo_codes;
+  v_until timestamptz;
+begin
+  select * into v_family from public.families where id = public.my_family_id();
+  if not found then
+    raise exception 'not_allowed';
+  end if;
+  if exists (select 1 from public.promo_redemptions where family_id = v_family.id) then
+    raise exception 'already_redeemed';
+  end if;
+  perform public.count_code_attempt();
+  select * into v_promo from public.promo_codes
+   where code = upper(trim(p_code)) and (valid_until is null or valid_until >= current_date)
+   for update;
+  if not found
+     or (v_promo.max_uses is not null
+         and (select count(*) from public.promo_redemptions where code = v_promo.code) >= v_promo.max_uses) then
+    return null;
+  end if;
+  -- Die freien Tage beginnen nach der Testzeit (bzw. heute, wenn sie schon vorbei ist).
+  v_until := greatest(
+    now(),
+    case when v_family.joined_at is null then v_family.created_at + interval '30 days'
+         else v_family.joined_at + interval '14 days' end
+  ) + make_interval(days => v_promo.days);
+  update public.families set promo_until = v_until where id = v_family.id;
+  insert into public.promo_redemptions (family_id, code, redeemed_by) values (v_family.id, v_promo.code, auth.uid());
+  return v_until;
+end;
+$$;
+
 -- ───────────── Konto löschen (Pflicht für den App Store) ─────────────
 -- Löscht das eigene Konto und das eigene Tagebuch. Die gemeinsame Familie (Kalender, Kosten,
 -- Nachrichten) bleibt für den anderen Elternteil erhalten – sie ist auch seine Dokumentation.
@@ -1400,7 +1480,7 @@ begin
     'answer_decision(uuid, boolean, text)', 'reply_handover(uuid, boolean, text)', 'accept_agreement(uuid)',
     'create_professional_invite(text, int)', 'approve_professional(uuid)', 'revoke_professional(uuid)',
     'join_as_professional(text)', 'my_invite_code()', 'set_read_receipts(boolean)',
-    'answer_maintenance(uuid, boolean)', 'reset_packing()', 'my_calendar_token(text, boolean)', 'stop_calendar_feed()'
+    'answer_maintenance(uuid, boolean)', 'reset_packing()', 'redeem_promo_code(text)', 'my_calendar_token(text, boolean)', 'stop_calendar_feed()'
   ] loop
     execute format('revoke execute on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);

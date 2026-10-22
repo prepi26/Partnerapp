@@ -19,6 +19,9 @@ Umgangsberatung nach § 18 SGB VIII.
 - Nachrichten ohne Löschen, Ton-Hinweis vor dem Senden
 
 **Was Sie als Fachkraft davon haben**
+- **Im Browser, ohne Installation** – auch auf dem Dienst-PC (Link `…/?fachkraft`, automatische Abmeldung nach 30 Minuten)
+- **Gutscheincode für Ihre Stelle** (z. B. 3 Monate kostenlos für die Familien, die Sie beraten) – auf Wunsch mit Auswertung,
+  wie viele Familien ihn genutzt haben
 - **Kostenloser Lesezugang** für Fachkräfte (Eltern zahlen ein Familien-Abo), wenn beide Eltern zustimmen – befristet, jederzeit widerrufbar, ohne private Tagebücher
 - **Kurzbericht auf einer Seite**: Betreuungstage je Elternteil, Übergaben, Antwortzeiten, offene Entscheidungen,
   Kostensaldo, Unterhalt je Monat (bezahlt / teilweise / offen) – statt Screenshot-Stapeln
@@ -40,7 +43,7 @@ das Hilfetelefon 116 016 und Beratungsstellen.
 | Phase | Was | Ziel |
 |---|---|---|
 | 1. Feedback (2–3 Wochen) | 3–5 Fachkräfte aus deinem Netzwerk bekommen TestFlight-Zugang + 20-Minuten-Demo | Wording, fehlende Funktionen, „würde ich empfehlen?“ |
-| 2. Pilot (3 Monate) | 1–2 Jugendämter oder Erziehungsberatungsstellen empfehlen die App aktiv, 20–50 Familien | Nutzung nach 4 Wochen, Fachkraft-Zugänge, Kurzberichte |
+| 2. Pilot (3 Monate) | 1–2 Jugendämter oder Erziehungsberatungsstellen empfehlen die App aktiv, 20–50 Familien – jede Stelle mit eigenem Gutscheincode | Einlösungen je Code (`promo_stats`), Nutzung nach 4 Wochen, Fachkraft-Zugänge, Kurzberichte |
 | 3. Auswertung | kurzer Bericht, Zitate (mit Erlaubnis) | Referenz für weitere Ämter, ggf. LAG Erziehungsberatung |
 
 **Fragen an die Fachkräfte im Feedback-Gespräch**

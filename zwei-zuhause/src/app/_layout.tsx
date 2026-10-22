@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppLock } from '@/components/AppLock';
 import { HandoverReminders } from '@/components/HandoverReminders';
 import { IntroGate } from '@/components/Intro';
+import { WebIdleLogout } from '@/components/WebIdleLogout';
 import { DialogHost, PrimaryButton } from '@/components/ui';
 import { isConfigured } from '@/config';
 import { LanguageProvider, useT } from '@/i18n';
@@ -20,19 +21,23 @@ import { colors, spacing } from '@/theme';
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <LanguageProvider>
-        <StatusBar style="light" />
-        {isConfigured ? (
-          <IntroGate>
-            <AuthProvider>
-              <Gate />
-            </AuthProvider>
-          </IntroGate>
-        ) : (
-          <NotConfigured />
-        )}
-        <DialogHost />
-      </LanguageProvider>
+      <View style={styles.page}>
+        <View style={styles.app}>
+          <LanguageProvider>
+            <StatusBar style="light" />
+            {isConfigured ? (
+              <IntroGate>
+                <AuthProvider>
+                  <Gate />
+                </AuthProvider>
+              </IntroGate>
+            ) : (
+              <NotConfigured />
+            )}
+            <DialogHost />
+          </LanguageProvider>
+        </View>
+      </View>
     </SafeAreaProvider>
   );
 }
@@ -69,6 +74,7 @@ function SignedIn() {
       <RootStack signedIn hasFamily={family !== null} professional={isProfessional} />
       {(family || isProfessional) && Platform.OS !== 'web' ? <PushSetup /> : null}
       {family && Platform.OS !== 'web' ? <HandoverReminders /> : null}
+      {isProfessional && Platform.OS === 'web' ? <WebIdleLogout /> : null}
     </PlusProvider>
   );
 }
@@ -183,6 +189,9 @@ function NotConfigured() {
 }
 
 const styles = StyleSheet.create({
+  // Im Browser am PC: App mittig mit lesbarer Breite statt über den ganzen Bildschirm.
+  page: { flex: 1, backgroundColor: Platform.OS === 'web' ? colors.border : colors.background },
+  app: { flex: 1, width: '100%', maxWidth: Platform.OS === 'web' ? 820 : undefined, alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.sm },
   title: { fontSize: 22, fontWeight: '800', color: colors.text },
   text: { fontSize: 15, color: colors.textMuted, textAlign: 'center', lineHeight: 21 },

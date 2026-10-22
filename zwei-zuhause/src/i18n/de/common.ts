@@ -53,6 +53,7 @@ export const common = {
     is_professional: 'Dieses Konto ist ein Fachkraft-Zugang. Für die eigene Familie brauchst du ein eigenes Konto.',
     is_parent: 'Dieses Konto gehört zu einer Familie. Für den Fachkraft-Zugang brauchst du ein eigenes Konto.',
     network: 'Keine Verbindung zum Server. Bist du online?',
+    already_redeemed: 'Eure Familie hat schon einen Gutscheincode eingelöst.',
   },
   subscription: {
     /** Fehlermeldung, wenn nach der Testzeit ohne Abo geschrieben wird */
@@ -65,6 +66,8 @@ export const common = {
     trialBannerOther: 'Noch {n} Tage kostenlos testen',
     trialBannerOne: 'Noch 1 Tag kostenlos testen',
     trialBannerLast: 'Letzter Tag der kostenlosen Testzeit',
+    /** Gutschein, kurz vor Ende. {n} Tage */
+    promoBanner: 'Gutschein: noch {n} Tage kostenlos',
     /** Allein, kurz vor Ende der kostenlosen Zeit. {n} Tage, {name} anderer Elternteil */
     soloBanner: 'Noch {n} Tage kostenlos allein – lade {name} ein, dann starten eure 14 Testtage.',
   },

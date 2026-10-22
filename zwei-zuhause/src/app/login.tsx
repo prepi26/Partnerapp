@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Chip, Field, PrimaryButton, showError } from '@/components/ui';
 import { currentT, Dict, fmt, useT } from '@/i18n';
+import { isProEntry } from '@/lib/proEntry';
 import { supabase } from '@/lib/supabase';
 import { colors, gradient, spacing } from '@/theme';
 
@@ -29,6 +30,7 @@ function loginError(message: string, t: Dict = currentT()): string {
 }
 
 export default function Login() {
+  const proEntry = isProEntry();
   const t = useT();
   const l = t.auth.login;
   const insets = useSafeAreaInsets();
@@ -106,7 +108,8 @@ export default function Login() {
           <View style={styles.hero}>
             <Text style={styles.emoji}>🏠🏠</Text>
             <Text style={styles.title}>Zwei Zuhause</Text>
-            <Text style={styles.subtitle}>{l.subtitle}</Text>
+            <Text style={styles.subtitle}>{proEntry ? l.proSubtitle : l.subtitle}</Text>
+            {proEntry ? <Text style={styles.subtitle}>{l.proIdle}</Text> : null}
           </View>
 
           <View style={styles.switch}>
@@ -215,9 +218,10 @@ export default function Login() {
                 disabled={busy || !valid}
                 onPress={submit}
               />
-              <Text style={styles.hint}>
-                {mode === 'signup' ? l.signupHint : l.signinHint}
-              </Text>
+              {/* Der Hinweis zum Verbinden der Eltern passt nicht für Fachkräfte. */}
+              {mode === 'signup' && proEntry ? null : (
+                <Text style={styles.hint}>{mode === 'signup' ? l.signupHint : l.signinHint}</Text>
+              )}
               {mode === 'signin' ? (
                 <Pressable accessibilityRole="button" onPress={startReset} hitSlop={8}>
                   <Text style={[styles.hint, styles.link]}>{l.forgotLink}</Text>

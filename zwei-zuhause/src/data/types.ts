@@ -29,6 +29,8 @@ export interface Family {
   joined_at: string | null;
   /** Region der Schule für die Ferien, z. B. „DE-NW“; leer = keine. */
   school_state: string;
+  /** Gutschein: kostenlos bis (vom Server gesetzt) */
+  promo_until: string | null;
   created_at: string;
 }
 
