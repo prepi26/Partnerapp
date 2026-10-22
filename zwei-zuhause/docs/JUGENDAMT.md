@@ -17,7 +17,7 @@ Umgangsberatung nach § 18 SGB VIII.
 - Kinderkosten teilen, Nachrichten ohne Löschen, Ton-Hinweis vor dem Senden
 
 **Was Sie als Fachkraft davon haben**
-- **Kostenloser Lesezugang**, wenn beide Eltern zustimmen – befristet, jederzeit widerrufbar, ohne private Tagebücher
+- **Kostenloser Lesezugang** für Fachkräfte (Eltern zahlen ein Familien-Abo), wenn beide Eltern zustimmen – befristet, jederzeit widerrufbar, ohne private Tagebücher
 - **Kurzbericht auf einer Seite**: Betreuungstage je Elternteil, Übergaben, Antwortzeiten, offene Entscheidungen,
   Kostensaldo – statt Screenshot-Stapeln
 - Vollständige, chronologische Verläufe statt ausgewählter Ausschnitte – beide Eltern sehen dasselbe

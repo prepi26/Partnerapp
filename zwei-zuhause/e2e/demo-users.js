@@ -12,7 +12,7 @@ async function signup(page, email) {
 }
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
-  const a = await (await browser.newContext()).newPage();
+  const a = await (await browser.newContext({ locale: 'de-DE' })).newPage();
   await signup(a, 'sandra@demo.de');
   await a.getByPlaceholder('z. B. Sandra').fill('Sandra');
   await a.getByPlaceholder('z. B. Thomas').fill('Thomas');
@@ -20,7 +20,7 @@ async function signup(page, email) {
   await a.getByText('Familie anlegen', { exact: true }).last().click();
   await a.getByText('Hallo Sandra').waitFor({ timeout: 15000 });
   const code = (await a.textContent('body')).match(/verbunden([A-Z]{6})/)[1];
-  const b = await (await browser.newContext()).newPage();
+  const b = await (await browser.newContext({ locale: 'de-DE' })).newPage();
   await signup(b, 'thomas@demo.de');
   await b.getByText('Ich habe einen Code', { exact: true }).click();
   await b.getByPlaceholder('z. B. KMPQXT').fill(code);

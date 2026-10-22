@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { InviteCard } from '@/components/InviteCard';
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { parentColor } from '@/components/ParentTag';
 import { Card, GradientHeader, HeaderIcon, IconName } from '@/components/ui';
 import { useFamily } from '@/data/store';
@@ -56,6 +57,7 @@ export default function Home() {
         right={<HeaderIcon icon="settings-outline" label={t.home.today.settings} onPress={() => router.push('/settings')} />}
       />
       <ScrollView contentContainerStyle={styles.content}>
+        <SubscriptionBanner />
         <Card style={[styles.today, { backgroundColor: todayColor.pale }]}>
           <Text style={styles.todayLabel}>{t.home.today.label}</Text>
           {todayInfo.parent ? (

@@ -13,7 +13,9 @@ import {
   View,
 } from 'react-native';
 
+import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { EmptyState, GradientHeader, HeaderIcon, showError, tap } from '@/components/ui';
+import { usePlus } from '@/data/plus';
 import { errorMessage, useFamily } from '@/data/store';
 import { currentT, fmt, useT } from '@/i18n';
 import { Message } from '@/data/types';
@@ -38,6 +40,7 @@ function confirmTone(hints: string[], onSend: () => void) {
 export default function Messages() {
   const t = useT();
   const { messages, me, otherName, otherJoined, sendMessage, markRead, readReceiptsVisible } = useFamily();
+  const { canWrite } = usePlus();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const list = useRef<FlatList<Message>>(null);
@@ -101,13 +104,18 @@ export default function Messages() {
             <Bubble message={item} mine={item.sender_key === me} showRead={readReceiptsVisible} />
           )}
         />
+        {!canWrite ? (
+          <View style={{ padding: spacing.sm }}>
+            <SubscriptionBanner />
+          </View>
+        ) : null}
         <View style={styles.inputBar}>
           <TextInput
             value={text}
             onChangeText={setText}
             placeholder={otherJoined ? t.messages.chat.placeholder : fmt(t.messages.chat.notConnected, { name: otherName })}
             placeholderTextColor={colors.textMuted}
-            editable={otherJoined}
+            editable={otherJoined && canWrite}
             multiline
             maxLength={4000}
             style={styles.input}
@@ -115,7 +123,7 @@ export default function Messages() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t.messages.chat.send}
-            disabled={sending || !text.trim() || !otherJoined}
+            disabled={sending || !text.trim() || !otherJoined || !canWrite}
             onPress={trySend}
             style={({ pressed }) => [
               styles.send,

@@ -41,6 +41,9 @@ alter table public.families add constraint families_handover_place_check check (
 alter table public.families add column if not exists read_receipts_a boolean not null default true;
 alter table public.families add column if not exists read_receipts_b boolean not null default true;
 
+-- Abo „Zwei Zuhause Plus“ gilt für die ganze Familie. plus_until setzt nur die Edge Function (service_role).
+alter table public.families add column if not exists plus_until timestamptz;
+
 create unique index if not exists families_parent_a_key on public.families (parent_a);
 create unique index if not exists families_parent_b_key on public.families (parent_b);
 
@@ -85,6 +88,22 @@ as $$
 $$;
 
 -- Neuer, noch unbenutzter Einladungscode (6 Großbuchstaben ohne I und O).
+-- Darf die Familie gerade schreiben? 14 Tage ab Anlegen kostenlos, danach nur mit Abo – sonst nur lesen.
+-- Lesen, Exportieren, eigene Einträge löschen und das Konto löschen gehen immer (DSGVO).
+create or replace function public.family_active()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.families
+     where id = public.my_family_id()
+       and (created_at + interval '14 days' > now() or plus_until > now())
+  )
+$$;
+
 create or replace function public.new_invite_code()
 returns text
 language plpgsql
@@ -197,12 +216,12 @@ create policy families_select on public.families
 drop policy if exists families_update on public.families;
 create policy families_update on public.families
   for update using (parent_a = auth.uid() or parent_b = auth.uid())
-  with check (parent_a = auth.uid() or parent_b = auth.uid());
+  with check ((parent_a = auth.uid() or parent_b = auth.uid()) and public.family_active());
 
 -- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
 revoke select on public.families from authenticated;
 grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
-              default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, created_at)
+              default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, plus_until, created_at)
   on public.families to authenticated;
 
 create or replace function public.my_invite_code()
@@ -255,7 +274,9 @@ create policy schedule_changes_select on public.schedule_changes
   for select using (family_id = public.my_family_id());
 drop policy if exists schedule_changes_insert on public.schedule_changes;
 create policy schedule_changes_insert on public.schedule_changes
-  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and status = 'proposed');
+  for insert with check (
+    family_id = public.my_family_id() and created_by = auth.uid() and status = 'proposed' and public.family_active()
+  );
 -- Nur offene, eigene Vorschläge darf man zurückziehen.
 drop policy if exists schedule_changes_delete on public.schedule_changes;
 create policy schedule_changes_delete on public.schedule_changes
@@ -268,6 +289,9 @@ security definer
 set search_path = public
 as $$
 begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
   update public.schedule_changes
      set status = case when p_accept then 'accepted' else 'declined' end,
          answered_at = now()
@@ -312,7 +336,9 @@ drop policy if exists expenses_select on public.expenses;
 create policy expenses_select on public.expenses for select using (family_id = public.my_family_id());
 drop policy if exists expenses_insert on public.expenses;
 create policy expenses_insert on public.expenses
-  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and status = 'open');
+  for insert with check (
+    family_id = public.my_family_id() and created_by = auth.uid() and status = 'open' and public.family_active()
+  );
 -- Bestätigte Kosten bleiben stehen; nur Offenes oder Abgelehntes darf der Verfasser löschen.
 drop policy if exists expenses_delete on public.expenses;
 create policy expenses_delete on public.expenses
@@ -325,6 +351,9 @@ security definer
 set search_path = public
 as $$
 begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
   update public.expenses
      set status = case when p_confirm then 'confirmed' else 'disputed' end,
          answered_at = now()
@@ -395,7 +424,8 @@ alter table public.messages enable row level security;
 drop policy if exists messages_select on public.messages;
 create policy messages_select on public.messages for select using (family_id = public.my_family_id());
 drop policy if exists messages_insert on public.messages;
-create policy messages_insert on public.messages for insert with check (family_id = public.my_family_id());
+create policy messages_insert on public.messages
+  for insert with check (family_id = public.my_family_id() and public.family_active());
 revoke insert, update, delete on public.messages from authenticated;
 -- Nur der Text kommt vom Gerät; Absender, Zeit, Reihenfolge und Prüfsumme setzt der Server.
 grant insert (text) on public.messages to authenticated;
@@ -432,7 +462,13 @@ create table if not exists public.journal (
 
 alter table public.journal enable row level security;
 drop policy if exists journal_own on public.journal;
-create policy journal_own on public.journal for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists journal_select on public.journal;
+create policy journal_select on public.journal for select using (user_id = auth.uid());
+drop policy if exists journal_insert on public.journal;
+create policy journal_insert on public.journal
+  for insert with check (user_id = auth.uid() and public.family_active());
+drop policy if exists journal_delete on public.journal;
+create policy journal_delete on public.journal for delete using (user_id = auth.uid());
 
 -- ───────────── Server-Zeitstempel ─────────────
 -- Beim Einfügen setzt der Server Verfasser und Zeit und leert Antwortfelder – vom Gerät kommt nur der Inhalt.
@@ -479,7 +515,7 @@ create table if not exists public.child_info (
 alter table public.child_info enable row level security;
 drop policy if exists child_info_family on public.child_info;
 create policy child_info_family on public.child_info for all
-  using (family_id = public.my_family_id()) with check (family_id = public.my_family_id());
+  using (family_id = public.my_family_id()) with check (family_id = public.my_family_id() and public.family_active());
 
 create or replace function public.child_info_touch()
 returns trigger
@@ -519,7 +555,9 @@ drop policy if exists decisions_select on public.decisions;
 create policy decisions_select on public.decisions for select using (family_id = public.my_family_id());
 drop policy if exists decisions_insert on public.decisions;
 create policy decisions_insert on public.decisions
-  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and status = 'proposed');
+  for insert with check (
+    family_id = public.my_family_id() and created_by = auth.uid() and status = 'proposed' and public.family_active()
+  );
 drop policy if exists decisions_delete on public.decisions;
 create policy decisions_delete on public.decisions
   for delete using (created_by = auth.uid() and status = 'proposed');
@@ -531,6 +569,9 @@ security definer
 set search_path = public
 as $$
 begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
   update public.decisions
      set status = case when p_agree then 'agreed' else 'rejected' end,
          answer_note = left(coalesce(p_note, ''), 2000),
@@ -567,7 +608,9 @@ drop policy if exists handovers_select on public.handovers;
 create policy handovers_select on public.handovers for select using (family_id = public.my_family_id());
 drop policy if exists handovers_insert on public.handovers;
 create policy handovers_insert on public.handovers
-  for insert with check (family_id = public.my_family_id() and created_by = auth.uid() and reply is null);
+  for insert with check (
+    family_id = public.my_family_id() and created_by = auth.uid() and reply is null and public.family_active()
+  );
 -- Nachweise bleiben: kein Bearbeiten und kein Löschen.
 
 create or replace function public.reply_handover(p_id uuid, p_confirm boolean, p_note text)
@@ -577,6 +620,9 @@ security definer
 set search_path = public
 as $$
 begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
   update public.handovers
      set reply = case when p_confirm then 'confirmed' else 'disputed' end,
          reply_note = left(coalesce(p_note, ''), 1000),
@@ -646,7 +692,8 @@ alter table public.agreements enable row level security;
 drop policy if exists agreements_select on public.agreements;
 create policy agreements_select on public.agreements for select using (family_id = public.my_family_id());
 drop policy if exists agreements_insert on public.agreements;
-create policy agreements_insert on public.agreements for insert with check (family_id = public.my_family_id());
+create policy agreements_insert on public.agreements
+  for insert with check (family_id = public.my_family_id() and public.family_active());
 revoke update, delete on public.agreements from authenticated;
 
 create or replace function public.accept_agreement(p_id uuid)
@@ -658,6 +705,9 @@ as $$
 declare
   v_key text := public.my_parent_key();
 begin
+  if not public.family_active() then
+    raise exception 'subscription_required';
+  end if;
   -- Zustimmen geht nur zur neuesten Version.
   update public.agreements a
      set accepted_a_at = case when v_key = 'a' then coalesce(accepted_a_at, now()) else accepted_a_at end,
@@ -877,6 +927,7 @@ create policy documents_insert on public.documents
     family_id = public.my_family_id()
     and created_by = auth.uid()
     and public.storage_folder(file_path) = public.my_family_id()::text
+    and public.family_active()
   );
 drop policy if exists documents_delete on public.documents;
 create policy documents_delete on public.documents for delete using (created_by = auth.uid());
@@ -917,7 +968,9 @@ create policy receipts_select on storage.objects for select
   using (bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text);
 drop policy if exists receipts_insert on storage.objects;
 create policy receipts_insert on storage.objects for insert
-  with check (bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text);
+  with check (
+    bucket_id = 'receipts' and (storage.foldername(name))[1] = public.my_family_id()::text and public.family_active()
+  );
 drop policy if exists receipts_delete on storage.objects;
 create policy receipts_delete on storage.objects for delete
   using (
@@ -944,7 +997,9 @@ create policy documents_files_select on storage.objects for select
   using (bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text);
 drop policy if exists documents_files_insert on storage.objects;
 create policy documents_files_insert on storage.objects for insert
-  with check (bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text);
+  with check (
+    bucket_id = 'documents' and (storage.foldername(name))[1] = public.my_family_id()::text and public.family_active()
+  );
 drop policy if exists documents_files_delete on storage.objects;
 create policy documents_files_delete on storage.objects for delete
   using (
@@ -1271,235 +1326,235 @@ insert into public.push_texts (lang, key, text) values
   ('de', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
   ('de', 'documentNewBody', '{title}'),
   ('de', 'otherParent', 'Der andere Elternteil'),
-  ('en', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('en', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('en', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('en', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('en', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('en', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('en', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('en', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('en', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('en', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('en', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('en', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('en', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('en', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('en', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('en', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('en', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('en', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('en', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('en', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('en', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('en', 'tapToOpen', 'Tap here to view it.'),
+  ('en', 'messageTitle', '💬 New message from {name}'),
+  ('en', 'messageBody', 'Tap here to read it.'),
+  ('en', 'changeNew', '📅 {name} is proposing a change to the contact schedule'),
+  ('en', 'changeAccepted', '✅ {name} accepted your proposal'),
+  ('en', 'changeDeclined', '❌ {name} declined your proposal'),
+  ('en', 'expenseNew', '💶 {name} added an expense'),
+  ('en', 'expenseNewBody', 'Please review and confirm.'),
+  ('en', 'expenseConfirmed', '✅ {name} confirmed an expense'),
+  ('en', 'expenseDisputed', '❌ {name} rejected an expense'),
+  ('en', 'decisionNew', '🤝 {name} is asking for a decision'),
+  ('en', 'decisionAgreed', '✅ {name} agreed'),
+  ('en', 'decisionRejected', '❌ {name} did not agree'),
+  ('en', 'handoverNew', '🚗 {name} recorded a handover'),
+  ('en', 'handoverReply', '🚗 {name} replied to your handover entry'),
+  ('en', 'agreementNew', '📝 {name} edited the parenting agreement'),
+  ('en', 'agreementNewBody', 'Read the new version and agree if it works for you.'),
+  ('en', 'agreementAccepted', '📝 {name} agreed to the parenting agreement'),
+  ('en', 'professionalInvite', '🔐 {name} would like to invite a professional'),
+  ('en', 'professionalInviteBody', '{label} – please approve or decline.'),
+  ('en', 'documentNew', '📄 {name} shared a document'),
   ('en', 'documentNewBody', '{title}'),
-  ('en', 'otherParent', 'Der andere Elternteil'),
-  ('tr', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('tr', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('tr', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('tr', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('tr', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('tr', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('tr', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('tr', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('tr', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('tr', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('tr', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('tr', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('tr', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('tr', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('tr', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('tr', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('tr', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('tr', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('tr', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('tr', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('tr', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('en', 'otherParent', 'The other parent'),
+  ('tr', 'tapToOpen', 'Görüntülemek için dokunun.'),
+  ('tr', 'messageTitle', '💬 {name} size yeni bir mesaj gönderdi'),
+  ('tr', 'messageBody', 'Okumak için dokunun.'),
+  ('tr', 'changeNew', '📅 {name} bakım planında bir değişiklik öneriyor'),
+  ('tr', 'changeAccepted', '✅ {name} önerinizi kabul etti'),
+  ('tr', 'changeDeclined', '❌ {name} önerinizi reddetti'),
+  ('tr', 'expenseNew', '💶 {name} bir harcama girdi'),
+  ('tr', 'expenseNewBody', 'Lütfen kontrol edip onaylayın.'),
+  ('tr', 'expenseConfirmed', '✅ {name} bir harcamayı onayladı'),
+  ('tr', 'expenseDisputed', '❌ {name} bir harcamayı reddetti'),
+  ('tr', 'decisionNew', '🤝 {name} bir karar için yanıtınızı bekliyor'),
+  ('tr', 'decisionAgreed', '✅ {name} onayladı'),
+  ('tr', 'decisionRejected', '❌ {name} onaylamadı'),
+  ('tr', 'handoverNew', '🚗 {name} bir teslim kaydı girdi'),
+  ('tr', 'handoverReply', '🚗 {name} teslim kaydınıza yanıt verdi'),
+  ('tr', 'agreementNew', '📝 {name} ebeveyn anlaşmasını düzenledi'),
+  ('tr', 'agreementNewBody', 'Yeni metni okuyun ve sizin için uygunsa onaylayın.'),
+  ('tr', 'agreementAccepted', '📝 {name} ebeveyn anlaşmasını onayladı'),
+  ('tr', 'professionalInvite', '🔐 {name} bir uzmanı davet etmek istiyor'),
+  ('tr', 'professionalInviteBody', '{label} – lütfen onaylayın veya reddedin.'),
+  ('tr', 'documentNew', '📄 {name} bir belge paylaştı'),
   ('tr', 'documentNewBody', '{title}'),
-  ('tr', 'otherParent', 'Der andere Elternteil'),
-  ('ar', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('ar', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('ar', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('ar', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('ar', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('ar', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('ar', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('ar', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('ar', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('ar', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('ar', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('ar', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('ar', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('ar', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('ar', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('ar', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('ar', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('ar', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('ar', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('ar', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('ar', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('tr', 'otherParent', 'Diğer ebeveyn'),
+  ('ar', 'tapToOpen', 'للعرض، يُرجى الضغط هنا.'),
+  ('ar', 'messageTitle', '💬 رسالة جديدة من {name}'),
+  ('ar', 'messageBody', 'للقراءة، يُرجى الضغط هنا.'),
+  ('ar', 'changeNew', '📅 اقتراح تغيير في جدول الرعاية من {name}'),
+  ('ar', 'changeAccepted', '✅ {name}: تمت الموافقة على اقتراحك'),
+  ('ar', 'changeDeclined', '❌ {name}: تم رفض اقتراحك'),
+  ('ar', 'expenseNew', '💶 {name}: تم تسجيل مصروف'),
+  ('ar', 'expenseNewBody', 'يُرجى المراجعة والتأكيد.'),
+  ('ar', 'expenseConfirmed', '✅ {name}: تم تأكيد مصروف'),
+  ('ar', 'expenseDisputed', '❌ {name}: تم رفض مصروف'),
+  ('ar', 'decisionNew', '🤝 طلب قرار من {name}'),
+  ('ar', 'decisionAgreed', '✅ {name}: تمت الموافقة'),
+  ('ar', 'decisionRejected', '❌ {name}: لم تتم الموافقة'),
+  ('ar', 'handoverNew', '🚗 {name}: تم تسجيل تسليم'),
+  ('ar', 'handoverReply', '🚗 {name}: رد على تسجيل التسليم الخاص بك'),
+  ('ar', 'agreementNew', '📝 {name}: تم تعديل اتفاق الوالدين'),
+  ('ar', 'agreementNewBody', 'يُرجى قراءة النسخة الجديدة والموافقة عليها إن كانت مناسبة لك.'),
+  ('ar', 'agreementAccepted', '📝 {name}: تمت الموافقة على اتفاق الوالدين'),
+  ('ar', 'professionalInvite', '🔐 {name}: طلب دعوة مختص'),
+  ('ar', 'professionalInviteBody', '{label} – يُرجى الموافقة أو الرفض.'),
+  ('ar', 'documentNew', '📄 {name}: تمت مشاركة مستند'),
   ('ar', 'documentNewBody', '{title}'),
-  ('ar', 'otherParent', 'Der andere Elternteil'),
-  ('ru', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('ru', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('ru', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('ru', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('ru', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('ru', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('ru', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('ru', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('ru', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('ru', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('ru', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('ru', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('ru', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('ru', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('ru', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('ru', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('ru', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('ru', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('ru', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('ru', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('ru', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('ar', 'otherParent', 'الطرف الآخر من الوالدين'),
+  ('ru', 'tapToOpen', 'Нажмите, чтобы посмотреть.'),
+  ('ru', 'messageTitle', '💬 Новое сообщение от: {name}'),
+  ('ru', 'messageBody', 'Нажмите, чтобы прочитать.'),
+  ('ru', 'changeNew', '📅 {name} предлагает изменение в графике общения'),
+  ('ru', 'changeAccepted', '✅ {name} принимает ваше предложение'),
+  ('ru', 'changeDeclined', '❌ {name} отклоняет ваше предложение'),
+  ('ru', 'expenseNew', '💶 {name} добавляет расход'),
+  ('ru', 'expenseNewBody', 'Пожалуйста, проверьте и подтвердите.'),
+  ('ru', 'expenseConfirmed', '✅ {name} подтверждает расход'),
+  ('ru', 'expenseDisputed', '❌ {name} отклоняет расход'),
+  ('ru', 'decisionNew', '🤝 {name} просит принять решение'),
+  ('ru', 'decisionAgreed', '✅ {name} соглашается'),
+  ('ru', 'decisionRejected', '❌ {name} не соглашается'),
+  ('ru', 'handoverNew', '🚗 {name} добавляет запись о передаче'),
+  ('ru', 'handoverReply', '🚗 {name} отвечает на вашу запись о передаче'),
+  ('ru', 'agreementNew', '📝 {name} изменяет родительскую договорённость'),
+  ('ru', 'agreementNewBody', 'Прочитайте новую редакцию и дайте согласие, если она вам подходит.'),
+  ('ru', 'agreementAccepted', '📝 {name} соглашается с родительской договорённостью'),
+  ('ru', 'professionalInvite', '🔐 {name} хочет пригласить специалиста'),
+  ('ru', 'professionalInviteBody', '{label} – пожалуйста, согласитесь или отклоните.'),
+  ('ru', 'documentNew', '📄 {name} делится документом'),
   ('ru', 'documentNewBody', '{title}'),
-  ('ru', 'otherParent', 'Der andere Elternteil'),
-  ('uk', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('uk', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('uk', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('uk', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('uk', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('uk', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('uk', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('uk', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('uk', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('uk', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('uk', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('uk', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('uk', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('uk', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('uk', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('uk', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('uk', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('uk', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('uk', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('uk', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('uk', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('ru', 'otherParent', 'Другой родитель'),
+  ('uk', 'tapToOpen', 'Натисніть, щоб переглянути.'),
+  ('uk', 'messageTitle', '💬 Нове повідомлення від {name}'),
+  ('uk', 'messageBody', 'Натисніть, щоб прочитати.'),
+  ('uk', 'changeNew', '📅 {name}: пропозиція змінити графік спілкування з дитиною'),
+  ('uk', 'changeAccepted', '✅ {name}: вашу пропозицію прийнято'),
+  ('uk', 'changeDeclined', '❌ {name}: вашу пропозицію відхилено'),
+  ('uk', 'expenseNew', '💶 {name}: внесено нову витрату'),
+  ('uk', 'expenseNewBody', 'Будь ласка, перевірте й підтвердьте.'),
+  ('uk', 'expenseConfirmed', '✅ {name}: витрату підтверджено'),
+  ('uk', 'expenseDisputed', '❌ {name}: витрату відхилено'),
+  ('uk', 'decisionNew', '🤝 {name} просить ухвалити рішення'),
+  ('uk', 'decisionAgreed', '✅ {name}: згоду надано'),
+  ('uk', 'decisionRejected', '❌ {name}: згоди не надано'),
+  ('uk', 'handoverNew', '🚗 {name}: внесено передачу дитини'),
+  ('uk', 'handoverReply', '🚗 {name}: відповідь на ваш запис про передачу'),
+  ('uk', 'agreementNew', '📝 {name}: батьківську угоду змінено'),
+  ('uk', 'agreementNewBody', 'Прочитайте нову редакцію і погодьтеся, якщо вона вам підходить.'),
+  ('uk', 'agreementAccepted', '📝 {name}: згоду з батьківською угодою надано'),
+  ('uk', 'professionalInvite', '🔐 {name} хоче запросити фахівця'),
+  ('uk', 'professionalInviteBody', '{label} – будь ласка, погодьтеся або відхиліть.'),
+  ('uk', 'documentNew', '📄 {name}: новий спільний документ'),
   ('uk', 'documentNewBody', '{title}'),
-  ('uk', 'otherParent', 'Der andere Elternteil'),
-  ('pl', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('pl', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('pl', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('pl', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('pl', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('pl', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('pl', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('pl', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('pl', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('pl', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('pl', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('pl', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('pl', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('pl', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('pl', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('pl', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('pl', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('pl', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('pl', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('pl', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('pl', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('uk', 'otherParent', 'Інший із батьків'),
+  ('pl', 'tapToOpen', 'Dotknij, aby zobaczyć.'),
+  ('pl', 'messageTitle', '💬 Nowa wiadomość od: {name}'),
+  ('pl', 'messageBody', 'Dotknij, aby przeczytać.'),
+  ('pl', 'changeNew', '📅 {name} proponuje zmianę w planie opieki'),
+  ('pl', 'changeAccepted', '✅ {name} przyjmuje twoją propozycję'),
+  ('pl', 'changeDeclined', '❌ {name} odrzuca twoją propozycję'),
+  ('pl', 'expenseNew', '💶 {name} dodaje wydatek'),
+  ('pl', 'expenseNewBody', 'Sprawdź i potwierdź.'),
+  ('pl', 'expenseConfirmed', '✅ {name} potwierdza wydatek'),
+  ('pl', 'expenseDisputed', '❌ {name} odrzuca wydatek'),
+  ('pl', 'decisionNew', '🤝 {name} prosi o decyzję'),
+  ('pl', 'decisionAgreed', '✅ {name} wyraża zgodę'),
+  ('pl', 'decisionRejected', '❌ {name} nie wyraża zgody'),
+  ('pl', 'handoverNew', '🚗 {name} dodaje wpis o przekazaniu'),
+  ('pl', 'handoverReply', '🚗 {name} odpowiada na twój wpis o przekazaniu'),
+  ('pl', 'agreementNew', '📝 {name} zmienia porozumienie rodzicielskie'),
+  ('pl', 'agreementNewBody', 'Przeczytaj nową wersję i zaakceptuj ją, jeśli ci odpowiada.'),
+  ('pl', 'agreementAccepted', '📝 {name} akceptuje porozumienie rodzicielskie'),
+  ('pl', 'professionalInvite', '🔐 {name} chce zaprosić specjalistę'),
+  ('pl', 'professionalInviteBody', '{label} – zaakceptuj lub odrzuć.'),
+  ('pl', 'documentNew', '📄 {name} udostępnia dokument'),
   ('pl', 'documentNewBody', '{title}'),
-  ('pl', 'otherParent', 'Der andere Elternteil'),
-  ('sq', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('sq', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('sq', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('sq', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('sq', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('sq', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('sq', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('sq', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('sq', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('sq', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('sq', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('sq', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('sq', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('sq', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('sq', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('sq', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('sq', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('sq', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('sq', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('sq', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('sq', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('pl', 'otherParent', 'Drugi rodzic'),
+  ('sq', 'tapToOpen', 'Prek këtu për ta parë.'),
+  ('sq', 'messageTitle', '💬 Mesazh i ri nga {name}'),
+  ('sq', 'messageBody', 'Prek këtu për ta lexuar.'),
+  ('sq', 'changeNew', '📅 {name} propozon një ndryshim në planin e kujdesit'),
+  ('sq', 'changeAccepted', '✅ {name} e pranoi propozimin tënd'),
+  ('sq', 'changeDeclined', '❌ {name} e refuzoi propozimin tënd'),
+  ('sq', 'expenseNew', '💶 {name} shënoi një shpenzim'),
+  ('sq', 'expenseNewBody', 'Kontrolloje dhe konfirmoje.'),
+  ('sq', 'expenseConfirmed', '✅ {name} konfirmoi një shpenzim'),
+  ('sq', 'expenseDisputed', '❌ {name} refuzoi një shpenzim'),
+  ('sq', 'decisionNew', '🤝 {name} kërkon një vendim'),
+  ('sq', 'decisionAgreed', '✅ {name} ra dakord'),
+  ('sq', 'decisionRejected', '❌ {name} nuk ra dakord'),
+  ('sq', 'handoverNew', '🚗 {name} shënoi një dorëzim'),
+  ('sq', 'handoverReply', '🚗 {name} iu përgjigj shënimit tënd për dorëzimin'),
+  ('sq', 'agreementNew', '📝 {name} ndryshoi marrëveshjen prindërore'),
+  ('sq', 'agreementNewBody', 'Lexo versionin e ri dhe prano nëse të përshtatet.'),
+  ('sq', 'agreementAccepted', '📝 {name} pranoi marrëveshjen prindërore'),
+  ('sq', 'professionalInvite', '🔐 {name} dëshiron të ftojë një profesionist'),
+  ('sq', 'professionalInviteBody', '{label} – prano ose refuzo.'),
+  ('sq', 'documentNew', '📄 {name} ndau një dokument'),
   ('sq', 'documentNewBody', '{title}'),
-  ('sq', 'otherParent', 'Der andere Elternteil'),
-  ('ro', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('ro', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('ro', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('ro', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('ro', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('ro', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('ro', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('ro', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('ro', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('ro', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('ro', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('ro', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('ro', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('ro', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('ro', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('ro', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('ro', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('ro', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('ro', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('ro', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('ro', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('sq', 'otherParent', 'Prindi tjetër'),
+  ('ro', 'tapToOpen', 'Atinge aici pentru a vedea.'),
+  ('ro', 'messageTitle', '💬 Mesaj nou de la {name}'),
+  ('ro', 'messageBody', 'Atinge aici pentru a-l citi.'),
+  ('ro', 'changeNew', '📅 {name} propune o modificare a programului'),
+  ('ro', 'changeAccepted', '✅ {name} a acceptat propunerea ta'),
+  ('ro', 'changeDeclined', '❌ {name} a respins propunerea ta'),
+  ('ro', 'expenseNew', '💶 {name} a adăugat o cheltuială'),
+  ('ro', 'expenseNewBody', 'Te rugăm să verifici și să confirmi.'),
+  ('ro', 'expenseConfirmed', '✅ {name} a confirmat o cheltuială'),
+  ('ro', 'expenseDisputed', '❌ {name} a respins o cheltuială'),
+  ('ro', 'decisionNew', '🤝 {name} cere o decizie'),
+  ('ro', 'decisionAgreed', '✅ {name} a fost de acord'),
+  ('ro', 'decisionRejected', '❌ {name} nu a fost de acord'),
+  ('ro', 'handoverNew', '🚗 {name} a înregistrat o predare'),
+  ('ro', 'handoverReply', '🚗 {name} a răspuns la înregistrarea ta despre predare'),
+  ('ro', 'agreementNew', '📝 {name} a modificat acordul parental'),
+  ('ro', 'agreementNewBody', 'Citește noua versiune și acceptă-o dacă ți se potrivește.'),
+  ('ro', 'agreementAccepted', '📝 {name} a acceptat acordul parental'),
+  ('ro', 'professionalInvite', '🔐 {name} vrea să invite un specialist'),
+  ('ro', 'professionalInviteBody', '{label} – te rugăm să accepți sau să refuzi.'),
+  ('ro', 'documentNew', '📄 {name} a partajat un document'),
   ('ro', 'documentNewBody', '{title}'),
-  ('ro', 'otherParent', 'Der andere Elternteil'),
-  ('sr', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('sr', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('sr', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('sr', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('sr', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('sr', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('sr', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('sr', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('sr', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('sr', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('sr', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('sr', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('sr', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('sr', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('sr', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('sr', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('sr', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('sr', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('sr', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('sr', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('sr', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('ro', 'otherParent', 'Celălalt părinte'),
+  ('sr', 'tapToOpen', 'Dodirnite ovde da biste pogledali.'),
+  ('sr', 'messageTitle', '💬 Nova poruka – {name}'),
+  ('sr', 'messageBody', 'Dodirnite ovde da biste je pročitali.'),
+  ('sr', 'changeNew', '📅 {name} predlaže izmenu plana viđanja'),
+  ('sr', 'changeAccepted', '✅ {name} je prihvatio/la vaš predlog'),
+  ('sr', 'changeDeclined', '❌ {name} je odbio/la vaš predlog'),
+  ('sr', 'expenseNew', '💶 {name} je uneo/la trošak'),
+  ('sr', 'expenseNewBody', 'Proverite i potvrdite.'),
+  ('sr', 'expenseConfirmed', '✅ {name} je potvrdio/la trošak'),
+  ('sr', 'expenseDisputed', '❌ {name} je odbio/la trošak'),
+  ('sr', 'decisionNew', '🤝 {name} traži odluku'),
+  ('sr', 'decisionAgreed', '✅ {name} se saglasio/la'),
+  ('sr', 'decisionRejected', '❌ {name} se nije saglasio/la'),
+  ('sr', 'handoverNew', '🚗 {name} je uneo/la primopredaju'),
+  ('sr', 'handoverReply', '🚗 {name} je odgovorio/la na vaš unos o primopredaji'),
+  ('sr', 'agreementNew', '📝 {name} je izmenio/la roditeljski sporazum'),
+  ('sr', 'agreementNewBody', 'Pročitajte novu verziju i saglasite se ako vam odgovara.'),
+  ('sr', 'agreementAccepted', '📝 {name} se saglasio/la sa roditeljskim sporazumom'),
+  ('sr', 'professionalInvite', '🔐 {name} želi da pozove stručno lice'),
+  ('sr', 'professionalInviteBody', '{label} – saglasite se ili odbijte.'),
+  ('sr', 'documentNew', '📄 {name} je podelio/la dokument'),
   ('sr', 'documentNewBody', '{title}'),
-  ('sr', 'otherParent', 'Der andere Elternteil'),
-  ('fr', 'tapToOpen', 'Tipp hier, um es anzusehen.'),
-  ('fr', 'messageTitle', '💬 Neue Nachricht von {name}'),
-  ('fr', 'messageBody', 'Tipp hier, um sie zu lesen.'),
-  ('fr', 'changeNew', '📅 {name} schlägt eine Änderung im Umgang vor'),
-  ('fr', 'changeAccepted', '✅ {name} hat deinem Vorschlag zugestimmt'),
-  ('fr', 'changeDeclined', '❌ {name} hat deinen Vorschlag abgelehnt'),
-  ('fr', 'expenseNew', '💶 {name} hat eine Ausgabe eingetragen'),
-  ('fr', 'expenseNewBody', 'Bitte prüfen und bestätigen.'),
-  ('fr', 'expenseConfirmed', '✅ {name} hat eine Ausgabe bestätigt'),
-  ('fr', 'expenseDisputed', '❌ {name} hat eine Ausgabe abgelehnt'),
-  ('fr', 'decisionNew', '🤝 {name} bittet um eine Entscheidung'),
-  ('fr', 'decisionAgreed', '✅ {name} hat zugestimmt'),
-  ('fr', 'decisionRejected', '❌ {name} hat nicht zugestimmt'),
-  ('fr', 'handoverNew', '🚗 {name} hat eine Übergabe eingetragen'),
-  ('fr', 'handoverReply', '🚗 {name} hat auf deinen Übergabe-Eintrag geantwortet'),
-  ('fr', 'agreementNew', '📝 {name} hat die Elternvereinbarung bearbeitet'),
-  ('fr', 'agreementNewBody', 'Lies die neue Fassung und stimme zu, wenn sie für dich passt.'),
-  ('fr', 'agreementAccepted', '📝 {name} hat der Elternvereinbarung zugestimmt'),
-  ('fr', 'professionalInvite', '🔐 {name} möchte eine Fachkraft einladen'),
-  ('fr', 'professionalInviteBody', '{label} – bitte zustimmen oder ablehnen.'),
-  ('fr', 'documentNew', '📄 {name} hat ein Dokument geteilt'),
+  ('sr', 'otherParent', 'Drugi roditelj'),
+  ('fr', 'tapToOpen', 'Touchez ici pour l’afficher.'),
+  ('fr', 'messageTitle', '💬 Nouveau message de {name}'),
+  ('fr', 'messageBody', 'Touchez ici pour le lire.'),
+  ('fr', 'changeNew', '📅 {name} propose une modification de la garde'),
+  ('fr', 'changeAccepted', '✅ {name} a accepté votre proposition'),
+  ('fr', 'changeDeclined', '❌ {name} a refusé votre proposition'),
+  ('fr', 'expenseNew', '💶 {name} a saisi une dépense'),
+  ('fr', 'expenseNewBody', 'Veuillez vérifier et confirmer.'),
+  ('fr', 'expenseConfirmed', '✅ {name} a confirmé une dépense'),
+  ('fr', 'expenseDisputed', '❌ {name} a refusé une dépense'),
+  ('fr', 'decisionNew', '🤝 {name} demande une décision'),
+  ('fr', 'decisionAgreed', '✅ {name} a donné son accord'),
+  ('fr', 'decisionRejected', '❌ {name} n’a pas donné son accord'),
+  ('fr', 'handoverNew', '🚗 {name} a saisi une remise de l’enfant'),
+  ('fr', 'handoverReply', '🚗 {name} a répondu à votre saisie de remise'),
+  ('fr', 'agreementNew', '📝 {name} a modifié l’accord parental'),
+  ('fr', 'agreementNewBody', 'Lisez la nouvelle version et acceptez-la si elle vous convient.'),
+  ('fr', 'agreementAccepted', '📝 {name} a accepté l’accord parental'),
+  ('fr', 'professionalInvite', '🔐 {name} souhaite inviter un(e) professionnel(le)'),
+  ('fr', 'professionalInviteBody', '{label} – veuillez accepter ou refuser.'),
+  ('fr', 'documentNew', '📄 {name} a partagé un document'),
   ('fr', 'documentNewBody', '{title}'),
-  ('fr', 'otherParent', 'Der andere Elternteil')
+  ('fr', 'otherParent', 'L’autre parent')
 on conflict (lang, key) do update set text = excluded.text;
 -- PUSH_TEXTS_END

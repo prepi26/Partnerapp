@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 
+import { WriteGate } from '@/components/SubscriptionBanner';
 import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { AgreementContent } from '@/data/types';
@@ -39,29 +40,31 @@ export default function AgreementEdit() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.intro}>{fmt(t.family.agreementEdit.intro, { name: otherName })}</Text>
-        {sections.map((s) => (
-          <Field
-            key={s.key}
-            label={s.title}
-            value={content[s.key] ?? ''}
-            onChangeText={(text) => setContent((c) => ({ ...c, [s.key]: text }))}
-            placeholder={s.questions}
-            multiline
-            maxLength={3000}
+    <WriteGate>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <Text style={styles.intro}>{fmt(t.family.agreementEdit.intro, { name: otherName })}</Text>
+          {sections.map((s) => (
+            <Field
+              key={s.key}
+              label={s.title}
+              value={content[s.key] ?? ''}
+              onChangeText={(text) => setContent((c) => ({ ...c, [s.key]: text }))}
+              placeholder={s.questions}
+              multiline
+              maxLength={3000}
+            />
+          ))}
+          <PrimaryButton
+            title={busy ? t.common.saving : latest ? t.family.agreementEdit.proposeNew : t.family.agreementEdit.saveAccept}
+            icon="checkmark"
+            disabled={busy || filled === 0 || !changed}
+            onPress={save}
           />
-        ))}
-        <PrimaryButton
-          title={busy ? t.common.saving : latest ? t.family.agreementEdit.proposeNew : t.family.agreementEdit.saveAccept}
-          icon="checkmark"
-          disabled={busy || filled === 0 || !changed}
-          onPress={save}
-        />
-        <Text style={styles.hint}>{fmt(t.family.agreementEdit.filled, { n: filled, total: sections.length })}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <Text style={styles.hint}>{fmt(t.family.agreementEdit.filled, { n: filled, total: sections.length })}</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </WriteGate>
   );
 }
 

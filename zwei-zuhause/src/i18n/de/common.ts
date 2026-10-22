@@ -54,6 +54,18 @@ export const common = {
     is_parent: 'Dieses Konto gehört zu einer Familie. Für den Fachkraft-Zugang brauchst du ein eigenes Konto.',
     network: 'Keine Verbindung zum Server. Bist du online?',
   },
+  subscription: {
+    /** Fehlermeldung, wenn nach der Testzeit ohne Abo geschrieben wird */
+    required: 'Die kostenlose Testzeit ist vorbei. Mit einem Abo könnt ihr beide wieder alles eintragen.',
+    readOnlyTitle: 'Nur noch lesen',
+    /** {name} anderer Elternteil */
+    readOnlyText:
+      'Die 14 Tage Testzeit sind vorbei. Mit einem Abo für die ganze Familie können du und {name} wieder alles eintragen. Lesen und Exportieren geht weiterhin.',
+    cta: 'Abo ansehen',
+    trialBannerOther: 'Noch {n} Tage kostenlos testen',
+    trialBannerOne: 'Noch 1 Tag kostenlos testen',
+    trialBannerLast: 'Letzter Tag der kostenlosen Testzeit',
+  },
   language: {
     title: 'Sprache',
     hint: 'Berichte als PDF bleiben auf Deutsch – sie sind für deutsche Ämter und Beratungsstellen.',

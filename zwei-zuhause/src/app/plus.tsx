@@ -15,8 +15,8 @@ import { colors, gradient, radius, shadow, spacing } from '@/theme';
 function benefits(t: Dict): { icon: IconName; title: string; text: string }[] {
   const b = t.money.plus.benefits;
   return [
-    { icon: 'document-text', title: b.reportsTitle, text: b.reportsText },
-    { icon: 'camera', title: b.receiptsTitle, text: b.receiptsText },
+    { icon: 'people', title: b.familyTitle, text: b.familyText },
+    { icon: 'apps', title: b.allTitle, text: b.allText },
     { icon: 'shield-checkmark', title: b.proofTitle, text: b.proofText },
     { icon: 'heart', title: b.supportTitle, text: b.supportText },
   ];
@@ -39,7 +39,15 @@ function perMonth(pkg: PurchasesPackage, t: Dict) {
 
 export default function PlusScreen() {
   const t = useT();
-  const { active, packages, purchase, restore } = usePlus();
+  const { active, inTrial, trialDaysLeft, packages, purchase, restore } = usePlus();
+  const p = t.money.plus;
+  const trialText = !inTrial
+    ? p.trialOver
+    : trialDaysLeft === 0
+      ? p.trialLastDay
+      : trialDaysLeft === 1
+        ? p.trialLeftOne
+        : fmt(p.trialLeftOther, { n: trialDaysLeft });
   const [selected, setSelected] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -67,6 +75,12 @@ export default function PlusScreen() {
         <Text style={styles.heroTitle}>{t.money.plus.heroTitle}</Text>
         <Text style={styles.heroText}>{t.money.plus.heroText}</Text>
       </LinearGradient>
+
+      {!active ? (
+        <View style={[styles.trialBox, !inTrial && styles.trialOver]}>
+          <Text style={styles.trialText}>{trialText}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.benefits}>
         {benefits(t).map((b) => (
@@ -176,6 +190,9 @@ function trial(n: number, u: string, t: Dict) {
 }
 
 const styles = StyleSheet.create({
+  trialBox: { backgroundColor: colors.primaryPale, borderRadius: radius.md, padding: spacing.md },
+  trialOver: { backgroundColor: colors.parentBPale },
+  trialText: { fontSize: 15, fontWeight: '700', color: colors.text, textAlign: 'center', lineHeight: 21 },
   content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: 60 },
   hero: { borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', gap: spacing.xs },
   heroEmoji: { fontSize: 36 },

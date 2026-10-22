@@ -34,22 +34,36 @@ Danach testen: `npx expo start` und mit der Kamera den QR-Code scannen.
 **Achtung:** Push, Käufe und Kamera laufen nur in einem *Development Build*, nicht in Expo Go:
 `npx eas-cli@latest build --profile development --platform ios`.
 
-## 3. Abo „Zwei Zuhause Plus“ – ca. 45 Minuten
+## 3. Abo „Zwei Zuhause Plus“ – ca. 60 Minuten
 
-Plus gilt **pro Elternteil** (getrennte Eltern teilen kein Abo). Kalender, Kosten, Nachrichten, Entscheidungen,
-Übergaben, Vereinbarung und Fachkraft-Zugang bleiben kostenlos – Plus schaltet **PDF-Berichte** und **Belegfotos** frei.
+**Modell:** Ein Abo für die **ganze Familie** – einer zahlt, beide Eltern nutzen alles. **14 Tage kostenlos** ab dem
+Anlegen der Familie, danach ohne Abo **nur noch lesen** (Lesen, Export, eigene Einträge löschen und Konto löschen
+gehen immer – DSGVO). Die Sperre setzt die Datenbank durch (`family_active()` in `schema.sql`), nicht nur die App.
+Fachkräfte zahlen nie.
 
 1. **App Store Connect** → App anlegen (Bundle-ID `de.zweizuhause.app`) → *Monetarisierung → Abonnements* →
-   Gruppe „Zwei Zuhause Plus“ → zwei Abos, z. B. `plus_monthly` (**4,99 €**) und `plus_yearly` (**39,99 €**,
-   7 Tage gratis als Einführungsangebot). Vertrag für kostenpflichtige Apps muss aktiv sein.
+   Gruppe „Zwei Zuhause Plus“ → zwei Abos: `plus_monthly` (**7,99 €**) und `plus_yearly` (**59,99 €**).
+   **Kein** Einführungsangebot einstellen – die 14 Tage laufen bereits in der App. Vertrag für kostenpflichtige Apps
+   muss aktiv sein.
 2. **RevenueCat** (kostenlos bis 2.500 $ Monatsumsatz): Projekt anlegen → App Store App verbinden
    (In-App-Purchase-Key aus App Store Connect) → *Entitlement* mit Identifier **`plus`** → beide Produkte zuordnen →
    *Offering* „default“ mit beiden Paketen (Monthly, Annual).
 3. Öffentlichen RevenueCat-Key (`appl_…`) in `.env` als `EXPO_PUBLIC_REVENUECAT_IOS_KEY` eintragen.
-4. Für Android dasselbe mit Google Play (`goog_…`).
+4. **Edge Function anlegen** (damit ein Kauf für beide Eltern gilt): Supabase → *Edge Functions* → *Deploy a new
+   function* → Name `plus` → Inhalt von `supabase/functions/plus/index.ts` einfügen → **Verify JWT aus**.
+   Unter *Secrets*: `REVENUECAT_SECRET_KEY` (RevenueCat → API Keys → Secret) und `REVENUECAT_WEBHOOK_SECRET`
+   (beliebiges langes Passwort).
+5. **RevenueCat-Webhook** (Verlängerungen/Kündigungen): RevenueCat → *Integrations → Webhooks* → URL
+   `https://<projekt>.supabase.co/functions/v1/plus`, Authorization-Header `Bearer <REVENUECAT_WEBHOOK_SECRET>`.
+6. Für Android dasselbe mit Google Play (`goog_…`).
 
-> Preisbegründung: OurFamilyWizard kostet 110–200 $/Jahr pro Elternteil, Copario ab 4,99 €/Monat, Wechselplan
-> 8,98 €/Monat pro Familie. 39,99 €/Jahr liegt bewusst darunter – Basis gratis ist dein Hebel bei Jugendämtern.
+> **Preis:** 7,99 €/Monat bzw. 59,99 €/Jahr pro Familie. Zum Vergleich: OurFamilyWizard 110–200 $/Jahr **pro
+> Elternteil**, Wechselplan 89,98 €/Jahr pro Familie, Copario ab 4,99 €/Monat.
+
+> **Apple-Prüfung – Risiko [wahrscheinlich gering, aber ehrlich gesagt nicht sicher]:** Eine Testzeit, die die App
+> selbst verwaltet, ist bei Abo-Apps verbreitet („14 Tage voller Funktionsumfang, danach nur lesen“). Apple achtet
+> darauf, dass vor dem Kauf klar steht, was nach der Testzeit passiert – das zeigt die Abo-Seite. Lehnt Apple ab,
+> ist die Alternative ein 14-tägiges **Einführungsangebot** direkt am Abo in App Store Connect.
 
 ## 4. Pflichtseiten veröffentlichen
 

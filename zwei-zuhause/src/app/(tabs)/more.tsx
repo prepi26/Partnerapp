@@ -13,7 +13,7 @@ type Item = { icon: IconName; title: string; text: string; href: Parameters<type
 export default function More() {
   const t = useT();
   const { decisions, handovers, agreements, professional_access, journal, userId, me } = useFamily();
-  const { active: plus } = usePlus();
+  const { canWrite: plus } = usePlus();
 
   const openDecisions = decisions.filter((d) => d.status === 'proposed' && d.created_by !== userId).length;
   const openHandovers = handovers.filter((h) => !h.reply && h.created_by !== userId).length;

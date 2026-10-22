@@ -9,7 +9,7 @@ const run = 'd' + Date.now().toString(36);
 const SHOTS = process.env.SHOTS || '/tmp/zz-shots';
 const shot = (page, name) => page.screenshot({ path: `${SHOTS}/${name}.png` });
 async function newUser(browser, label) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'de-DE', acceptDownloads: true });
   const page = await ctx.newPage();
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('realtime')) errors.push(`${label}: ${m.text()}`); });
   page.on('pageerror', (e) => errors.push(`${label} PAGEERROR: ${e.message}`));

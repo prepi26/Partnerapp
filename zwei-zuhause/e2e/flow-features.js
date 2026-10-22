@@ -3,7 +3,7 @@ const URL = 'http://localhost:8081';
 const errors = [];
 const run = 'f2' + Date.now().toString(36);
 async function newUser(browser, label) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'de-DE' });
   const page = await ctx.newPage();
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('realtime')) errors.push(`${label}: ${m.text()}`); });
   page.on('pageerror', (e) => errors.push(`${label} PAGEERROR: ${e.message}`));

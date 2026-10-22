@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { DateField } from '@/components/DateField';
+import { WriteGate } from '@/components/SubscriptionBanner';
 import { Card, Chip, Field, Label, PrimaryButton, showError } from '@/components/ui';
 import { formatSize, MAX_DOCUMENT_BYTES, PickedFile } from '@/data/documents';
 import { attempt, useFamily } from '@/data/store';
@@ -85,78 +86,80 @@ export default function DocumentNew() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {file ? (
-          <Card style={styles.file}>
-            <Ionicons
-              name={file.mimeType === 'application/pdf' ? 'document-text' : 'image'}
-              size={28}
-              color={colors.primary}
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.fileName} numberOfLines={1}>
-                {file.name}
-              </Text>
-              <Text style={styles.hint}>{file.size ? formatSize(file.size) : ''}</Text>
+    <WriteGate>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          {file ? (
+            <Card style={styles.file}>
+              <Ionicons
+                name={file.mimeType === 'application/pdf' ? 'document-text' : 'image'}
+                size={28}
+                color={colors.primary}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.fileName} numberOfLines={1}>
+                  {file.name}
+                </Text>
+                <Text style={styles.hint}>{file.size ? formatSize(file.size) : ''}</Text>
+              </View>
+              <Pressable accessibilityRole="button" accessibilityLabel={t.family.documentNew.otherFile} onPress={() => setFile(null)}>
+                <Ionicons name="close-circle" size={24} color={colors.textMuted} />
+              </Pressable>
+            </Card>
+          ) : (
+            <View style={styles.pickers}>
+              {Platform.OS !== 'web' ? (
+                <PickButton icon="camera-outline" label={t.family.documentNew.takePhoto} onPress={() => pickPhoto(true)} />
+              ) : null}
+              <PickButton icon="image-outline" label={t.family.documentNew.fromPhotos} onPress={() => pickPhoto(false)} />
+              <PickButton icon="document-outline" label={t.family.documentNew.pdfFile} onPress={pickFile} />
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel={t.family.documentNew.otherFile} onPress={() => setFile(null)}>
-              <Ionicons name="close-circle" size={24} color={colors.textMuted} />
-            </Pressable>
-          </Card>
-        ) : (
-          <View style={styles.pickers}>
-            {Platform.OS !== 'web' ? (
-              <PickButton icon="camera-outline" label={t.family.documentNew.takePhoto} onPress={() => pickPhoto(true)} />
-            ) : null}
-            <PickButton icon="image-outline" label={t.family.documentNew.fromPhotos} onPress={() => pickPhoto(false)} />
-            <PickButton icon="document-outline" label={t.family.documentNew.pdfFile} onPress={pickFile} />
+          )}
+
+          <Field
+            label={t.family.documentNew.titleLabel}
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t.family.documentNew.titlePlaceholder}
+            maxLength={200}
+          />
+
+          <Label>{t.family.documentNew.area}</Label>
+          <View style={styles.chips}>
+            {documentCategories(t).map((c) => (
+              <Chip key={c.key} label={`${c.emoji} ${c.label}`} selected={category === c.key} onPress={() => setCategory(c.key)} />
+            ))}
           </View>
-        )}
+          <Text style={styles.hint}>{fmt(t.family.examples, { examples: documentCategory(category, t).examples })}</Text>
 
-        <Field
-          label={t.family.documentNew.titleLabel}
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t.family.documentNew.titlePlaceholder}
-          maxLength={200}
-        />
+          <View style={styles.chips}>
+            <Chip label={t.family.documentNew.noDate} tint="accent" selected={!withDate} onPress={() => setWithDate(false)} />
+            <Chip label={t.family.documentNew.withDate} tint="accent" selected={withDate} onPress={() => setWithDate(true)} />
+          </View>
+          {withDate ? (
+            <DateField label={t.family.documentNew.dateLabel} value={docDate} onChange={setDocDate} maximumDate={today()} />
+          ) : null}
 
-        <Label>{t.family.documentNew.area}</Label>
-        <View style={styles.chips}>
-          {documentCategories(t).map((c) => (
-            <Chip key={c.key} label={`${c.emoji} ${c.label}`} selected={category === c.key} onPress={() => setCategory(c.key)} />
-          ))}
-        </View>
-        <Text style={styles.hint}>{fmt(t.family.examples, { examples: documentCategory(category, t).examples })}</Text>
+          {health ? (
+            <Card style={styles.consent}>
+              <View style={styles.consentRow}>
+                <Text style={styles.consentText}>{fmt(t.family.documentNew.healthConsent, { name: otherName })}</Text>
+                <Switch value={consent} onValueChange={setConsent} trackColor={{ true: colors.primary }} />
+              </View>
+              <Text style={styles.hint}>{t.family.documentNew.healthHint}</Text>
+            </Card>
+          ) : null}
 
-        <View style={styles.chips}>
-          <Chip label={t.family.documentNew.noDate} tint="accent" selected={!withDate} onPress={() => setWithDate(false)} />
-          <Chip label={t.family.documentNew.withDate} tint="accent" selected={withDate} onPress={() => setWithDate(true)} />
-        </View>
-        {withDate ? (
-          <DateField label={t.family.documentNew.dateLabel} value={docDate} onChange={setDocDate} maximumDate={today()} />
-        ) : null}
-
-        {health ? (
-          <Card style={styles.consent}>
-            <View style={styles.consentRow}>
-              <Text style={styles.consentText}>{fmt(t.family.documentNew.healthConsent, { name: otherName })}</Text>
-              <Switch value={consent} onValueChange={setConsent} trackColor={{ true: colors.primary }} />
-            </View>
-            <Text style={styles.hint}>{t.family.documentNew.healthHint}</Text>
-          </Card>
-        ) : null}
-
-        <PrimaryButton
-          title={busy ? t.family.documentNew.uploading : t.family.documentNew.share}
-          icon="cloud-upload-outline"
-          disabled={busy || !file || !title.trim() || (health && !consent)}
-          onPress={save}
-        />
-        <Text style={styles.hint}>{fmt(t.family.documentNew.visibleHint, { name: otherName })}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <PrimaryButton
+            title={busy ? t.family.documentNew.uploading : t.family.documentNew.share}
+            icon="cloud-upload-outline"
+            disabled={busy || !file || !title.trim() || (health && !consent)}
+            onPress={save}
+          />
+          <Text style={styles.hint}>{fmt(t.family.documentNew.visibleHint, { name: otherName })}</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </WriteGate>
   );
 }
 

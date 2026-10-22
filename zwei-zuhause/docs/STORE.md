@@ -21,7 +21,7 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 **KOSTEN FAIR TEILEN**
 • Ausgaben fürs Kind mit Anteil (50/50 oder eigener Schlüssel)
 • Der andere bestätigt oder lehnt ab – der Saldo rechnet sich selbst
-• Belegfoto zum Kassenbon (Plus), Mehr- und Sonderbedarf kennzeichnen
+• Belegfoto zum Kassenbon, Mehr- und Sonderbedarf kennzeichnen
 
 **NACHRICHTEN MIT NACHWEIS**
 • Nichts lässt sich nachträglich ändern oder löschen
@@ -37,7 +37,7 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 
 **FÜR JUGENDAMT & BERATUNG**
 • Kostenloser Lesezugang für Fachkräfte – nur mit Zustimmung beider Eltern, jederzeit widerrufbar
-• Kurzbericht und vollständiger Bericht als PDF (Plus)
+• Kurzbericht und vollständiger Bericht als PDF
 • Hilfe-Seite mit Notfallnummern und Beratungsstellen
 
 **NUR FÜR DICH**
@@ -48,7 +48,8 @@ Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten we
 Server in Frankfurt (EU). Keine Werbung, kein Tracking, keine verkauften Daten. Eigene Daten jederzeit exportieren,
 Konto löschen mit einem Tipp.
 
-**KOSTENLOS NUTZBAR** – Zwei Zuhause Plus (Abo pro Elternteil) schaltet PDF-Berichte und Belegfotos frei.
+**14 TAGE KOSTENLOS TESTEN** – danach ein Abo für die ganze Familie: Zwei Zuhause Plus für 7,99 € im Monat oder
+59,99 € im Jahr. Einer zahlt, beide Eltern nutzen alles. Ohne Abo bleiben alle Einträge lesbar und exportierbar.
 
 Zwei Zuhause ersetzt keine Rechtsberatung. Bei Fragen zu Sorge, Umgang und Unterhalt helfen Jugendamt,
 Beratungsstellen und Fachanwälte für Familienrecht.
@@ -69,5 +70,6 @@ Formulierungen, die **nicht** verwendet werden dürfen: „gerichtsfest“, „r
 
 ## Hinweis für die App-Prüfung (App Review Notes)
 Die App verbindet zwei getrennte Elternteile. Zum Testen bitte mit Konto 1 anmelden (Elternteil A, Familie angelegt)
-und optional mit Konto 2 (Elternteil B) auf einem zweiten Gerät. Käufe: Abo „Zwei Zuhause Plus“ schaltet PDF-Berichte
-(Mehr → Bericht als PDF) und Belegfotos frei. Konto löschen: Mehr → Einstellungen → Konto löschen.
+und optional mit Konto 2 (Elternteil B) auf einem zweiten Gerät. Käufe: Die ersten 14 Tage ab Anlegen der Familie sind kostenlos und
+voll nutzbar; danach braucht die Familie das Abo „Zwei Zuhause Plus“ (ein Abo für beide Eltern), sonst ist die App nur
+noch lesbar. Konto löschen: Mehr → Einstellungen → Konto löschen.

@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 
@@ -122,6 +123,7 @@ const ERROR_KEYS = [
 export function errorMessage(e: unknown): string {
   const message = e instanceof Error ? e.message : String(e);
   const t = currentT();
+  if (isSubscriptionError(e)) return t.common.subscription.required;
   for (const key of ERROR_KEYS) if (message.includes(key)) return t.common.errors[key];
   if (/network|fetch/i.test(message)) return t.common.errors.network;
   return message;
@@ -133,9 +135,20 @@ export async function attempt(action: () => Promise<unknown>): Promise<boolean> 
     await action();
     return true;
   } catch (e) {
+    if (isSubscriptionError(e)) {
+      // Testzeit vorbei: statt Fehlermeldung direkt das Abo zeigen.
+      router.push('/plus');
+      return false;
+    }
     showError(currentT().common.failed, errorMessage(e));
     return false;
   }
+}
+
+/** Der Server lehnt Einträge ohne Abo nach der Testzeit ab (RPC-Fehler oder Zugriffsregel). */
+export function isSubscriptionError(e: unknown) {
+  const message = e instanceof Error ? e.message : String(e);
+  return message.includes('subscription_required') || message.includes('row-level security');
 }
 
 export interface NewPhoto {

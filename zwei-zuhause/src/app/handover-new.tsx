@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DateField } from '@/components/DateField';
+import { WriteGate } from '@/components/SubscriptionBanner';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { HandoverStatus } from '@/data/types';
@@ -32,48 +33,50 @@ export default function HandoverNew() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DateField label={t.calendar.handoverNew.day} value={day} onChange={setDay} maximumDate={today()} />
-        <Label>{t.calendar.handoverNew.how}</Label>
-        <View style={styles.chips}>
-          {HANDOVER_KEYS.map((k) => (
-            <Chip
-              key={k}
-              label={`${HANDOVER_EMOJI[k]} ${t.lib.handoverStatus[k]}`}
-              selected={status === k}
-              onPress={() => setStatus(k)}
-            />
-          ))}
-        </View>
-        {status === 'late' ? (
-          <>
-            <Label>{t.calendar.handoverNew.howLate}</Label>
-            <View style={styles.chips}>
-              {LATE.map((m) => (
-                <Chip
-                  key={m}
-                  label={fmt(t.lib.handoverStatus.minutes, { n: m })}
-                  tint="accent"
-                  selected={minutes === m}
-                  onPress={() => setMinutes(m)}
-                />
-              ))}
-            </View>
-          </>
-        ) : null}
-        <Field
-          label={t.calendar.handoverNew.noteLabel}
-          value={note}
-          onChangeText={setNote}
-          placeholder={status === 'missed' ? t.calendar.handoverNew.notePlaceholderMissed : t.calendar.handoverNew.notePlaceholder}
-          multiline
-          maxLength={1000}
-        />
-        <PrimaryButton title={busy ? t.common.saving : t.calendar.handoverNew.enter} icon="checkmark" disabled={busy} onPress={save} />
-        <Text style={styles.hint}>{t.calendar.handoverNew.hint}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <WriteGate>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <DateField label={t.calendar.handoverNew.day} value={day} onChange={setDay} maximumDate={today()} />
+          <Label>{t.calendar.handoverNew.how}</Label>
+          <View style={styles.chips}>
+            {HANDOVER_KEYS.map((k) => (
+              <Chip
+                key={k}
+                label={`${HANDOVER_EMOJI[k]} ${t.lib.handoverStatus[k]}`}
+                selected={status === k}
+                onPress={() => setStatus(k)}
+              />
+            ))}
+          </View>
+          {status === 'late' ? (
+            <>
+              <Label>{t.calendar.handoverNew.howLate}</Label>
+              <View style={styles.chips}>
+                {LATE.map((m) => (
+                  <Chip
+                    key={m}
+                    label={fmt(t.lib.handoverStatus.minutes, { n: m })}
+                    tint="accent"
+                    selected={minutes === m}
+                    onPress={() => setMinutes(m)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
+          <Field
+            label={t.calendar.handoverNew.noteLabel}
+            value={note}
+            onChangeText={setNote}
+            placeholder={status === 'missed' ? t.calendar.handoverNew.notePlaceholderMissed : t.calendar.handoverNew.notePlaceholder}
+            multiline
+            maxLength={1000}
+          />
+          <PrimaryButton title={busy ? t.common.saving : t.calendar.handoverNew.enter} icon="checkmark" disabled={busy} onPress={save} />
+          <Text style={styles.hint}>{t.calendar.handoverNew.hint}</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </WriteGate>
   );
 }
 

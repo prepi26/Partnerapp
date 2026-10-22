@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DateField } from '@/components/DateField';
 import { parentColor } from '@/components/ParentTag';
+import { WriteGate } from '@/components/SubscriptionBanner';
 import { Card, Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { ParentKey, ScheduleModel } from '@/data/types';
@@ -48,109 +49,111 @@ export default function Schedule() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <View style={{ gap: spacing.sm }}>
-        {models(t).map((m) => {
-          const chosen = m.key === model;
-          return (
-            <Pressable
-              key={m.key}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: chosen }}
-              onPress={() => setModel(m.key)}
-              style={[styles.option, chosen && styles.optionChosen]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.optionTitle}>{m.title}</Text>
-                <Text style={styles.optionText}>{m.text}</Text>
-              </View>
-              <Ionicons
-                name={chosen ? 'radio-button-on' : 'radio-button-off'}
-                size={22}
-                color={chosen ? colors.primary : colors.textMuted}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {model !== 'none' ? (
-        <>
-          <DateField label={t.calendar.schedule.start} value={start} onChange={setStart} />
-          <Label>{t.calendar.schedule.firstParent}</Label>
-          <View style={styles.chips}>
-            <Chip label={nameOf('a')} selected={first === 'a'} onPress={() => setFirst('a')} />
-            <Chip label={nameOf('b')} tint="accent" selected={first === 'b'} onPress={() => setFirst('b')} />
-          </View>
-          {model === 'residenz_we' ? (
-            <Text style={styles.hint}>{t.calendar.schedule.residenzHint}</Text>
-          ) : null}
-
-          <Card style={{ gap: 4 }}>
-            <Label>{t.calendar.schedule.preview}</Label>
-            <View style={styles.week}>
-              {t.common.dates.weekdaysShort.map((d) => (
-                <Text key={d} style={styles.weekday}>
-                  {d}
-                </Text>
-              ))}
-            </View>
-            {preview.map((week, i) => (
-              <View key={i} style={styles.week}>
-                {week.map((day, j) => {
-                  const p = plannedParent(draft, day);
-                  const c = parentColor(p);
-                  return (
-                    <View key={j} style={[styles.cell, { backgroundColor: c.pale }]}>
-                      <Text style={[styles.cellText, { color: c.main }]}>{day.getDate()}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            ))}
-          </Card>
-        </>
-      ) : null}
-
-      <Card style={{ gap: spacing.md }}>
-        <Label>{t.calendar.schedule.handover}</Label>
-        <View style={styles.chips}>
-          {TIMES.map((slot) => (
-            <Chip key={slot} label={slot} tint="accent" selected={cleanTime === slot} onPress={() => setTime(slot)} />
-          ))}
+    <WriteGate>
+      <ScrollView contentContainerStyle={styles.content}>
+        <View style={{ gap: spacing.sm }}>
+          {models(t).map((m) => {
+            const chosen = m.key === model;
+            return (
+              <Pressable
+                key={m.key}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: chosen }}
+                onPress={() => setModel(m.key)}
+                style={[styles.option, chosen && styles.optionChosen]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.optionTitle}>{m.title}</Text>
+                  <Text style={styles.optionText}>{m.text}</Text>
+                </View>
+                <Ionicons
+                  name={chosen ? 'radio-button-on' : 'radio-button-off'}
+                  size={22}
+                  color={chosen ? colors.primary : colors.textMuted}
+                />
+              </Pressable>
+            );
+          })}
         </View>
-        <Field
-          label={t.calendar.schedule.time}
-          value={time}
-          onChangeText={setTime}
-          placeholder={t.calendar.schedule.timePlaceholder}
-          keyboardType="numbers-and-punctuation"
-          maxLength={5}
-        />
-        {cleanTime === null ? <Text style={styles.error}>{t.calendar.schedule.timeError}</Text> : null}
-        <Field
-          label={t.calendar.schedule.place}
-          value={place}
-          onChangeText={setPlace}
-          placeholder={t.calendar.schedule.placePlaceholder}
-          maxLength={200}
-        />
-        <Text style={styles.hint}>{t.calendar.schedule.placeHint}</Text>
-      </Card>
 
-      <PrimaryButton
-        title={busy ? t.common.saving : t.calendar.schedule.save}
-        icon="checkmark"
-        disabled={busy || cleanTime === null}
-        onPress={save}
-      />
-      <Text style={styles.hint}>
-        {otherJoined
-          ? fmt(t.calendar.schedule.sharedJoined, { name: otherName })
-          : fmt(t.calendar.schedule.sharedNotJoined, { name: otherName })}{' '}
-        {t.calendar.schedule.singleDays}
-      </Text>
-    </ScrollView>
+        {model !== 'none' ? (
+          <>
+            <DateField label={t.calendar.schedule.start} value={start} onChange={setStart} />
+            <Label>{t.calendar.schedule.firstParent}</Label>
+            <View style={styles.chips}>
+              <Chip label={nameOf('a')} selected={first === 'a'} onPress={() => setFirst('a')} />
+              <Chip label={nameOf('b')} tint="accent" selected={first === 'b'} onPress={() => setFirst('b')} />
+            </View>
+            {model === 'residenz_we' ? (
+              <Text style={styles.hint}>{t.calendar.schedule.residenzHint}</Text>
+            ) : null}
+
+            <Card style={{ gap: 4 }}>
+              <Label>{t.calendar.schedule.preview}</Label>
+              <View style={styles.week}>
+                {t.common.dates.weekdaysShort.map((d) => (
+                  <Text key={d} style={styles.weekday}>
+                    {d}
+                  </Text>
+                ))}
+              </View>
+              {preview.map((week, i) => (
+                <View key={i} style={styles.week}>
+                  {week.map((day, j) => {
+                    const p = plannedParent(draft, day);
+                    const c = parentColor(p);
+                    return (
+                      <View key={j} style={[styles.cell, { backgroundColor: c.pale }]}>
+                        <Text style={[styles.cellText, { color: c.main }]}>{day.getDate()}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ))}
+            </Card>
+          </>
+        ) : null}
+
+        <Card style={{ gap: spacing.md }}>
+          <Label>{t.calendar.schedule.handover}</Label>
+          <View style={styles.chips}>
+            {TIMES.map((slot) => (
+              <Chip key={slot} label={slot} tint="accent" selected={cleanTime === slot} onPress={() => setTime(slot)} />
+            ))}
+          </View>
+          <Field
+            label={t.calendar.schedule.time}
+            value={time}
+            onChangeText={setTime}
+            placeholder={t.calendar.schedule.timePlaceholder}
+            keyboardType="numbers-and-punctuation"
+            maxLength={5}
+          />
+          {cleanTime === null ? <Text style={styles.error}>{t.calendar.schedule.timeError}</Text> : null}
+          <Field
+            label={t.calendar.schedule.place}
+            value={place}
+            onChangeText={setPlace}
+            placeholder={t.calendar.schedule.placePlaceholder}
+            maxLength={200}
+          />
+          <Text style={styles.hint}>{t.calendar.schedule.placeHint}</Text>
+        </Card>
+
+        <PrimaryButton
+          title={busy ? t.common.saving : t.calendar.schedule.save}
+          icon="checkmark"
+          disabled={busy || cleanTime === null}
+          onPress={save}
+        />
+        <Text style={styles.hint}>
+          {otherJoined
+            ? fmt(t.calendar.schedule.sharedJoined, { name: otherName })
+            : fmt(t.calendar.schedule.sharedNotJoined, { name: otherName })}{' '}
+          {t.calendar.schedule.singleDays}
+        </Text>
+      </ScrollView>
+    </WriteGate>
   );
 }
 

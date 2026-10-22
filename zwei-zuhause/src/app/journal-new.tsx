@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { DateField } from '@/components/DateField';
+import { WriteGate } from '@/components/SubscriptionBanner';
 import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { useT } from '@/i18n';
@@ -24,22 +25,24 @@ export default function JournalNew() {
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <DateField label={t.messages.journalNew.when} value={day} onChange={setDay} maximumDate={today()} />
-        <Field
-          label={t.messages.journalNew.what}
-          value={text}
-          onChangeText={setText}
-          placeholder={t.messages.journalNew.placeholder}
-          multiline
-          maxLength={8000}
-          style={{ minHeight: 180 }}
-        />
-        <PrimaryButton title={busy ? t.common.saving : t.common.save} icon="lock-closed" disabled={busy || !text.trim()} onPress={save} />
-        <Text style={styles.hint}>{t.messages.journalNew.tip}</Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    <WriteGate>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <DateField label={t.messages.journalNew.when} value={day} onChange={setDay} maximumDate={today()} />
+          <Field
+            label={t.messages.journalNew.what}
+            value={text}
+            onChangeText={setText}
+            placeholder={t.messages.journalNew.placeholder}
+            multiline
+            maxLength={8000}
+            style={{ minHeight: 180 }}
+          />
+          <PrimaryButton title={busy ? t.common.saving : t.common.save} icon="lock-closed" disabled={busy || !text.trim()} onPress={save} />
+          <Text style={styles.hint}>{t.messages.journalNew.tip}</Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </WriteGate>
   );
 }
 

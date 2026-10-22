@@ -24,7 +24,7 @@ const SECTIONS: ReportSection[] = [
 
 export default function Report() {
   const store = useFamily();
-  const { active: plus } = usePlus();
+  const { canWrite: plus } = usePlus();
   const t = useT();
   const tr = t.pro.report;
   const [mode, setMode] = useState<'kurz' | 'voll'>('kurz');

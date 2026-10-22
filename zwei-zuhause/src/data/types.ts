@@ -23,6 +23,8 @@ export interface Family {
   handover_place: string;
   read_receipts_a: boolean;
   read_receipts_b: boolean;
+  /** Familien-Abo bis (vom Server gesetzt) */
+  plus_until: string | null;
   created_at: string;
 }
 

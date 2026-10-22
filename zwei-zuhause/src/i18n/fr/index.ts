@@ -52,6 +52,16 @@ export const fr: Dict = {
       is_parent: 'Ce compte appartient à une famille. Pour l’accès professionnel, vous avez besoin d’un compte distinct.',
       network: 'Pas de connexion au serveur. Êtes-vous en ligne ?',
     },
+    subscription: {
+      required: 'L’essai gratuit est terminé. Avec un abonnement, vous pourrez de nouveau tout saisir tous les deux.',
+      readOnlyTitle: 'Lecture seule',
+      readOnlyText:
+        'Les 14 jours d’essai sont terminés. Avec un abonnement pour toute la famille, vous et {name} pourrez de nouveau tout saisir. La lecture et l’export restent possibles.',
+      cta: 'Voir l’abonnement',
+      trialBannerOther: 'Encore {n} jours d’essai gratuit',
+      trialBannerOne: 'Encore 1 jour d’essai gratuit',
+      trialBannerLast: 'Dernier jour de l’essai gratuit',
+    },
     language: {
       title: 'Langue',
       hint: 'Les rapports PDF restent en allemand – ils sont destinés aux administrations et centres de conseil allemands.',
@@ -631,14 +641,13 @@ export const fr: Dict = {
     },
     plus: {
       benefits: {
-        reportsTitle: 'Rapports PDF',
-        reportsText:
-          'Garde, frais, messages et journal – prêts pour l’office de la jeunesse (Jugendamt), un conseiller ou un avocat.',
-        receiptsTitle: 'Photographier les justificatifs',
-        receiptsText: 'Le ticket de caisse joint à la dépense – fini les « Tu ne l’as jamais payé ».',
+        familyTitle: 'Un abonnement pour toute la famille',
+        familyText: 'Un seul parent paie, les deux profitent de tout – sans dispute pour savoir qui paie.',
+        allTitle: 'Tout est inclus',
+        allText: 'Calendrier, frais, messages, décisions, documents, rapports PDF et photos des justificatifs.',
         proofTitle: 'Des preuves solides',
         proofText: 'Avec date, heure et somme de contrôle pour chaque saisie.',
-        supportTitle: 'Soutenez Zwei Zuhause',
+        supportTitle: 'Sans publicité',
         supportText: 'Pas de publicité, pas de vente de données. Serveurs dans l’UE.',
       },
       period: {
@@ -661,15 +670,19 @@ export const fr: Dict = {
       introPrice: 'D’abord {price}',
       nothingFound: 'Aucun résultat',
       heroTitle: 'Zwei Zuhause Plus',
-      heroText:
-        'Le calendrier, les frais et les messages restent gratuits. Plus sert à tout ce que vous devez pouvoir justifier.',
-      activeTitle: 'Plus est actif ✓',
-      activeText: 'Vous pouvez gérer ou résilier votre abonnement dans les réglages de votre téléphone.',
+      heroText: 'Essai gratuit de 14 jours – ensuite, un seul abonnement pour toute votre famille.',
+      activeTitle: 'Votre abonnement familial est actif ✓',
+      activeText: 'Le parent qui a souscrit l’abonnement le gère ou le résilie dans les réglages de son téléphone.',
+      trialLeftOther: 'Essai gratuit : encore {n} jours',
+      trialLeftOne: 'Essai gratuit : encore 1 jour',
+      trialLastDay: 'Essai gratuit : aujourd’hui est le dernier jour',
+      trialOver:
+        'L’essai gratuit est terminé. Sans abonnement, vous pouvez tout lire, mais plus rien saisir de nouveau.',
       unavailable: 'Les achats ne sont possibles que dans l’application iOS ou Android.',
       busy: 'Un instant…',
-      unlock: 'Activer Plus',
+      unlock: 'S’abonner',
       terms:
-        'L’abonnement ne vaut que pour vous, pas pour l’autre parent. Il se renouvelle automatiquement, sauf si vous le résiliez au moins 24 heures avant son échéance dans les réglages de l’App Store ou de Google Play.',
+        'L’abonnement vaut pour toute votre famille – pour vous et pour l’autre parent. Il se renouvelle automatiquement, sauf si vous le résiliez au moins 24 heures avant son échéance dans les réglages de l’App Store ou de Google Play. Sans abonnement, tout reste consultable et exportable après la période d’essai.',
       noPurchase: 'Aucun achat actif n’est associé à votre compte.',
       restore: 'Restaurer les achats',
       termsLink: 'Conditions d’utilisation',

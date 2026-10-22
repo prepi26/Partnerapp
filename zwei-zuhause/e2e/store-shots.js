@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 const URL = 'http://localhost:8081';
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined });
-  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 3 });
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 3, locale: 'de-DE' });
   const p = await ctx.newPage();
   await p.goto(URL);
   await p.getByText('Überspringen', { exact: true }).click();
