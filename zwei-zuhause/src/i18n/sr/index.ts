@@ -51,6 +51,7 @@ export const sr: Dict = {
         'Ovaj nalog je pristup za stručno lice. Za sopstvenu porodicu potreban vam je poseban nalog.',
       is_parent: 'Ovaj nalog pripada porodici. Za pristup stručnog lica potreban vam je poseban nalog.',
       network: 'Nema veze sa serverom. Da li ste na mreži?',
+      already_redeemed: 'Vaša porodica je već iskoristila vaučer kod.',
     },
     subscription: {
       required: 'Besplatna proba je završena. Uz pretplatu oboje ponovo možete sve da unosite.',
@@ -61,6 +62,7 @@ export const sr: Dict = {
       trialBannerOther: 'Besplatna proba – preostalo dana: {n}',
       trialBannerOne: 'Još 1 dan besplatne probe',
       trialBannerLast: 'Poslednji dan besplatne probe',
+      promoBanner: 'Vaučer – preostalo besplatnih dana: {n}',
       soloBanner:
         'Besplatno samostalno – preostalo dana: {n}. Pozovite roditelja {name}, pa počinje vaša proba od 14 dana.',
     },
@@ -273,6 +275,9 @@ export const sr: Dict = {
     login: {
       subtitle: 'Viđanje, troškovi i dogovori oko deteta – objektivno, proverljivo, na jednom mestu.',
       newHere: 'Novi korisnik',
+      proSubtitle:
+        'Pristup za stručna lica – besplatan i samo za čitanje. Napravite nalog sa službenom e-adresom, zatim unesite kod porodice.',
+      proIdle: 'Iz bezbednosnih razloga pregledač vas odjavljuje posle 30 minuta neaktivnosti.',
       haveAccount: 'Imam nalog',
       forgotTitle: 'Zaboravljena lozinka',
       email: 'Vaša e-adresa',
@@ -436,6 +441,8 @@ export const sr: Dict = {
       packingText: 'Šta se nosi na sledeću primopredaju',
       holidays: 'Školski raspusti',
       holidaysText: 'Raspusti u kalendaru, dogovor o podeli',
+      plus: 'Pretplata i vaučer',
+      plusText: 'Proba, porodična pretplata, vaučer kod',
       calendarSync: 'U kalendaru telefona',
       calendarSyncText: 'Plan viđanja u iPhone, Google ili Outlook kalendaru',
     },
@@ -726,6 +733,12 @@ export const sr: Dict = {
         'Pretplata važi za celu vašu porodicu – za vas i za drugog roditelja. Automatski se produžava dok je ne otkažete najkasnije 24 sata pre isteka u podešavanjima App Store-a odnosno Google Play-a. Bez pretplate, posle probnog perioda sve ostaje dostupno za čitanje i izvoz.',
       noPurchase: 'Za vaš nalog ne postoji aktivna kupovina.',
       restore: 'Vrati kupovine',
+      promoTitle: 'Vaučer kod',
+      promoHint: 'Dobili ste ga od savetovališta ili službe za mlade? Iskoristite ga ovde.',
+      promoPlaceholder: 'npr. JA-AACHEN',
+      promoRedeem: 'Iskoristi',
+      promoDoneTitle: 'Vaučer iskorišćen ✓',
+      promoActive: 'Vaučer: besplatno do {date}',
       termsLink: 'Uslovi korišćenja',
       privacyLink: 'Zaštita podataka',
     },

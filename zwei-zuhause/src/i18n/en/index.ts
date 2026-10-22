@@ -51,6 +51,7 @@ export const en: Dict = {
         'This account is a professional account. For your own family you need a separate account.',
       is_parent: 'This account belongs to a family. For professional access you need a separate account.',
       network: 'No connection to the server. Are you online?',
+      already_redeemed: 'Your family has already redeemed a voucher code.',
     },
     subscription: {
       required: 'The free trial has ended. With a subscription you can both add everything again.',
@@ -61,6 +62,7 @@ export const en: Dict = {
       trialBannerOther: '{n} days of free trial left',
       trialBannerOne: '1 day of free trial left',
       trialBannerLast: 'Last day of the free trial',
+      promoBanner: 'Voucher: {n} days free left',
       soloBanner: '{n} days left free on your own – invite {name} to start your 14-day trial together.',
     },
     language: {
@@ -255,6 +257,9 @@ export const en: Dict = {
     login: {
       subtitle: 'Contact, costs and arrangements for your child – factual, traceable, in one place.',
       newHere: 'New here',
+      proSubtitle:
+        'Access for professionals – free of charge and read-only. Create an account with your work email, then enter the family’s code.',
+      proIdle: 'For security reasons, the browser signs you out after 30 minutes of inactivity.',
       haveAccount: 'I have an account',
       forgotTitle: 'Forgot password',
       email: 'Your email',
@@ -418,6 +423,8 @@ export const en: Dict = {
       packingText: 'What goes along at the next handover',
       holidays: 'School holidays',
       holidaysText: 'Holidays in the calendar, agree on the split',
+      plus: 'Subscription & voucher',
+      plusText: 'Trial, family subscription, voucher code',
       calendarSync: 'In your phone calendar',
       calendarSyncText: 'Contact schedule in iPhone, Google or Outlook calendar',
     },
@@ -705,6 +712,12 @@ export const en: Dict = {
         'The subscription applies to your whole family – to you and the other parent. It renews automatically until you cancel it at least 24 hours before it expires in the App Store or Google Play settings. Without a subscription, everything remains readable and exportable after the trial.',
       noPurchase: 'There is no active purchase for your account.',
       restore: 'Restore purchases',
+      promoTitle: 'Voucher code',
+      promoHint: 'Got one from a counselling service or the youth welfare office? Redeem it here.',
+      promoPlaceholder: 'e.g. JA-AACHEN',
+      promoRedeem: 'Redeem',
+      promoDoneTitle: 'Voucher redeemed ✓',
+      promoActive: 'Voucher: free until {date}',
       termsLink: 'Terms of use',
       privacyLink: 'Privacy',
     },

@@ -51,6 +51,7 @@ export const sq: Dict = {
         'Kjo llogari është qasje profesionale. Për familjen tënde të duhet një llogari më vete.',
       is_parent: 'Kjo llogari i përket një familjeje. Për qasjen profesionale të duhet një llogari më vete.',
       network: 'Nuk ka lidhje me serverin. A je në internet?',
+      already_redeemed: 'Familja juaj ka përdorur tashmë një kod kuponi.',
     },
     subscription: {
       required: 'Prova falas mbaroi. Me një abonim të dy mund të shtoni përsëri gjithçka.',
@@ -61,6 +62,7 @@ export const sq: Dict = {
       trialBannerOther: 'Edhe {n} ditë provë falas',
       trialBannerOne: 'Edhe 1 ditë provë falas',
       trialBannerLast: 'Dita e fundit e provës falas',
+      promoBanner: 'Kupon: edhe {n} ditë falas',
       soloBanner: 'Edhe {n} ditë falas vetëm – fto {name}, pastaj fillojnë 14 ditët tuaja të provës.',
     },
     language: {
@@ -258,6 +260,9 @@ export const sq: Dict = {
     login: {
       subtitle: 'Kujdesi, shpenzimet dhe marrëveshjet për fëmijën – objektivisht, qartë, në një vend.',
       newHere: 'I/e ri/e këtu',
+      proSubtitle:
+        'Qasje për profesionistët – falas dhe vetëm për lexim. Krijo një llogari me email-in e punës, pastaj fut kodin e familjes.',
+      proIdle: 'Për arsye sigurie, shfletuesi të nxjerr nga llogaria pas 30 minutash pa aktivitet.',
       haveAccount: 'Kam llogari',
       forgotTitle: 'Fjalëkalimi i harruar',
       email: 'Email-i yt',
@@ -421,6 +426,8 @@ export const sq: Dict = {
       packingText: 'Çfarë merret në dorëzimin e ardhshëm',
       holidays: 'Pushimet shkollore',
       holidaysText: 'Pushimet në kalendar, bini dakord për ndarjen',
+      plus: 'Abonimi & kuponi',
+      plusText: 'Prova, abonimi familjar, kodi i kuponit',
       calendarSync: 'Në kalendarin e telefonit',
       calendarSyncText: 'Plani i kujdesit në kalendarin e iPhone, Google ose Outlook',
     },
@@ -707,6 +714,12 @@ export const sq: Dict = {
         'Abonimi vlen për gjithë familjen tuaj – për ty dhe për prindin tjetër. Ai rinovohet automatikisht derisa ta anulosh të paktën 24 orë para skadimit te cilësimet e App Store ose Google Play. Pa abonim, pas periudhës së provës gjithçka mbetet e lexueshme dhe e eksportueshme.',
       noPurchase: 'Për llogarinë tënde nuk ka asnjë blerje aktive.',
       restore: 'Rikthe blerjet',
+      promoTitle: 'Kodi i kuponit',
+      promoHint: 'E more nga një qendër këshillimi ose nga Jugendamt? Përdore këtu.',
+      promoPlaceholder: 'p.sh. JA-AACHEN',
+      promoRedeem: 'Përdor',
+      promoDoneTitle: 'Kuponi u përdor ✓',
+      promoActive: 'Kupon: falas deri më {date}',
       termsLink: 'Kushtet e përdorimit',
       privacyLink: 'Privatësia',
     },

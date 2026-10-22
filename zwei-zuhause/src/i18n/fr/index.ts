@@ -51,6 +51,7 @@ export const fr: Dict = {
         'Ce compte est un accès professionnel. Pour votre propre famille, vous avez besoin d’un compte distinct.',
       is_parent: 'Ce compte appartient à une famille. Pour l’accès professionnel, vous avez besoin d’un compte distinct.',
       network: 'Pas de connexion au serveur. Êtes-vous en ligne ?',
+      already_redeemed: 'Votre famille a déjà utilisé un code promo.',
     },
     subscription: {
       required: 'L’essai gratuit est terminé. Avec un abonnement, vous pourrez de nouveau tout saisir tous les deux.',
@@ -61,6 +62,7 @@ export const fr: Dict = {
       trialBannerOther: 'Encore {n} jours d’essai gratuit',
       trialBannerOne: 'Encore 1 jour d’essai gratuit',
       trialBannerLast: 'Dernier jour de l’essai gratuit',
+      promoBanner: 'Code promo : encore {n} jours gratuits',
       soloBanner: 'Encore {n} jours gratuits en solo – invitez {name} pour lancer vos 14 jours d’essai.',
     },
     language: {
@@ -304,6 +306,9 @@ export const fr: Dict = {
     login: {
       subtitle: 'Garde, frais et accords concernant l’enfant – objectifs, traçables, au même endroit.',
       newHere: 'Nouveau ici',
+      proSubtitle:
+        'Accès professionnel – gratuit et en lecture seule. Créez un compte avec votre e-mail professionnel, puis saisissez le code de la famille.',
+      proIdle: 'Pour des raisons de sécurité, le navigateur vous déconnecte après 30 minutes d’inactivité.',
       haveAccount: 'J’ai un compte',
       forgotTitle: 'Mot de passe oublié',
       email: 'Votre e-mail',
@@ -469,6 +474,8 @@ export const fr: Dict = {
       packingText: 'Ce qu’il faut emporter à la prochaine remise',
       holidays: 'Vacances scolaires',
       holidaysText: 'Vacances dans le calendrier, s’accorder sur la répartition',
+      plus: 'Abonnement & code promo',
+      plusText: 'Essai, abonnement familial, code promo',
       calendarSync: 'Dans le calendrier du téléphone',
       calendarSyncText: 'Planning de garde dans le calendrier iPhone, Google ou Outlook',
     },
@@ -765,6 +772,12 @@ export const fr: Dict = {
         'L’abonnement vaut pour toute votre famille – pour vous et pour l’autre parent. Il se renouvelle automatiquement, sauf si vous le résiliez au moins 24 heures avant son échéance dans les réglages de l’App Store ou de Google Play. Sans abonnement, tout reste consultable et exportable après la période d’essai.',
       noPurchase: 'Aucun achat actif n’est associé à votre compte.',
       restore: 'Restaurer les achats',
+      promoTitle: 'Code promo',
+      promoHint: 'Reçu d’un centre de conseil ou de l’office de la jeunesse ? Utilisez-le ici.',
+      promoPlaceholder: 'p. ex. JA-AACHEN',
+      promoRedeem: 'Utiliser',
+      promoDoneTitle: 'Code promo utilisé ✓',
+      promoActive: 'Code promo : gratuit jusqu’au {date}',
       termsLink: 'Conditions d’utilisation',
       privacyLink: 'Confidentialité',
     },

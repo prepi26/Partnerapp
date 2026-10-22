@@ -37,6 +37,7 @@ export const tr: Dict = {
       is_professional: 'Bu hesap bir uzman erişimidir. Kendi aileniz için ayrı bir hesaba ihtiyacınız var.',
       is_parent: 'Bu hesap bir aileye ait. Uzman erişimi için ayrı bir hesaba ihtiyacınız var.',
       network: 'Sunucuya bağlanılamıyor. İnternete bağlı mısınız?',
+      already_redeemed: 'Aileniz zaten bir kupon kodu kullandı.',
     },
     subscription: {
       required: 'Ücretsiz deneme süresi sona erdi. Abonelikle ikiniz de yeniden her şeyi ekleyebilirsiniz.',
@@ -47,6 +48,7 @@ export const tr: Dict = {
       trialBannerOther: 'Ücretsiz denemede {n} gün kaldı',
       trialBannerOne: 'Ücretsiz denemede 1 gün kaldı',
       trialBannerLast: 'Ücretsiz denemenin son günü',
+      promoBanner: 'Kupon: {n} gün daha ücretsiz',
       soloBanner: 'Tek başınıza {n} gün daha ücretsiz – {name} katılınca 14 günlük denemeniz başlar.',
     },
     language: {
@@ -241,6 +243,9 @@ export const tr: Dict = {
     login: {
       subtitle: 'Çocuk için görüşme düzeni, masraflar ve anlaşmalar – nesnel, izlenebilir, tek bir yerde.',
       newHere: 'Yeniyim',
+      proSubtitle:
+        'Uzmanlar için erişim – ücretsiz ve yalnızca okuma için. İş e-postanızla bir hesap oluşturun, ardından ailenin kodunu girin.',
+      proIdle: 'Güvenlik nedeniyle tarayıcı, 30 dakika işlem yapılmadığında oturumunuzu kapatır.',
       haveAccount: 'Hesabım var',
       forgotTitle: 'Şifremi unuttum',
       email: 'E-posta adresiniz',
@@ -404,6 +409,8 @@ export const tr: Dict = {
       packingText: 'Bir sonraki teslimde ne gidecek',
       holidays: 'Okul tatilleri',
       holidaysText: 'Takvimde tatiller, paylaşımı konuşun',
+      plus: 'Abonelik ve kupon',
+      plusText: 'Deneme süresi, aile aboneliği, kupon kodu',
       calendarSync: 'Telefon takviminde',
       calendarSyncText: 'iPhone, Google veya Outlook takviminde bakım planı',
     },
@@ -691,6 +698,12 @@ export const tr: Dict = {
         'Abonelik tüm aileniz için geçerlidir – sizin ve diğer ebeveyn için. Süre bitiminden en az 24 saat önce App Store veya Google Play ayarlarından iptal etmediğiniz sürece otomatik olarak yenilenir. Abonelik olmadan deneme süresinden sonra her şey okunabilir ve dışa aktarılabilir kalır.',
       noPurchase: 'Hesabınıza ait etkin bir satın alma yok.',
       restore: 'Satın alımları geri yükle',
+      promoTitle: 'Kupon kodu',
+      promoHint: 'Bir danışma merkezinden veya Gençlik Dairesi’nden mi aldınız? Buradan kullanın.',
+      promoPlaceholder: 'örn. JA-AACHEN',
+      promoRedeem: 'Kullan',
+      promoDoneTitle: 'Kupon kullanıldı ✓',
+      promoActive: 'Kupon: {date} tarihine kadar ücretsiz',
       termsLink: 'Kullanım koşulları',
       privacyLink: 'Gizlilik',
     },

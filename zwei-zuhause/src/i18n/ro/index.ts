@@ -51,6 +51,7 @@ export const ro: Dict = {
         'Acest cont este un acces pentru specialiști. Pentru propria familie ai nevoie de un cont separat.',
       is_parent: 'Acest cont aparține unei familii. Pentru accesul de specialist ai nevoie de un cont separat.',
       network: 'Nu există conexiune la server. Ești online?',
+      already_redeemed: 'Familia voastră a folosit deja un cod de voucher.',
     },
     subscription: {
       required: 'Perioada de testare gratuită s-a încheiat. Cu un abonament puteți din nou adăuga totul amândoi.',
@@ -61,6 +62,7 @@ export const ro: Dict = {
       trialBannerOther: 'Testare gratuită – zile rămase: {n}',
       trialBannerOne: 'Încă 1 zi de testare gratuită',
       trialBannerLast: 'Ultima zi de testare gratuită',
+      promoBanner: 'Voucher – zile gratuite rămase: {n}',
       soloBanner: 'Gratuit singur(ă) – zile rămase: {n}. Când se alătură {name}, încep cele 14 zile de testare.',
     },
     language: {
@@ -258,6 +260,9 @@ export const ro: Dict = {
     login: {
       subtitle: 'Programul, costurile și înțelegerile pentru copil – obiectiv, transparent, într-un singur loc.',
       newHere: 'Sunt nou aici',
+      proSubtitle:
+        'Acces pentru specialiști – gratuit și doar pentru citire. Creează un cont cu e-mailul de serviciu, apoi introdu codul familiei.',
+      proIdle: 'Din motive de securitate, browserul te deconectează după 30 de minute de inactivitate.',
       haveAccount: 'Am un cont',
       forgotTitle: 'Parolă uitată',
       email: 'E-mailul tău',
@@ -421,6 +426,8 @@ export const ro: Dict = {
       packingText: 'Ce se ia la următoarea predare',
       holidays: 'Vacanțe școlare',
       holidaysText: 'Vacanțele în calendar, stabiliți împărțirea',
+      plus: 'Abonament și voucher',
+      plusText: 'Testare, abonament de familie, cod de voucher',
       calendarSync: 'În calendarul telefonului',
       calendarSyncText: 'Planul de îngrijire în calendarul iPhone, Google sau Outlook',
     },
@@ -710,6 +717,12 @@ export const ro: Dict = {
         'Abonamentul este valabil pentru toată familia voastră – pentru tine și pentru celălalt părinte. Se prelungește automat până când îl anulezi cu cel puțin 24 de ore înainte de expirare în setările App Store, respectiv Google Play. Fără abonament, după perioada de testare totul rămâne disponibil pentru citire și export.',
       noPurchase: 'Nu există nicio achiziție activă pentru contul tău.',
       restore: 'Restaurează achizițiile',
+      promoTitle: 'Cod de voucher',
+      promoHint: 'L-ai primit de la un centru de consiliere sau de la Jugendamt? Folosește-l aici.',
+      promoPlaceholder: 'de ex. JA-AACHEN',
+      promoRedeem: 'Folosește',
+      promoDoneTitle: 'Voucher folosit ✓',
+      promoActive: 'Voucher: gratuit până la {date}',
       termsLink: 'Termeni de utilizare',
       privacyLink: 'Protecția datelor',
     },

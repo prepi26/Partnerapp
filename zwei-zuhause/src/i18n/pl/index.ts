@@ -50,6 +50,7 @@ export const pl: Dict = {
       is_professional: 'To konto jest dostępem dla specjalisty. Dla własnej rodziny potrzebujesz osobnego konta.',
       is_parent: 'To konto należy do rodziny. Do dostępu dla specjalisty potrzebujesz osobnego konta.',
       network: 'Brak połączenia z serwerem. Czy masz internet?',
+      already_redeemed: 'Wasza rodzina zrealizowała już kod promocyjny.',
     },
     subscription: {
       required: 'Bezpłatny okres próbny się skończył. Z subskrypcją oboje znów możecie wszystko dodawać.',
@@ -60,6 +61,7 @@ export const pl: Dict = {
       trialBannerOther: 'Bezpłatny okres próbny – pozostałe dni: {n}',
       trialBannerOne: 'Został 1 dzień bezpłatnego okresu próbnego',
       trialBannerLast: 'Ostatni dzień bezpłatnego okresu próbnego',
+      promoBanner: 'Kod promocyjny – pozostałe darmowe dni: {n}',
       soloBanner:
         'Za darmo w pojedynkę – pozostałe dni: {n}. Zaproś: {name}, a wtedy ruszy wasz 14-dniowy okres próbny.',
     },
@@ -256,6 +258,9 @@ export const pl: Dict = {
     login: {
       subtitle: 'Kontakty z dzieckiem, koszty i ustalenia – rzeczowo, przejrzyście, w jednym miejscu.',
       newHere: 'Jestem tu nowy(-a)',
+      proSubtitle:
+        'Dostęp dla specjalistów – bezpłatny i tylko do odczytu. Załóż konto ze służbowym e-mailem, potem wpisz kod rodziny.',
+      proIdle: 'Ze względów bezpieczeństwa przeglądarka wylogowuje cię po 30 minutach bezczynności.',
       haveAccount: 'Mam konto',
       forgotTitle: 'Nie pamiętam hasła',
       email: 'Twój e-mail',
@@ -419,6 +424,8 @@ export const pl: Dict = {
       packingText: 'Co zabrać na następne przekazanie',
       holidays: 'Ferie szkolne',
       holidaysText: 'Ferie w kalendarzu, ustalcie podział',
+      plus: 'Subskrypcja i kod',
+      plusText: 'Okres próbny, subskrypcja rodzinna, kod promocyjny',
       calendarSync: 'W kalendarzu telefonu',
       calendarSyncText: 'Plan opieki w kalendarzu iPhone, Google lub Outlook',
     },
@@ -707,6 +714,12 @@ export const pl: Dict = {
         'Subskrypcja obejmuje całą waszą rodzinę – ciebie i drugiego rodzica. Odnawia się automatycznie, dopóki nie anulujesz jej najpóźniej 24 godziny przed upływem okresu w ustawieniach App Store lub Google Play. Bez subskrypcji po okresie próbnym wszystko pozostaje dostępne do odczytu i eksportu.',
       noPurchase: 'Do twojego konta nie jest przypisany żaden aktywny zakup.',
       restore: 'Przywróć zakupy',
+      promoTitle: 'Kod promocyjny',
+      promoHint: 'Kod z poradni lub z urzędu (Jugendamt)? Zrealizuj go tutaj.',
+      promoPlaceholder: 'np. JA-AACHEN',
+      promoRedeem: 'Zrealizuj',
+      promoDoneTitle: 'Kod zrealizowany ✓',
+      promoActive: 'Kod promocyjny: za darmo do {date}',
       termsLink: 'Warunki korzystania',
       privacyLink: 'Prywatność',
     },
