@@ -1,10 +1,11 @@
 import type { Dict, Lang } from './index';
 import { de } from './de';
+import { en } from './en';
 
 /** Alle Sprachen. Fehlt eine Übersetzung noch, gilt Deutsch. */
 export const DICTS: Record<Lang, Dict> = {
   de,
-  en: de,
+  en,
   tr: de,
   ar: de,
   ru: de,
