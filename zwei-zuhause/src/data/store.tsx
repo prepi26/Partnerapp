@@ -196,6 +196,10 @@ interface Store extends Data {
   removeExpense(expense: Expense): Promise<void>;
   sendMessage(text: string): Promise<void>;
   markRead(): Promise<void>;
+  /** Lesebestätigungen für mich ein/aus – wechselseitig. */
+  setReadReceipts(on: boolean): Promise<void>;
+  /** Lesebestätigungen sind bei beiden an – nur dann zeigt die App „gelesen“. */
+  readReceiptsVisible: boolean;
   addJournal(entry: { day: ISODate; text: string }): Promise<void>;
   saveChildInfo(info: { id?: string; category: string; label: string; value: string }): Promise<void>;
   removeChildInfo(id: string): Promise<void>;
@@ -385,7 +389,14 @@ export function StoreProvider({ userId, children }: { userId: string; children: 
         await deleteReceipt(expense.receipt_path);
       },
       sendMessage: async (text) => after('messages', await supabase.from('messages').insert({ text })),
+      setReadReceipts: async (on) => {
+        must(await supabase.rpc('set_read_receipts', { p_on: on }));
+        setFamily(await fetchFamily(userId));
+      },
+      readReceiptsVisible: !!family?.read_receipts_a && !!family?.read_receipts_b,
       markRead: async () => {
+        const mine = me === 'a' ? family?.read_receipts_a : family?.read_receipts_b;
+        if (!mine) return;
         const unread = data.messages.some((m) => m.sender_key !== me && !m.read_at);
         if (unread) await after('messages', await supabase.rpc('mark_messages_read'));
       },

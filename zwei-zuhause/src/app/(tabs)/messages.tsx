@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import {
   Alert,
@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { EmptyState, GradientHeader, showError, tap } from '@/components/ui';
+import { EmptyState, GradientHeader, HeaderIcon, showError, tap } from '@/components/ui';
 import { errorMessage, useFamily } from '@/data/store';
 import { Message } from '@/data/types';
 import { formatTimestamp } from '@/lib/dates';
@@ -34,7 +34,7 @@ function confirmTone(hints: string[], onSend: () => void) {
 }
 
 export default function Messages() {
-  const { messages, me, otherName, otherJoined, sendMessage, markRead } = useFamily();
+  const { messages, me, otherName, otherJoined, sendMessage, markRead, readReceiptsVisible } = useFamily();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const list = useRef<FlatList<Message>>(null);
@@ -67,7 +67,11 @@ export default function Messages() {
 
   return (
     <View style={{ flex: 1 }}>
-      <GradientHeader title="Nachrichten" subtitle={`mit ${otherName} · nicht löschbar`} />
+      <GradientHeader
+        title="Nachrichten"
+        subtitle={`mit ${otherName} · nicht löschbar`}
+        right={<HeaderIcon icon="help-buoy-outline" label="Hilfe & Beratung" onPress={() => router.push('/help')} />}
+      />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -90,7 +94,9 @@ export default function Messages() {
               }
             />
           }
-          renderItem={({ item }) => <Bubble message={item} mine={item.sender_key === me} />}
+          renderItem={({ item }) => (
+            <Bubble message={item} mine={item.sender_key === me} showRead={readReceiptsVisible} />
+          )}
         />
         <View style={styles.inputBar}>
           <TextInput
@@ -122,7 +128,7 @@ export default function Messages() {
   );
 }
 
-function Bubble({ message: m, mine }: { message: Message; mine: boolean }) {
+function Bubble({ message: m, mine, showRead }: { message: Message; mine: boolean; showRead: boolean }) {
   return (
     <View style={[styles.bubbleWrap, mine ? styles.right : styles.left]}>
       <View style={[styles.bubble, mine ? styles.mine : styles.theirs]}>
@@ -130,7 +136,8 @@ function Bubble({ message: m, mine }: { message: Message; mine: boolean }) {
       </View>
       <Text style={styles.meta}>
         {formatTimestamp(m.created_at)}
-        {mine ? (m.read_at ? ` · gelesen ${formatTimestamp(m.read_at)}` : ' · zugestellt') : ''} · #{m.hash.slice(0, 8)}
+        {mine ? (showRead && m.read_at ? ` · gelesen ${formatTimestamp(m.read_at)}` : ' · zugestellt') : ''} · #
+        {m.hash.slice(0, 8)}
       </Text>
     </View>
   );

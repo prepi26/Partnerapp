@@ -118,6 +118,11 @@ export default function Home() {
           />
         </View>
 
+        <Pressable accessibilityRole="button" onPress={() => router.push('/help')} style={styles.helpRow}>
+          <Ionicons name="help-buoy-outline" size={18} color={colors.primary} />
+          <Text style={styles.helpText}>Hilfe & Beratung</Text>
+        </Pressable>
+
         <Text style={styles.footer}>
           Alles hier ist für beide gleich sichtbar – außer deinem Tagebuch. Nachrichten lassen sich nicht löschen oder
           ändern.
@@ -189,5 +194,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   bannerText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  helpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 4 },
+  helpText: { fontSize: 15, fontWeight: '700', color: colors.primary },
   footer: { fontSize: 13, color: colors.textMuted, textAlign: 'center', lineHeight: 19 },
 });

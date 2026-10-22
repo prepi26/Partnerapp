@@ -27,7 +27,7 @@ const SLIDES = [
   {
     emoji: '🤝',
     title: 'Hilfe, wenn es schwer wird',
-    text: 'Jugendamt und Beratung können mit eurer Zustimmung mitlesen. Notfallnummern und Beratungsstellen findest du unter Mehr → Hilfe.',
+    text: 'Jugendamt und Beratung können mit eurer Zustimmung mitlesen. Hast du Angst vor dem anderen Elternteil, hol dir zuerst Hilfe: Hilfetelefon 116 016, rund um die Uhr. Mehr unter Mehr → Hilfe.',
   },
 ];
 

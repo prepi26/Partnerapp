@@ -57,6 +57,14 @@ export default function Help() {
         </Pressable>
       ))}
 
+      <Text style={styles.section}>Wenn du Angst vor dem anderen Elternteil hast</Text>
+      <Card style={{ gap: spacing.sm }}>
+        <Tip text="Deine Sicherheit geht vor. Eine gemeinsame App ist dann nicht der richtige Weg – hol dir zuerst Unterstützung (Hilfetelefon oben, rund um die Uhr)." />
+        <Tip text="Das Jugendamt kann begleiteten Umgang oder Übergaben über Dritte organisieren. Das Familiengericht kann nach dem Gewaltschutzgesetz Kontakt- und Näherungsverbote aussprechen." />
+        <Tip text="Zwei Zuhause speichert keinen Standort. Lesebestätigungen kannst du in den Einstellungen ausschalten, die App-Sperre schützt Nachrichten und Tagebuch." />
+        <Tip text="Nachrichten lassen sich nicht löschen – auch nicht vom anderen Elternteil. Bedrohungen bleiben so dokumentiert." />
+      </Card>
+
       <Text style={styles.section}>Beratung & Begleitung</Text>
       {PLACES.map((p) => (
         <Card key={p.title} style={styles.place}>

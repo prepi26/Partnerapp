@@ -37,6 +37,10 @@ alter table public.families add constraint families_handover_time_check
 alter table public.families drop constraint if exists families_handover_place_check;
 alter table public.families add constraint families_handover_place_check check (length(handover_place) <= 200);
 
+-- Lesebestätigungen je Elternteil (wechselseitig: wer sie ausschaltet, sieht sie beim anderen auch nicht).
+alter table public.families add column if not exists read_receipts_a boolean not null default true;
+alter table public.families add column if not exists read_receipts_b boolean not null default true;
+
 create unique index if not exists families_parent_a_key on public.families (parent_a);
 create unique index if not exists families_parent_b_key on public.families (parent_b);
 
@@ -198,7 +202,8 @@ create policy families_update on public.families
 -- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
 revoke select on public.families from authenticated;
 grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
-              default_share_a, handover_time, handover_place, created_at) on public.families to authenticated;
+              default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, created_at)
+  on public.families to authenticated;
 
 create or replace function public.my_invite_code()
 returns text
@@ -208,6 +213,19 @@ security definer
 set search_path = public
 as $$
   select invite_code from public.families where parent_a = auth.uid() or parent_b = auth.uid() limit 1
+$$;
+
+-- Jeder schaltet nur seine eigenen Lesebestätigungen.
+create or replace function public.set_read_receipts(p_on boolean)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.families
+     set read_receipts_a = case when parent_a = auth.uid() then p_on else read_receipts_a end,
+         read_receipts_b = case when parent_b = auth.uid() then p_on else read_receipts_b end
+   where parent_a = auth.uid() or parent_b = auth.uid()
 $$;
 
 -- Wer zur Familie gehört und der Code sind tabu; Namen, Kinder und Umgangsplan dürfen beide ändern.
@@ -382,7 +400,7 @@ revoke insert, update, delete on public.messages from authenticated;
 -- Nur der Text kommt vom Gerät; Absender, Zeit, Reihenfolge und Prüfsumme setzt der Server.
 grant insert (text) on public.messages to authenticated;
 
--- Gelesen-Markierung setzt nur der Empfänger, und nur einmal.
+-- Gelesen-Markierung setzt nur der Empfänger, nur einmal – und nur, wenn er Lesebestätigungen eingeschaltet hat.
 create or replace function public.mark_messages_read()
 returns void
 language sql
@@ -394,6 +412,11 @@ as $$
    where family_id = public.my_family_id()
      and sender_key <> public.my_parent_key()
      and read_at is null
+     and exists (
+       select 1 from public.families f
+        where f.id = public.my_family_id()
+          and case when f.parent_a = auth.uid() then f.read_receipts_a else f.read_receipts_b end
+     )
 $$;
 
 -- ───────────── Tagebuch (nur für mich) ─────────────
@@ -987,7 +1010,7 @@ begin
     'answer_expense(uuid, boolean)', 'mark_messages_read()', 'delete_my_account()',
     'answer_decision(uuid, boolean, text)', 'reply_handover(uuid, boolean, text)', 'accept_agreement(uuid)',
     'create_professional_invite(text, int)', 'approve_professional(uuid)', 'revoke_professional(uuid)',
-    'join_as_professional(text)', 'my_invite_code()'
+    'join_as_professional(text)', 'my_invite_code()', 'set_read_receipts(boolean)'
   ] loop
     execute format('revoke execute on function public.%s from public, anon', f);
     execute format('grant execute on function public.%s to authenticated', f);

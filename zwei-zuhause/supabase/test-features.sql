@@ -21,3 +21,12 @@ select as_user('00000000-0000-0000-0000-00000000000a');
 select answer_decision((select id from decisions), true, 'ok');
 select reply_handover((select id from handovers), false, 'war pünktlich');
 select status, answer_note from decisions; select status, reply, reply_note from handovers;
+
+-- Lesebestätigungen ausschalten: B liest, ohne dass es markiert wird
+select as_user('00000000-0000-0000-0000-00000000000a');
+insert into messages (text) values ('Noch eine');
+select as_user('00000000-0000-0000-0000-00000000000b');
+select set_read_receipts(false);
+select mark_messages_read();
+select count(*) filter (where read_at is null and text = 'Noch eine') as stays_unread from messages;
+select read_receipts_a, read_receipts_b from families;

@@ -21,6 +21,8 @@ export interface Family {
   /** „HH:MM“ oder leer. */
   handover_time: string;
   handover_place: string;
+  read_receipts_a: boolean;
+  read_receipts_b: boolean;
   created_at: string;
 }
 

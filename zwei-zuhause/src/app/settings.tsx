@@ -15,8 +15,19 @@ import { colors, spacing } from '@/theme';
 const SHARES = [50, 60, 70, 80, 100, 40, 30, 20, 0];
 
 export default function Settings() {
-  const { family, me, otherJoined, otherName, nameOf, schedule_changes, updateFamily, signOut, deleteAccount } =
-    useFamily();
+  const {
+    family,
+    me,
+    otherJoined,
+    otherName,
+    nameOf,
+    schedule_changes,
+    updateFamily,
+    signOut,
+    deleteAccount,
+    setReadReceipts,
+  } = useFamily();
+  const myReceipts = me === 'a' ? family.read_receipts_a : family.read_receipts_b;
   const [lockOn, setLockOn] = useState(false);
   const [reminderOn, setReminderOn] = useState(true);
 
@@ -113,6 +124,15 @@ export default function Settings() {
         </Card>
 
         <SecondaryButton title="Umgangsplan ändern" icon="calendar-outline" onPress={() => router.push('/schedule')} />
+
+        <Card style={styles.card}>
+          <ToggleRow
+            title="Lesebestätigungen"
+            text={`Zeigt, wann eine Nachricht gelesen wurde. Schaltest du sie aus, sieht ${otherName} nicht, ob du gelesen hast – und du siehst es bei ${otherName} auch nicht.`}
+            value={myReceipts}
+            onChange={(on) => attempt(() => setReadReceipts(on))}
+          />
+        </Card>
 
         {Platform.OS !== 'web' ? (
           <Card style={styles.card}>
