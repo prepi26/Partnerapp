@@ -371,38 +371,6 @@ create policy photos_couple on storage.objects for all
   using (bucket_id = 'photos' and (storage.foldername(name))[1] = public.my_couple_id()::text)
   with check (bucket_id = 'photos' and (storage.foldername(name))[1] = public.my_couple_id()::text);
 
--- ───────────── Zahlen für die Paar-Erfolge ─────────────
--- Alles, was die App nicht selbst zählen kann (sie lädt z. B. nur die letzten Zettel und Zeichnungen).
-create or replace function public.couple_stats()
-returns jsonb
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  with c as (select public.my_couple_id() as id),
-  t as (
-    select (created_at at time zone 'Europe/Berlin') as at from public.thoughts where couple_id = (select id from c)
-  ),
-  heart_days as (select distinct (date_trunc('day', at))::date as d from t),
-  islands as (select d - (row_number() over (order by d))::int as grp from heart_days),
-  streak as (select coalesce(max(n), 0) as s from (select count(*) as n from islands group by grp) x),
-  mood_days as (
-    select day from public.moods where couple_id = (select id from c) group by day having count(distinct user_id) = 2
-  )
-  select jsonb_build_object(
-    'notes', (select count(*) from public.notes where couple_id = (select id from c)),
-    'drawings', (select count(*) from public.drawings where couple_id = (select id from c)),
-    'heart_streak', (select s from streak),
-    'night_hearts', (select count(*) from t where extract(hour from at) < 4),
-    'early_hearts', (select count(*) from t where extract(hour from at) between 5 and 6),
-    'mood_days', (select count(*) from mood_days)
-  )
-$$;
-
-revoke execute on function public.couple_stats() from public, anon;
-grant execute on function public.couple_stats() to authenticated;
-
 -- ───────────── Spiel „Wie gut kennst du mich?“ ─────────────
 -- Jeden Tag 3 Fragen. own = eigene Antwort, guess = Tipp für den Partner (Index 0–3).
 -- Die Zeilen des Partners werden erst sichtbar, wenn man dieselbe Frage selbst beantwortet hat.
@@ -465,6 +433,38 @@ create policy drawings_insert on public.drawings for insert with check (
 );
 drop policy if exists drawings_delete on public.drawings;
 create policy drawings_delete on public.drawings for delete using (couple_id = public.my_couple_id() and from_id = auth.uid());
+
+-- ───────────── Zahlen für die Paar-Erfolge ─────────────
+-- Alles, was die App nicht selbst zählen kann (sie lädt z. B. nur die letzten Zettel und Zeichnungen).
+create or replace function public.couple_stats()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  with c as (select public.my_couple_id() as id),
+  t as (
+    select (created_at at time zone 'Europe/Berlin') as at from public.thoughts where couple_id = (select id from c)
+  ),
+  heart_days as (select distinct (date_trunc('day', at))::date as d from t),
+  islands as (select d - (row_number() over (order by d))::int as grp from heart_days),
+  streak as (select coalesce(max(n), 0) as s from (select count(*) as n from islands group by grp) x),
+  mood_days as (
+    select day from public.moods where couple_id = (select id from c) group by day having count(distinct user_id) = 2
+  )
+  select jsonb_build_object(
+    'notes', (select count(*) from public.notes where couple_id = (select id from c)),
+    'drawings', (select count(*) from public.drawings where couple_id = (select id from c)),
+    'heart_streak', (select s from streak),
+    'night_hearts', (select count(*) from t where extract(hour from at) < 4),
+    'early_hearts', (select count(*) from t where extract(hour from at) between 5 and 6),
+    'mood_days', (select count(*) from mood_days)
+  )
+$$;
+
+revoke execute on function public.couple_stats() from public, anon;
+grant execute on function public.couple_stats() to authenticated;
 
 -- ───────────── Push-Benachrichtigungen ─────────────
 -- Jedes Handy meldet sein Expo-Push-Token. Neue Herzen, Zettel, Antworten und Erinnerungen schicken
