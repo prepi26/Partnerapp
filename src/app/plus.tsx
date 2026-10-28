@@ -113,7 +113,7 @@ export default function PlusScreen() {
                     {pkg.product.introPrice ? (
                       <Text style={styles.trial}>
                         {pkg.product.introPrice.price === 0
-                          ? `${pkg.product.introPrice.periodNumberOfUnits} ${unit(pkg.product.introPrice.periodUnit)} gratis testen`
+                          ? `${pkg.product.introPrice.periodNumberOfUnits} ${unit(pkg.product.introPrice.periodUnit, pkg.product.introPrice.periodNumberOfUnits)} gratis testen`
                           : `Erst ${pkg.product.introPrice.priceString}`}
                       </Text>
                     ) : hint ? (
@@ -169,8 +169,14 @@ export default function PlusScreen() {
   );
 }
 
-function unit(u: string) {
-  return { DAY: 'Tage', WEEK: 'Wochen', MONTH: 'Monate', YEAR: 'Jahre' }[u] ?? u;
+function unit(u: string, n: number) {
+  const names: Record<string, [string, string]> = {
+    DAY: ['Tag', 'Tage'],
+    WEEK: ['Woche', 'Wochen'],
+    MONTH: ['Monat', 'Monate'],
+    YEAR: ['Jahr', 'Jahre'],
+  };
+  return names[u]?.[n === 1 ? 0 : 1] ?? u;
 }
 
 const styles = StyleSheet.create({
