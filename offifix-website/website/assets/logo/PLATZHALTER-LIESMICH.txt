@@ -1,0 +1,8 @@
+ALLE SVG/PNG-Dateien in diesem Ordner sind Platzhalter.
+Der Ordner logo/ aus dem Auftrag lag nicht vor.
+Bitte die echten Dateien mit GENAU diesen Namen hier hineinkopieren:
+  offifix-lockup.svg, offifix-lockup-light.svg,
+  offifix-mark.svg, offifix-mark-light.svg,
+  offifix-wordmark.svg, offifix-wordmark-light.svg,
+  offifix-app-icon.svg, offifix-app-icon-180.png
+Danach og-image.png in assets/img neu erzeugen (siehe RUECKGABE.md).
