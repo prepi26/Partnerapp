@@ -34,11 +34,16 @@ Neu: Tabellen `quiz_answers`, `drawings`, Funktionen `thought_stats` und `couple
 
 ```
 cd Partnerapp
+git restore package-lock.json
 git pull
-npm install
+npm ci
+Select-String '"version"' app.json
 $env:EXPO_APPLE_ID = "prepitoys" + [char]64 + "gmail.com"
 npx eas-cli@latest build --platform ios --profile production
 ```
+
+Die letzte Zeile muss `"version": "1.2.0"` zeigen – sonst nicht bauen (dann hat `git pull` nicht geklappt).
+`npm ci` statt `npm install`, damit `package-lock.json` unverändert bleibt und der nächste `git pull` nicht abbricht.
 
 Neu bei diesem Build:
 - Profil für das **Widget** (`de.wirzwei.app.widget`) anlegen → **Y**
