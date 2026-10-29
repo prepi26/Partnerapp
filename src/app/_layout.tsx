@@ -125,7 +125,8 @@ function RootStack({ signedIn, hasCouple }: { signedIn: boolean; hasCouple: bool
         <Stack.Screen name="achievements" options={{ headerShown: true, title: 'Eure Erfolge' }} />
         <Stack.Screen name="year" options={{ headerShown: true, title: 'Jahresrückblick' }} />
         <Stack.Screen name="quiz" options={{ headerShown: true, title: 'Wie gut kennst du mich?' }} />
-        <Stack.Screen name="draw" options={{ headerShown: true, title: 'Malen' }} />
+        {/* Kein Zurück-Wischen: iOS würde Striche nach rechts sonst als „Zurück“ deuten. */}
+        <Stack.Screen name="draw" options={{ headerShown: true, title: 'Malen', gestureEnabled: false }} />
         <Stack.Screen name="settings" options={modal('Einstellungen')} />
         <Stack.Screen name="plus" options={modal('Wir zwei Plus')} />
         <Stack.Screen name="pack/[id]" options={{ headerShown: true, title: '' }} />
