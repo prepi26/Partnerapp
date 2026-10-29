@@ -43,20 +43,31 @@ export function DrawingCanvas({
   onChange,
   color,
   width,
+  onDrawing,
 }: {
   strokes: Stroke[];
   onChange: (strokes: Stroke[]) => void;
   color: string;
   width: number;
+  /** Meldet, solange ein Finger malt – damit die umgebende ScrollView dann stillhält. */
+  onDrawing?: (active: boolean) => void;
 }) {
   const [current, setCurrent] = useState<Stroke | null>(null);
   const [size, setSize] = useState(1);
   // Werte für die Gesten-Handler, die nur einmal erstellt werden (kein Re-Render nötig).
-  const [box] = useState(() => ({ size: 1, color, width, strokes, onChange, current: null as Stroke | null }));
+  const [box] = useState(() => ({
+    size: 1,
+    color,
+    width,
+    strokes,
+    onChange,
+    onDrawing,
+    current: null as Stroke | null,
+  }));
 
   useEffect(() => {
-    Object.assign(box, { color, width, strokes, onChange, size });
-  }, [box, color, width, strokes, onChange, size]);
+    Object.assign(box, { color, width, strokes, onChange, onDrawing, size });
+  }, [box, color, width, strokes, onChange, onDrawing, size]);
 
   const [responder] = useState(() => {
     const toGrid = (x: number, y: number): [number, number] => {
@@ -73,6 +84,7 @@ export function DrawingCanvas({
       onMoveShouldSetPanResponder: () => true,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: (e) => {
+        box.onDrawing?.(true);
         const { locationX, locationY } = e.nativeEvent;
         update({ c: box.color, w: box.width, p: [toGrid(locationX, locationY)] });
       },
@@ -89,8 +101,12 @@ export function DrawingCanvas({
         const stroke = box.current;
         if (stroke) box.onChange([...box.strokes, stroke]);
         update(null);
+        box.onDrawing?.(false);
       },
-      onPanResponderTerminate: () => update(null),
+      onPanResponderTerminate: () => {
+        update(null);
+        box.onDrawing?.(false);
+      },
     });
   });
 

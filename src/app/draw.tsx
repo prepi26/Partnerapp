@@ -52,6 +52,8 @@ export default function Draw() {
   const [width, setWidth] = useState(WIDTHS[1].value);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  // Während gemalt wird, darf die Seite nicht mitscrollen.
+  const [drawing, setDrawing] = useState(false);
 
   const send = async () => {
     tap();
@@ -77,7 +79,7 @@ export default function Draw() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} scrollEnabled={!drawing}>
       <DrawingCanvas
         strokes={strokes}
         onChange={(next) => {
@@ -86,6 +88,7 @@ export default function Draw() {
         }}
         color={color}
         width={width}
+        onDrawing={setDrawing}
       />
 
       <View style={styles.palette}>
