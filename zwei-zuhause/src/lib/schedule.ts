@@ -8,15 +8,30 @@ import { addDays, daysBetween, parseISO, toISO } from './dates';
  * Umgangsmodelle als 14-Tage-Muster ab dem Starttag. F = wer am Starttag das Kind hat, O = der andere.
  * Gezählt wird, bei wem das Kind übernachtet.
  */
-const PATTERNS: Record<Exclude<ScheduleModel, 'none'>, string> = {
+const PATTERNS: Record<Exclude<ScheduleModel, 'none' | 'custom'>, string> = {
   wechsel_7_7: 'FFFFFFFOOOOOOO',
   wechsel_2_2_5_5: 'FFOOFFFFFOOOOO',
   wechsel_2_2_3: 'FFOOFFFOOFFOOO',
+  // Mo–Mi bei F, Do–So beim anderen; die Woche darauf Mo–Do bei F, Fr–So beim anderen.
+  wechsel_3_4_4_3: 'FFFOOOOFFFFOOO',
+  wechsel_14_14: 'FFFFFFFFFFFFFFOOOOOOOOOOOOOO',
   // Start an einem Montag: Mo–Do bei F, Fr–So beim anderen, die folgende Woche komplett bei F.
   residenz_we: 'FFFFOOOFFFFFFF',
 };
 
-export const MODEL_KEYS: ScheduleModel[] = ['wechsel_7_7', 'wechsel_2_2_5_5', 'wechsel_2_2_3', 'residenz_we', 'none'];
+export const MODEL_KEYS: ScheduleModel[] = [
+  'wechsel_7_7',
+  'wechsel_2_2_5_5',
+  'wechsel_2_2_3',
+  'wechsel_3_4_4_3',
+  'wechsel_14_14',
+  'residenz_we',
+  'custom',
+  'none',
+];
+
+/** Eigener Rhythmus: Vorschlag beim ersten Öffnen – eine Woche hier, eine Woche dort. */
+export const DEFAULT_CUSTOM_PATTERN = 'aaaaaaabbbbbbb';
 
 /** Umgangsmodelle mit Titel und Erklärung in der gewählten Sprache. */
 export function models(t: Dict = currentT()): { key: ScheduleModel; title: string; text: string }[] {
@@ -37,6 +52,11 @@ export function plannedParent(family: Family, day: ISODate | Date): ParentKey | 
   const date = typeof day === 'string' ? parseISO(day) : day;
   const offset = daysBetween(parseISO(family.schedule_start), date);
   if (offset < 0) return null;
+  // Eigener Rhythmus: 'a'/'b' stehen direkt im Muster (muss zu calendar_days in supabase/schema.sql passen).
+  if (family.schedule_model === 'custom') {
+    const custom = family.schedule_pattern;
+    return custom ? (custom[offset % custom.length] as ParentKey) : null;
+  }
   const pattern = PATTERNS[family.schedule_model];
   const index = offset % pattern.length;
   return pattern[index] === 'F' ? family.schedule_first : other(family.schedule_first);

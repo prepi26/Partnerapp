@@ -4,7 +4,7 @@
 Code, Umgangsplan, Nachricht, Ausgabe + Bestätigung, Entscheidung + Antwort, Übergabe + Widerspruch, Kind-Info,
 Elternvereinbarung + Zustimmung, Einführung, Dokumente (PDF, Gesundheit nur mit Einwilligung), Datenexport, Fachkraft einladen → zustimmen → Fachkraft liest → Kurzbericht, Tagebuch, Hilfe,
 Allein-Start-Hinweis, Unterhalt (Betrag, Zahlung, Bestätigung), Packliste (abhaken, zurücksetzen), Schulferien
-(Bundesland, Aufteilung vorschlagen), Gutscheincode, Fachkraft-Link im Browser, mehrere Familien (Wechsler,
+(Bundesland, Aufteilung vorschlagen), kostenlose Grundversion nach der Testzeit, eigener Rhythmus, Gutscheincode, Fachkraft-Link im Browser, mehrere Familien (Wechsler,
 Übersicht, strikte Trennung der Nachrichten und Kosten, geteilte Ausgabe). Kalender-Abo: Inhalt (ICS) per SQL-Test und Kalender-Parser geprüft.
 Datenbankregeln: `supabase/test-*.sql`.
 

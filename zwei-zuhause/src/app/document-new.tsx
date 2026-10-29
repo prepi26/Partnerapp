@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { DateField } from '@/components/DateField';
-import { WriteGate } from '@/components/SubscriptionBanner';
+import { PlusGate } from '@/components/SubscriptionBanner';
 import { Card, Chip, Field, Label, PrimaryButton, showError } from '@/components/ui';
 import { formatSize, MAX_DOCUMENT_BYTES, PickedFile } from '@/data/documents';
 import { attempt, useFamily } from '@/data/store';
@@ -86,7 +86,7 @@ export default function DocumentNew() {
   };
 
   return (
-    <WriteGate>
+    <PlusGate>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {file ? (
@@ -159,7 +159,7 @@ export default function DocumentNew() {
           <Text style={styles.hint}>{fmt(t.family.documentNew.visibleHint, { name: otherName })}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </PlusGate>
   );
 }
 

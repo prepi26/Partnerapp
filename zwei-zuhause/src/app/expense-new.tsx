@@ -6,7 +6,7 @@ import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleShee
 
 import { DateField } from '@/components/DateField';
 import { familyLabel } from '@/components/FamilySwitcher';
-import { WriteGate } from '@/components/SubscriptionBanner';
+import { PlusGate } from '@/components/SubscriptionBanner';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { usePlus } from '@/data/plus';
 import { attempt, NewPhoto, useFamily } from '@/data/store';
@@ -21,7 +21,7 @@ import { colors, radius, spacing } from '@/theme';
 export default function ExpenseNew() {
   const t = useT();
   const { family, families, userId, me, otherName, otherJoined, addExpense, addExpenseTo } = useFamily();
-  const { canWrite: plus } = usePlus();
+  const { hasPlus: plus } = usePlus();
   const [kind, setKind] = useState<ExpenseKind>('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
@@ -101,7 +101,7 @@ export default function ExpenseNew() {
   };
 
   return (
-    <WriteGate>
+    <PlusGate>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.chips}>
@@ -241,7 +241,7 @@ export default function ExpenseNew() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </PlusGate>
   );
 }
 

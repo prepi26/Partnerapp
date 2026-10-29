@@ -2,7 +2,9 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ExpenseStatus } from '@/components/ExpenseStatus';
+import { PlusCard } from '@/components/SubscriptionBanner';
 import { Card, Fab, PrimaryButton, SecondaryButton } from '@/components/ui';
+import { usePlus } from '@/data/plus';
 import { attempt, useFamily } from '@/data/store';
 import { fmt, useT } from '@/i18n';
 import { formatDate, formatMonth, formatTimestamp, parseISO, today } from '@/lib/dates';
@@ -30,6 +32,7 @@ export default function Maintenance() {
     answerMaintenance,
     removeMaintenancePayment,
   } = useFamily();
+  const { hasPlus } = usePlus();
   const now = today();
   const current = termFor(maintenance_terms, monthStart(now));
   const rows = monthRows(maintenance_terms, maintenance_payments, now);
@@ -43,6 +46,7 @@ export default function Maintenance() {
         ListHeaderComponent={
           <View style={{ gap: spacing.md }}>
             <Text style={styles.intro}>{m.intro}</Text>
+            {hasPlus ? null : <PlusCard />}
             {current ? (
               <Card style={{ gap: 4 }}>
                 <Text style={styles.big}>

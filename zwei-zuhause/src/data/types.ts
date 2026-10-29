@@ -4,7 +4,15 @@ export type ISODate = string;
 /** Elternteil a hat die Familie angelegt, b ist mit dem Code beigetreten. */
 export type ParentKey = 'a' | 'b';
 
-export type ScheduleModel = 'none' | 'wechsel_7_7' | 'wechsel_2_2_5_5' | 'wechsel_2_2_3' | 'residenz_we';
+export type ScheduleModel =
+  | 'none'
+  | 'wechsel_7_7'
+  | 'wechsel_2_2_5_5'
+  | 'wechsel_2_2_3'
+  | 'wechsel_3_4_4_3'
+  | 'wechsel_14_14'
+  | 'residenz_we'
+  | 'custom';
 
 export interface Family {
   id: string;
@@ -17,6 +25,8 @@ export interface Family {
   schedule_model: ScheduleModel;
   schedule_start: ISODate;
   schedule_first: ParentKey;
+  /** Eigener Rhythmus: ab dem Starttag je Tag 'a' oder 'b' (7, 14, 21 oder 28 Zeichen); sonst leer. */
+  schedule_pattern: string;
   default_share_a: number;
   /** „HH:MM“ oder leer. */
   handover_time: string;

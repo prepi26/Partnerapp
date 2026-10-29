@@ -222,6 +222,7 @@ type FamilyPatch = Partial<
     | 'schedule_model'
     | 'schedule_start'
     | 'schedule_first'
+    | 'schedule_pattern'
     | 'default_share_a'
     | 'handover_time'
     | 'handover_place'

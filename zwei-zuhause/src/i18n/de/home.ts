@@ -100,7 +100,7 @@ export const home = {
     noPlan: 'kein Plan',
     /** {n} Anzahl offener Punkte */
     open: '{n} offen',
-    locked: 'nur lesen',
+    locked: 'ohne Plus',
   },
   invite: {
     /** {code} Einladungscode */

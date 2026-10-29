@@ -55,11 +55,12 @@ export const en: Dict = {
       too_many_families: 'An account can’t hold more than 5 families.',
     },
     subscription: {
-      required: 'The free trial has ended. With a subscription you can both add everything again.',
-      readOnlyTitle: 'Read only',
+      required: 'This is part of Plus. Calendar, messages and handovers stay free.',
+      readOnlyTitle: 'Plus feature',
       readOnlyText:
-        'The free trial has ended. With a subscription for the whole family, you and {name} can add everything again. Reading and exporting still work.',
+        'Costs, child maintenance, documents and the PDF report are part of Plus – one subscription covers you and {name}. Calendar, messages, handovers and everything else stay free.',
       cta: 'View subscription',
+      freeBanner: 'Free version · Plus for costs, maintenance and reports',
       trialBannerOther: '{n} days of free trial left',
       trialBannerOne: '1 day of free trial left',
       trialBannerLast: 'Last day of the free trial',
@@ -76,10 +77,16 @@ export const en: Dict = {
       wechsel_7_7: { title: 'Shared care 7/7', text: 'One week here, one week there.' },
       wechsel_2_2_5_5: { title: 'Shared care 2-2-5-5', text: 'Fixed weekdays plus alternating weekends.' },
       wechsel_2_2_3: { title: 'Shared care 2-2-3', text: 'Short intervals – good for young children.' },
+      wechsel_3_4_4_3: {
+        title: 'Shared care 3-4-4-3',
+        text: 'Three days here, four there – the other way round the following week.',
+      },
+      wechsel_14_14: { title: 'Two weeks each', text: 'Two weeks here, two weeks there – e.g. for long distances.' },
       residenz_we: {
         title: 'Main residence (Residenzmodell)',
         text: 'The child lives mainly with one parent and every other weekend (Fri–Sun) with the other.',
       },
+      custom: { title: 'Custom rhythm', text: 'You decide who has which day for 1 to 4 weeks – then it repeats.' },
       none: { title: 'No fixed plan', text: 'You enter each day individually.' },
     },
     expenseCategories: {
@@ -441,7 +448,7 @@ export const en: Dict = {
       atYou: 'with you',
       noPlan: 'no plan',
       open: '{n} open',
-      locked: 'read only',
+      locked: 'without Plus',
     },
     invite: {
       shareMessage:
@@ -503,6 +510,10 @@ export const en: Dict = {
       start: 'Plan starts on',
       firstParent: 'On this day the child is with',
       residenzHint: 'Choose a Monday as the start. The weekend of that week (Fri–Sun) is with the other parent.',
+      customLength: 'Rhythm length',
+      customWeeksOne: '1 week',
+      customWeeksOther: '{n} weeks',
+      customHint: 'Tap a day to give it to the other parent. The rhythm begins on the start day and then repeats.',
       preview: 'Preview',
       handover: 'Handover – when and where?',
       time: 'Time',
@@ -687,8 +698,9 @@ export const en: Dict = {
       benefits: {
         familyTitle: 'One subscription for the whole family',
         familyText: 'One parent pays, both parents use everything – no arguing about who pays.',
-        allTitle: 'Everything included',
-        allText: 'Calendar, costs, messages, decisions, documents, PDF reports and receipt photos.',
+        allTitle: 'Costs, maintenance, documents, reports',
+        allText:
+          'Share expenses with receipt photos, child maintenance month by month, share documents and PDF reports for counselling and the youth welfare office.',
         proofTitle: 'Records that hold up',
         proofText: 'With date, time and checksum for every entry.',
         supportTitle: 'No ads',
@@ -714,7 +726,8 @@ export const en: Dict = {
       introPrice: 'First {price}',
       nothingFound: 'Nothing found',
       heroTitle: 'Zwei Zuhause Plus',
-      heroText: 'Try it free for 14 days once you are both in – then one subscription for your whole family.',
+      heroText:
+        'Calendar, messages and handovers are free. Try Plus free for 14 days once you are both in – then one subscription covers your whole family.',
       activeTitle: 'Your family subscription is active ✓',
       activeText: 'Whoever took out the subscription manages or cancels it in their phone’s settings.',
       trialLeftOther: 'Free trial: {n} days left',
@@ -722,7 +735,7 @@ export const en: Dict = {
       trialLastDay: 'Free trial: today is the last day',
       trialSolo: 'The 14 trial days start when {name} joins. On your own, the app stays free for {n} more days.',
       trialOver:
-        'The free trial has ended. Without a subscription you can read everything, but you cannot add anything new.',
+        'The trial has ended. Calendar, messages and handovers stay free – for costs, child maintenance, documents and reports you need Plus.',
       unavailable: 'Purchases are only possible in the iOS and Android app.',
       tierSingle: 'For 1 family',
       tierMulti: 'Plus Multi-Family – for up to 3 families',
@@ -734,7 +747,7 @@ export const en: Dict = {
       busy: 'One moment…',
       unlock: 'Subscribe',
       terms:
-        'The subscription applies to your whole family – to you and the other parent. It renews automatically until you cancel it at least 24 hours before it expires in the App Store or Google Play settings. Without a subscription, everything remains readable and exportable after the trial.',
+        'The subscription applies to your whole family – to you and the other parent. It renews automatically until you cancel it at least 24 hours before it expires in the App Store or Google Play settings. Without a subscription, the basic features stay free and everything remains readable and exportable.',
       noPurchase: 'There is no active purchase for your account.',
       restore: 'Restore purchases',
       promoTitle: 'Voucher code',

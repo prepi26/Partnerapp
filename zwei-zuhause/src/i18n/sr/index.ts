@@ -55,11 +55,12 @@ export const sr: Dict = {
       too_many_families: 'Jedan nalog ne može da ima više od 5 porodica.',
     },
     subscription: {
-      required: 'Besplatna proba je završena. Uz pretplatu oboje ponovo možete sve da unosite.',
-      readOnlyTitle: 'Samo čitanje',
+      required: 'Ovo spada u Plus. Kalendar, poruke i primopredaje ostaju besplatni.',
+      readOnlyTitle: 'Plus funkcija',
       readOnlyText:
-        'Besplatna proba je istekla. Uz pretplatu za celu porodicu vi i {name} ponovo možete sve da unosite. Čitanje i izvoz i dalje rade.',
+        'Troškovi, izdržavanje, dokumenti i PDF izveštaj spadaju u Plus – jednu pretplatu koristite i vi i {name}. Kalendar, poruke, primopredaje i sve ostalo ostaju besplatni.',
       cta: 'Pogledaj pretplatu',
+      freeBanner: 'Besplatna verzija · Plus za troškove, izdržavanje i izveštaje',
       trialBannerOther: 'Besplatna proba – preostalo dana: {n}',
       trialBannerOne: 'Još 1 dan besplatne probe',
       trialBannerLast: 'Poslednji dan besplatne probe',
@@ -80,9 +81,21 @@ export const sr: Dict = {
         text: 'Stalni dani u nedelji, a vikendi naizmenično.',
       },
       wechsel_2_2_3: { title: 'Naizmenično staranje 2-2-3', text: 'Kratki razmaci – dobro za malu decu.' },
+      wechsel_3_4_4_3: {
+        title: 'Naizmenično staranje 3-4-4-3',
+        text: 'Tri dana ovde, četiri tamo – sledeće nedelje obrnuto.',
+      },
+      wechsel_14_14: {
+        title: 'Po dve nedelje naizmenično',
+        text: 'Dve nedelje ovde, dve nedelje tamo – npr. kod velikih udaljenosti.',
+      },
       residenz_we: {
         title: 'Pretežno kod jednog roditelja (Residenzmodell)',
         text: 'Dete uglavnom živi kod jednog roditelja, a svaki drugi vikend (pet–ned) kod drugog.',
+      },
+      custom: {
+        title: 'Sopstveni ritam',
+        text: 'Za 1 do 4 nedelje određujete ko je kog dana na redu – zatim se to ponavlja.',
       },
       none: { title: 'Bez stalnog plana', text: 'Svaki dan unosite pojedinačno.' },
     },
@@ -459,7 +472,7 @@ export const sr: Dict = {
       atYou: 'kod vas',
       noPlan: 'nema plana',
       open: 'otvoreno: {n}',
-      locked: 'samo čitanje',
+      locked: 'bez Plus',
     },
     invite: {
       shareMessage:
@@ -521,6 +534,10 @@ export const sr: Dict = {
       start: 'Plan počinje',
       firstParent: 'Tog dana dete je kod',
       residenzHint: 'Kao početak izaberite ponedeljak. Vikend te nedelje (pet–ned) dete je kod drugog roditelja.',
+      customLength: 'Dužina ritma',
+      customWeeksOne: '1 nedelja',
+      customWeeksOther: '{n} ned.',
+      customHint: 'Dodirnite dan da biste ga dali drugom roditelju. Ritam počinje početnog dana i zatim se ponavlja.',
       preview: 'Pregled',
       handover: 'Primopredaja – kada i gde?',
       time: 'Vreme',
@@ -707,8 +724,9 @@ export const sr: Dict = {
       benefits: {
         familyTitle: 'Jedna pretplata za celu porodicu',
         familyText: 'Jedan plaća, oba roditelja koriste sve – bez svađe oko toga ko plaća.',
-        allTitle: 'Sve je uključeno',
-        allText: 'Kalendar, troškovi, poruke, odluke, dokumenti, izveštaji u PDF-u i fotografije računa.',
+        allTitle: 'Troškovi, izdržavanje, dokumenti, izveštaji',
+        allText:
+          'Deljenje troškova sa fotografijom računa, izdržavanje mesec po mesec, deljenje dokumenata i PDF izveštaji za savetovalište i službu za mlade.',
         proofTitle: 'Dokazi koji važe',
         proofText: 'Sa datumom, vremenom i kontrolnim zbirom uz svaki unos.',
         supportTitle: 'Bez reklama',
@@ -734,7 +752,8 @@ export const sr: Dict = {
       introPrice: 'Na početku {price}',
       nothingFound: 'Ništa nije pronađeno',
       heroTitle: 'Zwei Zuhause Plus',
-      heroText: 'Besplatna proba 14 dana čim ste oboje u aplikaciji – zatim jedna pretplata za celu vašu porodicu.',
+      heroText:
+        'Kalendar, poruke i primopredaje su besplatni. Plus probate 14 dana besplatno čim ste oboje u aplikaciji – zatim važi jedna pretplata za celu vašu porodicu.',
       activeTitle: 'Vaša porodična pretplata je aktivna ✓',
       activeText: 'Ko je uzeo pretplatu, upravlja njome ili je otkazuje u podešavanjima svog telefona.',
       trialLeftOther: 'Besplatna proba – preostalo dana: {n}',
@@ -743,7 +762,7 @@ export const sr: Dict = {
       trialSolo:
         'Proba od 14 dana počinje kada se {name} pridruži. Samostalno je aplikacija još besplatna – preostalo dana: {n}.',
       trialOver:
-        'Besplatna proba je završena. Bez pretplate možete sve da čitate, ali ne možete da unosite ništa novo.',
+        'Proba je završena. Kalendar, poruke i primopredaje ostaju besplatni – za troškove, izdržavanje, dokumente i izveštaje treba vam Plus.',
       unavailable: 'Kupovina je moguća samo u iOS i Android aplikaciji.',
       tierSingle: 'Za 1 porodicu',
       tierMulti: 'Plus Više porodica – najviše 3 porodice',
@@ -754,7 +773,7 @@ export const sr: Dict = {
       busy: 'Trenutak…',
       unlock: 'Pretplati se',
       terms:
-        'Pretplata važi za celu vašu porodicu – za vas i za drugog roditelja. Automatski se produžava dok je ne otkažete najkasnije 24 sata pre isteka u podešavanjima App Store-a odnosno Google Play-a. Bez pretplate, posle probnog perioda sve ostaje dostupno za čitanje i izvoz.',
+        'Pretplata važi za celu vašu porodicu – za vas i za drugog roditelja. Automatski se produžava dok je ne otkažete najkasnije 24 sata pre isteka u podešavanjima App Store-a odnosno Google Play-a. Bez pretplate osnovne funkcije ostaju besplatne, a sve ostaje dostupno za čitanje i izvoz.',
       noPurchase: 'Za vaš nalog ne postoji aktivna kupovina.',
       restore: 'Vrati kupovine',
       promoTitle: 'Vaučer kod',

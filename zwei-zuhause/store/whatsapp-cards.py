@@ -104,14 +104,14 @@ cards.append(('08-mehr', list_card('Außerdem drin', None, [
     ('•', 'Jugendamt & Beratung', 'Lesezugang für Fachkräfte – nur, wenn beide zustimmen. Bericht als PDF.'),
     ('•', 'Sicher', 'Server in Deutschland/EU, keine Werbung, App-Sperre mit Face ID, Hilfe-Nummern.'),
     ('•', '11 Sprachen', 'Deutsch, Englisch, Türkisch, Arabisch, Russisch, Ukrainisch, Polnisch, Albanisch, Rumänisch, Serbisch, Französisch.'),
-    ('•', '14 Tage kostenlos testen', 'Danach ein Abo für die ganze Familie: 7,99 € im Monat – einer zahlt, beide nutzen alles.'),
+    ('•', 'Grundversion kostenlos', 'Kalender, Nachrichten und Übergaben gratis. Plus für Kosten, Unterhalt und Berichte: 7,99 € im Monat für die ganze Familie.'),
 ])))
 cards.append(('09-deine-meinung', list_card('Deine Meinung?', 'Antworte einfach per WhatsApp – gern auch per Sprachnachricht.', [
     ('1', 'Würdest du das nutzen?', 'Und würde der andere Elternteil mitmachen?'),
     ('2', 'Was nervt euch am meisten?', 'Übergaben, Geld, Absprachen, Kommunikation …?'),
     ('3', 'Was fehlt dir?', 'Gibt es etwas, das unbedingt rein müsste?'),
     ('4', 'Was ist zu viel?', 'Was würdest du nie benutzen?'),
-    ('5', 'Wäre es dir 7,99 € im Monat wert?', 'Ein Abo für die ganze Familie. Zu viel, okay oder günstig?'),
+    ('5', 'Wäre dir Plus 7,99 € im Monat wert?', 'Kosten, Unterhalt und Berichte – ein Abo für die ganze Familie. Zu viel, okay oder günstig?'),
 ], 'Danke! Deine Antworten bleiben unter uns.')))
 
 os.makedirs(OUT, exist_ok=True)

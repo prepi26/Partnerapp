@@ -4,7 +4,6 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 
 import { DateField } from '@/components/DateField';
 import { ParentTag } from '@/components/ParentTag';
-import { WriteGate } from '@/components/SubscriptionBanner';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { ParentKey } from '@/data/types';
@@ -47,7 +46,7 @@ export default function ChangeNew() {
   };
 
   return (
-    <WriteGate>
+    <>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.chips}>
@@ -105,7 +104,7 @@ export default function ChangeNew() {
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </>
   );
 }
 

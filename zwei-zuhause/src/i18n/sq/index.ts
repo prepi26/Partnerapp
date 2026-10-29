@@ -55,11 +55,12 @@ export const sq: Dict = {
       too_many_families: 'Një llogari nuk mund të ketë më shumë se 5 familje.',
     },
     subscription: {
-      required: 'Prova falas mbaroi. Me një abonim të dy mund të shtoni përsëri gjithçka.',
-      readOnlyTitle: 'Vetëm për lexim',
+      required: 'Kjo është pjesë e Plus. Kalendari, mesazhet dhe dorëzimet mbeten falas.',
+      readOnlyTitle: 'Funksion Plus',
       readOnlyText:
-        'Prova falas mbaroi. Me një abonim për gjithë familjen, ti dhe {name} mund të shtoni përsëri gjithçka. Leximi dhe eksportimi funksionojnë ende.',
+        'Shpenzimet, pensioni ushqimor, dokumentet dhe raporti PDF janë pjesë e Plus – një abonim vlen për ty dhe {name}. Kalendari, mesazhet, dorëzimet dhe gjithçka tjetër mbeten falas.',
       cta: 'Shiko abonimin',
+      freeBanner: 'Versioni falas · Plus për shpenzimet, pensionin ushqimor dhe raportet',
       trialBannerOther: 'Edhe {n} ditë provë falas',
       trialBannerOne: 'Edhe 1 ditë provë falas',
       trialBannerLast: 'Dita e fundit e provës falas',
@@ -79,9 +80,21 @@ export const sq: Dict = {
         text: 'Ditë fikse të javës plus fundjavat me radhë.',
       },
       wechsel_2_2_3: { title: 'Kujdes i alternuar 2-2-3', text: 'Ndërrime të shpeshta – mirë për fëmijë të vegjël.' },
+      wechsel_3_4_4_3: {
+        title: 'Kujdes i alternuar 3-4-4-3',
+        text: 'Tri ditë këtu, katër atje – javën pasuese anasjelltas.',
+      },
+      wechsel_14_14: {
+        title: 'Dy javë me ndërrim',
+        text: 'Dy javë këtu, dy javë atje – p.sh. kur distanca është e madhe.',
+      },
       residenz_we: {
         title: 'Banim kryesor (Residenzmodell)',
         text: 'Fëmija jeton kryesisht te njëri prind dhe çdo të dytën fundjavë (Pre–Die) te tjetri.',
+      },
+      custom: {
+        title: 'Ritmi juaj',
+        text: 'Ju caktoni për 1 deri në 4 javë kush e ka fëmijën në cilën ditë – pastaj përsëritet.',
       },
       none: { title: 'Pa plan fiks', text: 'E shënoni secilën ditë veçmas.' },
     },
@@ -444,7 +457,7 @@ export const sq: Dict = {
       atYou: 'te ti',
       noPlan: 'pa plan',
       open: 'të hapura: {n}',
-      locked: 'vetëm lexim',
+      locked: 'pa Plus',
     },
     invite: {
       shareMessage:
@@ -506,6 +519,11 @@ export const sq: Dict = {
       start: 'Plani fillon më',
       firstParent: 'Në këtë ditë fëmija është te',
       residenzHint: 'Zgjidh një të hënë si fillim. Fundjava e kësaj jave (Pre–Die) është te prindi tjetër.',
+      customLength: 'Gjatësia e ritmit',
+      customWeeksOne: '1 javë',
+      customWeeksOther: '{n} javë',
+      customHint:
+        'Prek një ditë për t’ia dhënë prindit tjetër. Ritmi fillon në ditën e fillimit dhe pastaj përsëritet.',
       preview: 'Paraparje',
       handover: 'Dorëzimi – kur dhe ku?',
       time: 'Ora',
@@ -690,8 +708,9 @@ export const sq: Dict = {
       benefits: {
         familyTitle: 'Një abonim për gjithë familjen',
         familyText: 'Paguan njëri, të dy prindërit përdorin gjithçka – pa grindje se kush paguan.',
-        allTitle: 'Gjithçka e përfshirë',
-        allText: 'Kalendari, shpenzimet, mesazhet, vendimet, dokumentet, raportet PDF dhe fotot e faturave.',
+        allTitle: 'Shpenzime, pension ushqimor, dokumente, raporte',
+        allText:
+          'Ndarja e shpenzimeve me foto të faturës, pensioni ushqimor muaj pas muaji, ndarja e dokumenteve dhe raporte PDF për këshillim dhe Jugendamt.',
         proofTitle: 'Dëshmi që qëndrojnë',
         proofText: 'Me datë, orë dhe shumë kontrolluese për çdo shënim.',
         supportTitle: 'Pa reklama',
@@ -717,14 +736,16 @@ export const sq: Dict = {
       introPrice: 'Fillimisht {price}',
       nothingFound: 'Nuk u gjet asgjë',
       heroTitle: 'Zwei Zuhause Plus',
-      heroText: 'Provo falas 14 ditë, sapo të jeni të dy brenda – pastaj një abonim për gjithë familjen tuaj.',
+      heroText:
+        'Kalendari, mesazhet dhe dorëzimet janë falas. Plus e provoni falas 14 ditë, sapo të jeni të dy brenda – pastaj një abonim vlen për gjithë familjen tuaj.',
       activeTitle: 'Abonimi juaj familjar është aktiv ✓',
       activeText: 'Kush e ka bërë abonimin, e menaxhon ose e anulon te cilësimet e telefonit të vet.',
       trialLeftOther: 'Provë falas: edhe {n} ditë',
       trialLeftOne: 'Provë falas: edhe 1 ditë',
       trialLastDay: 'Provë falas: sot është dita e fundit',
       trialSolo: '14 ditët e provës fillojnë kur {name} të bashkohet. Vetëm, aplikacioni është falas edhe {n} ditë.',
-      trialOver: 'Prova falas mbaroi. Pa abonim mund të lexoni gjithçka, por nuk mund të shtoni asgjë të re.',
+      trialOver:
+        'Prova mbaroi. Kalendari, mesazhet dhe dorëzimet mbeten falas – për shpenzimet, pensionin ushqimor, dokumentet dhe raportet ju duhet Plus.',
       unavailable: 'Blerjet janë të mundura vetëm në aplikacionin për iOS dhe Android.',
       tierSingle: 'Për 1 familje',
       tierMulti: 'Plus Shumëfamiljar – për deri në 3 familje',
@@ -735,7 +756,7 @@ export const sq: Dict = {
       busy: 'Një moment…',
       unlock: 'Bëj abonimin',
       terms:
-        'Abonimi vlen për gjithë familjen tuaj – për ty dhe për prindin tjetër. Ai rinovohet automatikisht derisa ta anulosh të paktën 24 orë para skadimit te cilësimet e App Store ose Google Play. Pa abonim, pas periudhës së provës gjithçka mbetet e lexueshme dhe e eksportueshme.',
+        'Abonimi vlen për gjithë familjen tuaj – për ty dhe për prindin tjetër. Ai rinovohet automatikisht derisa ta anulosh të paktën 24 orë para skadimit te cilësimet e App Store ose Google Play. Pa abonim, funksionet bazë mbeten falas dhe gjithçka mbetet e lexueshme dhe e eksportueshme.',
       noPurchase: 'Për llogarinë tënde nuk ka asnjë blerje aktive.',
       restore: 'Rikthe blerjet',
       promoTitle: 'Kodi i kuponit',

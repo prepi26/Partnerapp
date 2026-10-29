@@ -39,8 +39,8 @@ interface Plus {
   promoUntil: Date | null;
   /** Ganze Tage Testzeit, die noch übrig sind (0 = heute letzter Tag). */
   trialDaysLeft: number;
-  /** Eintragen erlaubt (Abo oder Testzeit) – sonst nur lesen. Der Server prüft dasselbe. */
-  canWrite: boolean;
+  /** Plus-Funktionen frei (Abo, Testzeit oder Gutschein): Kosten, Unterhalt, Dokumente, PDF-Bericht. Der Server prüft dasselbe. */
+  hasPlus: boolean;
   packages: PurchasesPackage[];
   purchase(pkg: PurchasesPackage): Promise<boolean>;
   restore(): Promise<boolean>;
@@ -156,7 +156,7 @@ export function PlusProvider({ children }: { children: ReactNode }) {
       solo: solo && !promoActive,
       promoUntil: promoActive ? new Date(promoEnd) : null,
       trialDaysLeft,
-      canWrite: active || inTrial,
+      hasPlus: active || inTrial,
       packages,
       purchase: async (pkg) => {
         try {

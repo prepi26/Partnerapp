@@ -83,9 +83,10 @@ update families set joined_at = now() - interval '20 days' where id = :'f2';
 set role authenticated;
 select as_user(:'sandra');
 select family_active(:'f1') as f1_active, family_active(:'f2') as f2_active;
--- ERROR 5: Schreiben in Familie 2 ohne Abo
-insert into messages (family_id, text) values (:'f2', 'nach Testzeit');
-insert into messages (family_id, text) values (:'f1', 'Familie 1 geht noch');
+-- ERROR 5: Kosten in Familie 2 ohne Abo; Nachrichten (Grundversion) gehen in beiden Familien
+insert into expenses (family_id, title, amount_cents, day, paid_by) values (:'f2', 'nach Testzeit', 1000, '2026-10-10', 'a');
+insert into messages (family_id, text) values (:'f2', 'Grundversion geht');
+insert into expenses (family_id, title, amount_cents, day, paid_by) values (:'f1', 'Familie 1 hat noch Plus', 1000, '2026-10-10', 'a');
 
 -- Fachkraft in Familie 1 sieht Familie 2 nicht
 select create_professional_invite(:'f1', 'Jugendamt', 30) as pcode \gset

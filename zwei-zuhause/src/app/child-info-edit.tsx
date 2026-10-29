@@ -2,7 +2,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
-import { WriteGate } from '@/components/SubscriptionBanner';
 import { Chip, confirmDestructive, Field, Label, PrimaryButton, SecondaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { fmt, useT } from '@/i18n';
@@ -44,7 +43,7 @@ export default function ChildInfoEdit() {
     );
 
   return (
-    <WriteGate>
+    <>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Label>{t.family.childInfoEdit.area}</Label>
@@ -89,7 +88,7 @@ export default function ChildInfoEdit() {
           {existing ? <SecondaryButton title={t.common.delete} icon="trash-outline" danger onPress={remove} /> : null}
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </>
   );
 }
 

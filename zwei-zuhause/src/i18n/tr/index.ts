@@ -41,11 +41,12 @@ export const tr: Dict = {
       too_many_families: 'Bir hesaba 5’ten fazla aile eklenemez.',
     },
     subscription: {
-      required: 'Ücretsiz deneme süresi sona erdi. Abonelikle ikiniz de yeniden her şeyi ekleyebilirsiniz.',
-      readOnlyTitle: 'Yalnızca okuma',
+      required: 'Bu özellik Plus kapsamındadır. Takvim, mesajlar ve teslimler ücretsiz kalır.',
+      readOnlyTitle: 'Plus özelliği',
       readOnlyText:
-        'Ücretsiz deneme süresi sona erdi. Tüm aile için bir abonelikle siz ve {name} yeniden her şeyi ekleyebilirsiniz. Okuma ve dışa aktarma hâlâ mümkün.',
+        'Masraflar, nafaka, belgeler ve PDF raporu Plus kapsamındadır – tek abonelik siz ve {name} için geçerlidir. Takvim, mesajlar, teslimler ve diğer her şey ücretsiz kalır.',
       cta: 'Aboneliği görüntüle',
+      freeBanner: 'Ücretsiz sürüm · Masraflar, nafaka ve raporlar için Plus',
       trialBannerOther: 'Ücretsiz denemede {n} gün kaldı',
       trialBannerOne: 'Ücretsiz denemede 1 gün kaldı',
       trialBannerLast: 'Ücretsiz denemenin son günü',
@@ -62,9 +63,21 @@ export const tr: Dict = {
       wechsel_7_7: { title: 'Dönüşümlü bakım 7/7', text: 'Bir hafta bir evde, bir hafta diğerinde.' },
       wechsel_2_2_5_5: { title: 'Dönüşümlü bakım 2-2-5-5', text: 'Sabit hafta içi günleri, hafta sonları dönüşümlü.' },
       wechsel_2_2_3: { title: 'Dönüşümlü bakım 2-2-3', text: 'Kısa aralıklar – küçük çocuklar için uygun.' },
+      wechsel_3_4_4_3: {
+        title: 'Dönüşümlü bakım 3-4-4-3',
+        text: 'Üç gün bir evde, dört gün diğerinde – sonraki hafta tam tersi.',
+      },
+      wechsel_14_14: {
+        title: 'İki haftada bir değişim',
+        text: 'İki hafta bir evde, iki hafta diğerinde – ör. mesafe uzaksa.',
+      },
       residenz_we: {
         title: 'Tek evde yaşama modeli (Residenzmodell)',
         text: 'Çocuk çoğunlukla bir ebeveynde yaşar, iki haftada bir hafta sonu (Cum–Paz) diğerindedir.',
+      },
+      custom: {
+        title: 'Kendi düzeniniz',
+        text: 'Hangi günün kimde olacağını 1 ile 4 hafta için belirlersiniz – sonra tekrarlanır.',
       },
       none: { title: 'Sabit plan yok', text: 'Her günü ayrı ayrı girersiniz.' },
     },
@@ -427,7 +440,7 @@ export const tr: Dict = {
       atYou: 'sizde',
       noPlan: 'plan yok',
       open: '{n} açık',
-      locked: 'yalnızca okuma',
+      locked: 'Plus olmadan',
     },
     invite: {
       shareMessage:
@@ -489,6 +502,11 @@ export const tr: Dict = {
       start: 'Planın başlangıç tarihi',
       firstParent: 'Bu gün çocuğun kaldığı ebeveyn',
       residenzHint: 'Başlangıç olarak bir pazartesi seçin. O haftanın hafta sonu (Cum–Paz) diğer ebeveynde geçer.',
+      customLength: 'Düzen süresi',
+      customWeeksOne: '1 hafta',
+      customWeeksOther: '{n} hafta',
+      customHint:
+        'Bir günü diğer ebeveyne vermek için ona dokunun. Düzen başlangıç gününde başlar ve sonra tekrarlanır.',
       preview: 'Önizleme',
       handover: 'Teslim – ne zaman ve nerede?',
       time: 'Saat',
@@ -673,8 +691,9 @@ export const tr: Dict = {
       benefits: {
         familyTitle: 'Tüm aile için tek abonelik',
         familyText: 'Biri öder, iki ebeveyn de her şeyi kullanır – kimin ödeyeceği konusunda tartışma olmadan.',
-        allTitle: 'Her şey dahil',
-        allText: 'Takvim, masraflar, mesajlar, kararlar, belgeler, PDF raporlar ve fiş fotoğrafları.',
+        allTitle: 'Masraflar, nafaka, belgeler, raporlar',
+        allText:
+          'Fiş fotoğrafıyla masraf paylaşımı, ay ay nafaka, belge paylaşımı ve danışmanlık ile Gençlik Dairesi için PDF raporlar.',
         proofTitle: 'Sağlam kanıtlar',
         proofText: 'Her kayıtta tarih, saat ve sağlama değeri.',
         supportTitle: 'Reklamsız',
@@ -700,7 +719,8 @@ export const tr: Dict = {
       introPrice: 'İlk dönem {price}',
       nothingFound: 'Hiçbir şey bulunamadı',
       heroTitle: 'Zwei Zuhause Plus',
-      heroText: 'İkiniz de katıldığınızda 14 gün ücretsiz deneyin – ardından tüm aileniz için tek abonelik.',
+      heroText:
+        'Takvim, mesajlar ve teslimler ücretsizdir. İkiniz de katıldığınızda Plus 14 gün ücretsiz denenebilir – ardından tüm aileniz için tek abonelik geçerlidir.',
       activeTitle: 'Aile aboneliğiniz etkin ✓',
       activeText: 'Aboneliği kim başlattıysa, kendi telefonunun ayarlarından yönetir veya iptal eder.',
       trialLeftOther: 'Ücretsiz deneme süresi: {n} gün kaldı',
@@ -708,7 +728,7 @@ export const tr: Dict = {
       trialLastDay: 'Ücretsiz deneme süresi: bugün son gün',
       trialSolo: '14 günlük deneme {name} katıldığında başlar. Tek başınıza uygulama {n} gün daha ücretsiz.',
       trialOver:
-        'Ücretsiz deneme süresi sona erdi. Abonelik olmadan her şeyi okuyabilirsiniz, ancak yeni bir şey ekleyemezsiniz.',
+        'Deneme süresi sona erdi. Takvim, mesajlar ve teslimler ücretsiz kalır – masraflar, nafaka, belgeler ve raporlar için Plus gerekir.',
       unavailable: 'Satın alma yalnızca iOS ve Android uygulamasında mümkündür.',
       tierSingle: '1 aile için',
       tierMulti: 'Plus Çoklu Aile – en fazla 3 aile için',
@@ -720,7 +740,7 @@ export const tr: Dict = {
       busy: 'Bir saniye…',
       unlock: 'Abone olun',
       terms:
-        'Abonelik tüm aileniz için geçerlidir – sizin ve diğer ebeveyn için. Süre bitiminden en az 24 saat önce App Store veya Google Play ayarlarından iptal etmediğiniz sürece otomatik olarak yenilenir. Abonelik olmadan deneme süresinden sonra her şey okunabilir ve dışa aktarılabilir kalır.',
+        'Abonelik tüm aileniz için geçerlidir – sizin ve diğer ebeveyn için. Süre bitiminden en az 24 saat önce App Store veya Google Play ayarlarından iptal etmediğiniz sürece otomatik olarak yenilenir. Abonelik olmadan temel işlevler ücretsiz kalır, her şey okunabilir ve dışa aktarılabilir.',
       noPurchase: 'Hesabınıza ait etkin bir satın alma yok.',
       restore: 'Satın alımları geri yükle',
       promoTitle: 'Kupon kodu',

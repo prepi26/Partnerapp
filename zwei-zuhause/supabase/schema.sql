@@ -26,7 +26,17 @@ create table if not exists public.families (
 
 alter table public.families drop constraint if exists families_schedule_model_check;
 alter table public.families add constraint families_schedule_model_check
-  check (schedule_model in ('none', 'wechsel_7_7', 'wechsel_2_2_5_5', 'wechsel_2_2_3', 'residenz_we'));
+  check (schedule_model in ('none', 'wechsel_7_7', 'wechsel_2_2_5_5', 'wechsel_2_2_3', 'wechsel_3_4_4_3', 'wechsel_14_14',
+                            'residenz_we', 'custom'));
+
+-- Eigener Rhythmus (schedule_model = 'custom'): ab dem Starttag je Tag 'a' oder 'b', 1 bis 4 Wochen, wiederholt sich.
+alter table public.families add column if not exists schedule_pattern text not null default '';
+alter table public.families drop constraint if exists families_schedule_pattern_check;
+alter table public.families add constraint families_schedule_pattern_check
+  check (schedule_pattern = '' or (schedule_pattern ~ '^[ab]+$' and length(schedule_pattern) in (7, 14, 21, 28)));
+alter table public.families drop constraint if exists families_custom_needs_pattern;
+alter table public.families add constraint families_custom_needs_pattern
+  check (schedule_model <> 'custom' or schedule_pattern <> '');
 
 -- Wann und wo üblicherweise übergeben wird (z. B. „17:00“, „Kita Sonnenschein“).
 alter table public.families add column if not exists handover_time text not null default '';
@@ -113,9 +123,10 @@ as $$
   from public.families where id = p_family
 $$;
 
--- Darf diese Familie gerade schreiben? Allein höchstens 30 Tage ab Anlegen kostenlos; sobald der andere Elternteil
--- beitritt, 14 Testtage ab dem Beitritt; ein Gutschein verlängert. Danach nur mit Abo – sonst nur lesen.
--- Lesen, Exportieren, eigene Einträge löschen und das Konto löschen gehen immer (DSGVO).
+-- Hat diese Familie gerade Plus? Allein höchstens 30 Tage ab Anlegen kostenlos; sobald der andere Elternteil
+-- beitritt, 14 Testtage ab dem Beitritt; ein Gutschein verlängert; danach mit Abo.
+-- Plus braucht man nur für Kosten, Unterhalt, Dokumente (und in der App für den PDF-Bericht). Kalender, Nachrichten,
+-- Übergaben, Entscheidungen, Vereinbarung, Kind-Infos, Packliste und Tagebuch sind dauerhaft kostenlos.
 -- Muss zu src/data/plus.tsx (SOLO_DAYS, TRIAL_DAYS) passen.
 create or replace function public.family_active(p_family uuid)
 returns boolean
@@ -134,7 +145,22 @@ as $$
   )
 $$;
 
--- Prüft vor einer Antwort: Eintrag gehört zu meiner Familie, und die Familie darf schreiben.
+-- Nur Mitglied der Familie (für kostenlose Bereiche).
+create or replace function public.require_member(p_family uuid)
+returns void
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  if p_family is null or not public.is_my_family(p_family) then
+    raise exception 'not_allowed';
+  end if;
+end;
+$$;
+
+-- Prüft vor einer Antwort in einem Plus-Bereich: Eintrag gehört zu meiner Familie, und die Familie hat Plus.
 create or replace function public.require_active(p_family uuid)
 returns void
 language plpgsql
@@ -288,11 +314,11 @@ create policy families_select on public.families
 drop policy if exists families_update on public.families;
 create policy families_update on public.families
   for update using (parent_a = auth.uid() or parent_b = auth.uid())
-  with check ((parent_a = auth.uid() or parent_b = auth.uid()) and public.family_active(id));
+  with check ((parent_a = auth.uid() or parent_b = auth.uid()));
 
 -- Den Einladungscode lesen nur die Eltern selbst (per Funktion) – nicht eingeladene Fachkräfte.
 revoke select on public.families from authenticated;
-grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first,
+grant select (id, parent_a, parent_b, name_a, name_b, children, schedule_model, schedule_start, schedule_first, schedule_pattern,
               default_share_a, handover_time, handover_place, read_receipts_a, read_receipts_b, plus_until, joined_at,
               school_state, promo_until, plus_payer, created_at)
   on public.families to authenticated;
@@ -324,7 +350,7 @@ $$;
 
 -- Wer zur Familie gehört und der Code sind tabu; Namen, Kinder und Umgangsplan dürfen beide ändern.
 revoke update on public.families from authenticated;
-grant update (name_a, name_b, children, schedule_model, schedule_start, schedule_first, default_share_a,
+grant update (name_a, name_b, children, schedule_model, schedule_start, schedule_first, schedule_pattern, default_share_a,
               handover_time, handover_place, school_state)
   on public.families to authenticated;
 
@@ -350,7 +376,7 @@ create policy schedule_changes_select on public.schedule_changes
 drop policy if exists schedule_changes_insert on public.schedule_changes;
 create policy schedule_changes_insert on public.schedule_changes
   for insert with check (
-    public.is_my_family(family_id) and created_by = auth.uid() and status = 'proposed' and public.family_active(family_id)
+    public.is_my_family(family_id) and created_by = auth.uid() and status = 'proposed'
   );
 -- Nur offene, eigene Vorschläge darf man zurückziehen.
 drop policy if exists schedule_changes_delete on public.schedule_changes;
@@ -364,7 +390,6 @@ security definer
 set search_path = public
 as $$
 begin
-  perform public.require_active((select family_id from public.schedule_changes where id = p_id));
   update public.schedule_changes
      set status = case when p_accept then 'accepted' else 'declined' end,
          answered_at = now()
@@ -496,7 +521,7 @@ drop policy if exists messages_select on public.messages;
 create policy messages_select on public.messages for select using (public.is_my_family(family_id));
 drop policy if exists messages_insert on public.messages;
 create policy messages_insert on public.messages
-  for insert with check (public.is_my_family(family_id) and public.family_active(family_id));
+  for insert with check (public.is_my_family(family_id));
 revoke insert, update, delete on public.messages from authenticated;
 -- Nur Familie und Text kommen vom Gerät; Absender, Zeit, Reihenfolge und Prüfsumme setzt der Server.
 grant insert (family_id, text) on public.messages to authenticated;
@@ -547,7 +572,7 @@ drop policy if exists journal_select on public.journal;
 create policy journal_select on public.journal for select using (user_id = auth.uid());
 drop policy if exists journal_insert on public.journal;
 create policy journal_insert on public.journal
-  for insert with check (user_id = auth.uid() and public.is_my_family(family_id) and public.family_active(family_id));
+  for insert with check (user_id = auth.uid() and public.is_my_family(family_id));
 drop policy if exists journal_delete on public.journal;
 create policy journal_delete on public.journal for delete using (user_id = auth.uid());
 
@@ -605,7 +630,7 @@ create table if not exists public.child_info (
 alter table public.child_info enable row level security;
 drop policy if exists child_info_family on public.child_info;
 create policy child_info_family on public.child_info for all
-  using (public.is_my_family(family_id)) with check (public.is_my_family(family_id) and public.family_active(family_id));
+  using (public.is_my_family(family_id)) with check (public.is_my_family(family_id));
 
 create or replace function public.child_info_touch()
 returns trigger
@@ -646,7 +671,7 @@ create policy decisions_select on public.decisions for select using (public.is_m
 drop policy if exists decisions_insert on public.decisions;
 create policy decisions_insert on public.decisions
   for insert with check (
-    public.is_my_family(family_id) and created_by = auth.uid() and status = 'proposed' and public.family_active(family_id)
+    public.is_my_family(family_id) and created_by = auth.uid() and status = 'proposed'
   );
 drop policy if exists decisions_delete on public.decisions;
 create policy decisions_delete on public.decisions
@@ -659,7 +684,6 @@ security definer
 set search_path = public
 as $$
 begin
-  perform public.require_active((select family_id from public.decisions where id = p_id));
   update public.decisions
      set status = case when p_agree then 'agreed' else 'rejected' end,
          answer_note = left(coalesce(p_note, ''), 2000),
@@ -697,7 +721,7 @@ create policy handovers_select on public.handovers for select using (public.is_m
 drop policy if exists handovers_insert on public.handovers;
 create policy handovers_insert on public.handovers
   for insert with check (
-    public.is_my_family(family_id) and created_by = auth.uid() and reply is null and public.family_active(family_id)
+    public.is_my_family(family_id) and created_by = auth.uid() and reply is null
   );
 -- Nachweise bleiben: kein Bearbeiten und kein Löschen.
 
@@ -708,7 +732,6 @@ security definer
 set search_path = public
 as $$
 begin
-  perform public.require_active((select family_id from public.handovers where id = p_id));
   update public.handovers
      set reply = case when p_confirm then 'confirmed' else 'disputed' end,
          reply_note = left(coalesce(p_note, ''), 1000),
@@ -779,7 +802,7 @@ drop policy if exists agreements_select on public.agreements;
 create policy agreements_select on public.agreements for select using (public.is_my_family(family_id));
 drop policy if exists agreements_insert on public.agreements;
 create policy agreements_insert on public.agreements
-  for insert with check (public.is_my_family(family_id) and public.family_active(family_id));
+  for insert with check (public.is_my_family(family_id));
 revoke update, delete on public.agreements from authenticated;
 
 create or replace function public.accept_agreement(p_id uuid)
@@ -792,7 +815,7 @@ declare
   v_family uuid := (select family_id from public.agreements where id = p_id);
   v_key text := public.parent_key(v_family);
 begin
-  perform public.require_active(v_family);
+  perform public.require_member(v_family);
   -- Zustimmen geht nur zur neuesten Version.
   update public.agreements a
      set accepted_a_at = case when v_key = 'a' then coalesce(accepted_a_at, now()) else accepted_a_at end,
@@ -1208,7 +1231,7 @@ create table if not exists public.packing_items (
 alter table public.packing_items enable row level security;
 drop policy if exists packing_items_family on public.packing_items;
 create policy packing_items_family on public.packing_items for all
-  using (public.is_my_family(family_id)) with check (public.is_my_family(family_id) and public.family_active(family_id));
+  using (public.is_my_family(family_id)) with check (public.is_my_family(family_id));
 
 drop trigger if exists packing_items_touch on public.packing_items;
 create trigger packing_items_touch before insert or update on public.packing_items
@@ -1223,7 +1246,7 @@ security definer
 set search_path = public
 as $$
 begin
-  perform public.require_active(p_family);
+  perform public.require_member(p_family);
   delete from public.packing_items where family_id = p_family and packed and not recurring;
   update public.packing_items set packed = false where family_id = p_family and packed;
 end;
@@ -1274,6 +1297,7 @@ as $$
 $$;
 
 -- Bei wem ist das Kind an welchem Tag? Gleiche Regeln wie src/lib/schedule.ts (Muster + bestätigte Ausnahmen).
+-- F = wer am Starttag das Kind hat, O = der andere; beim eigenen Rhythmus steht 'a'/'b' direkt im Muster.
 create or replace function public.calendar_days(p_family uuid, p_from date, p_to date)
 returns table (day date, parent text)
 language sql
@@ -1287,7 +1311,10 @@ as $$
              when 'wechsel_7_7' then 'FFFFFFFOOOOOOO'
              when 'wechsel_2_2_5_5' then 'FFOOFFFFFOOOOO'
              when 'wechsel_2_2_3' then 'FFOOFFFOOFFOOO'
+             when 'wechsel_3_4_4_3' then 'FFFOOOOFFFFOOO'
+             when 'wechsel_14_14' then 'FFFFFFFFFFFFFFOOOOOOOOOOOOOO'
              when 'residenz_we' then 'FFFFOOOFFFFFFF'
+             when 'custom' then nullif(f.schedule_pattern, '')
            end as pattern
       from public.families f
      where f.id = p_family
@@ -1303,7 +1330,8 @@ as $$
            ch.parent,
            case
              when f.pattern is null or d::date < f.schedule_start then null
-             when substr(f.pattern, ((d::date - f.schedule_start) % 14) + 1, 1) = 'F' then f.schedule_first
+             when f.schedule_model = 'custom' then substr(f.pattern, ((d::date - f.schedule_start) % length(f.pattern)) + 1, 1)
+             when substr(f.pattern, ((d::date - f.schedule_start) % length(f.pattern)) + 1, 1) = 'F' then f.schedule_first
              when f.schedule_first = 'a' then 'b'
              else 'a'
            end

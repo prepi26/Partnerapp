@@ -1,5 +1,6 @@
--- Tests für das Familien-Abo: allein bis 30 Tage, ab Beitritt 14 Testtage, danach nur lesen.
---   ./test-run.sh test-subscription.sql   → erwartet 6 ERROR-Zeilen (je 3 nach Ende der Solo- und der Testzeit)
+-- Tests für das Familien-Abo: allein bis 30 Tage, ab Beitritt 14 Testtage Plus; danach bleibt die Grundversion
+-- (Kalender, Nachrichten, Übergaben …) kostenlos, Plus-Bereiche (Kosten, Unterhalt, Dokumente) brauchen das Abo.
+--   ./test-run.sh test-subscription.sql   → erwartet 3 ERROR-Zeilen (nur Plus-Bereiche nach Ende der Testzeit)
 insert into auth.users (id) values ('00000000-0000-0000-0000-0000000000e1'),('00000000-0000-0000-0000-0000000000e2');
 create or replace function public.as_user(u text) returns void language sql as $$ select set_config('request.jwt.claim.sub', u, false) $$;
 grant execute on function public.as_user(text) to authenticated;
@@ -16,7 +17,7 @@ update families set created_at = now() - interval '20 days';
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e1');
 select family_active(:'fam') as active_alone_day20;
--- Allein, 31 Tage später: nur lesen
+-- Allein, 31 Tage später: Grundversion geht weiter, Kosten nicht
 reset role;
 update families set created_at = now() - interval '31 days';
 set role authenticated;
@@ -32,7 +33,7 @@ select as_user('00000000-0000-0000-0000-0000000000e2');
 select join_family(:'code') is not null as joined;
 select family_active(:'fam') as active_after_join;
 insert into messages (family_id, text) values (:'fam', 'nach Beitritt');
--- 15 Tage nach dem Beitritt: nur lesen
+-- 15 Tage nach dem Beitritt: Grundversion geht weiter, Unterhalt und Kosten nicht
 reset role;
 update families set joined_at = now() - interval '15 days';
 set role authenticated;
@@ -41,10 +42,14 @@ select family_active(:'fam') as active_after_trial;
 insert into messages (family_id, text) values (:'fam', 'nach der Testzeit');
 insert into maintenance_payments (family_id, payer, month, amount_cents, paid_on) values (:'fam', 'a', '2026-10-01', 1000, '2026-10-02');
 insert into packing_items (family_id, label) values (:'fam', 'Jacke');
--- Abo der Familie: beide dürfen wieder schreiben
+insert into expenses (family_id, title, amount_cents, day, paid_by) values (:'fam', 'Schuhe', 1000, '2026-10-10', 'b');
+select count(*) as free_packing from packing_items;
+-- Abo der Familie: auch Kosten gehen wieder
 reset role;
 update families set plus_until = now() + interval '1 month';
 set role authenticated;
 select as_user('00000000-0000-0000-0000-0000000000e1');
 insert into messages (family_id, text) values (:'fam', 'mit Abo');
+insert into expenses (family_id, title, amount_cents, day, paid_by) values (:'fam', 'Schuhe', 1000, '2026-10-10', 'a');
 select count(*) as msgs_now from messages;
+select count(*) as expenses_now from expenses;

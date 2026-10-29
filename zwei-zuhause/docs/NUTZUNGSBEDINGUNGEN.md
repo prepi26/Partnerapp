@@ -12,7 +12,7 @@ empfohlen.)*
 
 Zwei Zuhause ist eine App zur Organisation zwischen getrennt lebenden Eltern: Kalender, Kosten, Nachrichten,
 Entscheidungen, Übergaben, Elternvereinbarung, Infos zum Kind, privates Tagebuch, Berichte und Lesezugang für
-Fachkräfte. Die ersten 14 Tage zu zweit sind kostenlos, danach ist ein Abo nötig (Abschnitt 5).
+Fachkräfte. Die Grundversion ist kostenlos; Kosten, Unterhalt, Dokumente und Berichte gehören zum Abo „Plus“ (Abschnitt 5).
 
 ## 2. Keine Rechtsberatung
 
@@ -37,15 +37,16 @@ entscheidet diese selbst. Die Aufzeichnungen belegen Zeitpunkt und Inhalt, nicht
 
 ## 5. Zwei Zuhause Plus (Abo)
 
-- Die ersten **14 Tage ab dem Beitritt des zweiten Elternteils** sind kostenlos und voll nutzbar. Solange nur ein
+- Plus ist die ersten **14 Tage ab dem Beitritt des zweiten Elternteils** kostenlos. Solange nur ein
   Elternteil dabei ist, ist die App bis zu **30 Tage ab Anlegen der Familie** kostenlos.
 - Danach braucht die Familie das Abo „Zwei Zuhause Plus“ (7,99 € monatlich oder 59,99 € jährlich, Preise laut Store).
   Es gilt für **beide Elternteile der Familie**, unabhängig davon, wer es abschließt.
 - Wer Kinder mit verschiedenen Elternteilen hat, führt dafür getrennte Familien. Das Abo gilt je Familie;
   „Zwei Zuhause Plus Mehrfamilie“ (11,99 € monatlich oder 89,99 € jährlich) gilt für bis zu drei Familien des Elternteils,
   der es abschließt.
-- Ohne Abo können alle Einträge weiterhin gelesen, exportiert und eigene Einträge gelöscht werden; Neues eintragen ist
-  nicht möglich. Fachkraft-Zugänge sind immer kostenlos.
+- Ohne Abo bleibt die Grundversion kostenlos: Kalender, Nachrichten, Übergaben, Entscheidungen, Elternvereinbarung,
+  Infos zum Kind, Packliste und Tagebuch. Kosten, Unterhalt, Dokumente und PDF-Berichte erfordern Plus; bereits
+  eingetragene Einträge bleiben lesbar und exportierbar. Fachkraft-Zugänge sind immer kostenlos.
 - Kauf, Verlängerung, Kündigung und Erstattung laufen über **Apple App Store bzw. Google Play** nach deren Bedingungen.
   Das Abo verlängert sich automatisch, wenn es nicht mindestens 24 Stunden vor Ablauf in den Abo-Einstellungen des
   Stores gekündigt wird. Kündigen: iPhone → Einstellungen → [Name] → Abonnements; Android → Play Store → Abos.

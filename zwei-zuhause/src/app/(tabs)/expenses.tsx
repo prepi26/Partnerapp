@@ -3,7 +3,9 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ExpenseStatus } from '@/components/ExpenseStatus';
+import { PlusCard } from '@/components/SubscriptionBanner';
 import { Card, EmptyState, Fab, GradientHeader } from '@/components/ui';
+import { usePlus } from '@/data/plus';
 import { useFamily } from '@/data/store';
 import { Expense } from '@/data/types';
 import { fmt, useT } from '@/i18n';
@@ -15,6 +17,8 @@ import { colors, radius, spacing } from '@/theme';
 export default function Expenses() {
   const t = useT();
   const { expenses, me, otherName, nameOf, userId, maintenance_terms, maintenance_payments } = useFamily();
+  // Kosten sind ein Plus-Bereich: ohne Plus lesbar, Neues nur mit Abo oder in der Testzeit.
+  const { hasPlus } = usePlus();
   // Unterhalt im laufenden Monat – nur ein Hinweis, die Übersicht liegt auf eigener Seite.
   const thisMonth = monthRows(maintenance_terms, maintenance_payments, today(), 1)[0];
   const raw = balanceAB(expenses);
@@ -30,6 +34,11 @@ export default function Expenses() {
         contentContainerStyle={styles.content}
         ListHeaderComponent={
           <View>
+            {hasPlus ? null : (
+              <View style={{ marginBottom: spacing.sm }}>
+                <PlusCard />
+              </View>
+            )}
             <Card style={styles.balance}>
               <Text style={styles.balanceLabel}>
                 {balance === 0

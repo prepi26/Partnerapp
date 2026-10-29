@@ -55,11 +55,12 @@ export const fr: Dict = {
       too_many_families: 'Un compte ne peut pas contenir plus de 5 familles.',
     },
     subscription: {
-      required: 'L’essai gratuit est terminé. Avec un abonnement, vous pourrez de nouveau tout saisir tous les deux.',
-      readOnlyTitle: 'Lecture seule',
+      required: 'Cela fait partie de Plus. Le calendrier, les messages et les remises de l’enfant restent gratuits.',
+      readOnlyTitle: 'Fonction Plus',
       readOnlyText:
-        'L’essai gratuit est terminé. Avec un abonnement pour toute la famille, vous et {name} pourrez de nouveau tout saisir. La lecture et l’export restent possibles.',
+        'Les frais, la pension alimentaire, les documents et le rapport PDF font partie de Plus – un abonnement vaut pour vous et {name}. Le calendrier, les messages, les remises de l’enfant et tout le reste restent gratuits.',
       cta: 'Voir l’abonnement',
+      freeBanner: 'Version gratuite · Plus pour les frais, la pension et les rapports',
       trialBannerOther: 'Encore {n} jours d’essai gratuit',
       trialBannerOne: 'Encore 1 jour d’essai gratuit',
       trialBannerLast: 'Dernier jour de l’essai gratuit',
@@ -79,9 +80,21 @@ export const fr: Dict = {
         text: 'Jours fixes dans la semaine et week-ends en alternance.',
       },
       wechsel_2_2_3: { title: 'Garde alternée 2-2-3', text: 'Intervalles courts – adapté aux jeunes enfants.' },
+      wechsel_3_4_4_3: {
+        title: 'Garde alternée 3-4-4-3',
+        text: 'Trois jours ici, quatre là-bas – et l’inverse la semaine suivante.',
+      },
+      wechsel_14_14: {
+        title: 'Deux semaines en alternance',
+        text: 'Deux semaines ici, deux semaines là-bas – p. ex. en cas de longs trajets.',
+      },
       residenz_we: {
         title: 'Résidence principale (Residenzmodell)',
         text: 'L’enfant vit principalement chez un parent et un week-end sur deux (ven.–dim.) chez l’autre.',
+      },
+      custom: {
+        title: 'Rythme personnalisé',
+        text: 'Vous définissez sur 1 à 4 semaines qui a l’enfant quel jour – ensuite, cela se répète.',
       },
       none: { title: 'Pas de planning fixe', text: 'Vous saisissez chaque jour séparément.' },
     },
@@ -492,7 +505,7 @@ export const fr: Dict = {
       atYou: 'chez vous',
       noPlan: 'pas de planning',
       open: 'en attente : {n}',
-      locked: 'lecture seule',
+      locked: 'sans Plus',
     },
     invite: {
       shareMessage:
@@ -555,6 +568,11 @@ export const fr: Dict = {
       start: 'Le planning commence le',
       firstParent: 'Ce jour-là, l’enfant est chez',
       residenzHint: 'Choisissez un lundi comme début. Le week-end de cette semaine (ven.–dim.) est chez l’autre parent.',
+      customLength: 'Durée du rythme',
+      customWeeksOne: '1 semaine',
+      customWeeksOther: '{n} semaines',
+      customHint:
+        'Touchez un jour pour le donner à l’autre parent. Le rythme commence le jour de départ, puis se répète.',
       preview: 'Aperçu',
       handover: 'Remise de l’enfant – quand et où ?',
       time: 'Heure',
@@ -745,8 +763,9 @@ export const fr: Dict = {
       benefits: {
         familyTitle: 'Un abonnement pour toute la famille',
         familyText: 'Un seul parent paie, les deux profitent de tout – sans dispute pour savoir qui paie.',
-        allTitle: 'Tout est inclus',
-        allText: 'Calendrier, frais, messages, décisions, documents, rapports PDF et photos des justificatifs.',
+        allTitle: 'Frais, pension, documents, rapports',
+        allText:
+          'Partage des dépenses avec photo du justificatif, pension alimentaire mois par mois, partage de documents et rapports PDF pour un conseiller et l’office de la jeunesse.',
         proofTitle: 'Des preuves solides',
         proofText: 'Avec date, heure et somme de contrôle pour chaque saisie.',
         supportTitle: 'Sans publicité',
@@ -773,7 +792,7 @@ export const fr: Dict = {
       nothingFound: 'Aucun résultat',
       heroTitle: 'Zwei Zuhause Plus',
       heroText:
-        'Essai gratuit de 14 jours dès que vous êtes tous les deux inscrits – ensuite, un seul abonnement pour toute votre famille.',
+        'Le calendrier, les messages et les remises de l’enfant sont gratuits. Plus s’essaie gratuitement 14 jours dès que vous êtes tous les deux inscrits – ensuite, un seul abonnement pour toute votre famille.',
       activeTitle: 'Votre abonnement familial est actif ✓',
       activeText: 'Le parent qui a souscrit l’abonnement le gère ou le résilie dans les réglages de son téléphone.',
       trialLeftOther: 'Essai gratuit : encore {n} jours',
@@ -782,7 +801,7 @@ export const fr: Dict = {
       trialSolo:
         'Les 14 jours d’essai commencent quand {name} vous rejoint. Seul(e), l’appli reste gratuite encore {n} jours.',
       trialOver:
-        'L’essai gratuit est terminé. Sans abonnement, vous pouvez tout lire, mais plus rien saisir de nouveau.',
+        'L’essai est terminé. Le calendrier, les messages et les remises de l’enfant restent gratuits – pour les frais, la pension alimentaire, les documents et les rapports, il vous faut Plus.',
       unavailable: 'Les achats ne sont possibles que dans l’application iOS ou Android.',
       tierSingle: 'Pour 1 famille',
       tierMulti: 'Plus Multi-familles – jusqu’à 3 familles',
@@ -794,7 +813,7 @@ export const fr: Dict = {
       busy: 'Un instant…',
       unlock: 'S’abonner',
       terms:
-        'L’abonnement vaut pour toute votre famille – pour vous et pour l’autre parent. Il se renouvelle automatiquement, sauf si vous le résiliez au moins 24 heures avant son échéance dans les réglages de l’App Store ou de Google Play. Sans abonnement, tout reste consultable et exportable après la période d’essai.',
+        'L’abonnement vaut pour toute votre famille – pour vous et pour l’autre parent. Il se renouvelle automatiquement, sauf si vous le résiliez au moins 24 heures avant son échéance dans les réglages de l’App Store ou de Google Play. Sans abonnement, les fonctions de base restent gratuites et tout reste consultable et exportable.',
       noPurchase: 'Aucun achat actif n’est associé à votre compte.',
       restore: 'Restaurer les achats',
       promoTitle: 'Code promo',

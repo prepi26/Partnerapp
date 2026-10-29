@@ -8,17 +8,17 @@ import { fmt, useT } from '@/i18n';
 import { colors, radius, spacing } from '@/theme';
 
 /**
- * Hinweis zur Testzeit bzw. „nur noch lesen“. Während der Testzeit dezent, danach deutlich.
- * Ohne Kaufmöglichkeit (Web/Entwicklung) nur, wenn wirklich gesperrt ist.
+ * Hinweis zur Testzeit bzw. zur kostenlosen Version. Immer dezent – die Grundfunktionen bleiben ja frei.
+ * Ohne Kaufmöglichkeit (Web/Entwicklung) erst kurz vor Ende der Testzeit.
  */
 export function SubscriptionBanner() {
   const t = useT();
   const { otherName } = useFamily();
-  const { active, inTrial, solo, promoUntil, trialDaysLeft, canWrite } = usePlus();
+  const { active, inTrial, solo, promoUntil, trialDaysLeft, hasPlus } = usePlus();
   const s = t.common.subscription;
   if (active) return null;
 
-  if (canWrite) {
+  if (hasPlus) {
     // Allein erklärt die Einladungskarte die Testzeit – erst kurz vor Ende der kostenlosen Zeit erinnern.
     if (solo && trialDaysLeft > 5) return null;
     if (!purchasesAvailable && trialDaysLeft > 3) return null;
@@ -42,9 +42,24 @@ export function SubscriptionBanner() {
     );
   }
 
+  // Kostenlose Version: ein ruhiger Hinweis auf Plus.
+  return (
+    <Pressable accessibilityRole="button" onPress={() => router.push('/plus')} style={styles.trial}>
+      <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+      <Text style={styles.trialText}>{s.freeBanner}</Text>
+      <Ionicons name="chevron-forward" size={16} color={colors.primary} />
+    </Pressable>
+  );
+}
+
+/** Erklärt, warum ein Plus-Bereich gerade gesperrt ist, und führt zum Abo. */
+export function PlusCard() {
+  const t = useT();
+  const { otherName } = useFamily();
+  const s = t.common.subscription;
   return (
     <View style={styles.locked}>
-      <Text style={styles.lockedTitle}>🔒 {s.readOnlyTitle}</Text>
+      <Text style={styles.lockedTitle}>✨ {s.readOnlyTitle}</Text>
       <Text style={styles.lockedText}>{fmt(s.readOnlyText, { name: otherName })}</Text>
       <Pressable accessibilityRole="button" onPress={() => router.push('/plus')} style={styles.button}>
         <Text style={styles.buttonText}>{s.cta}</Text>
@@ -53,13 +68,13 @@ export function SubscriptionBanner() {
   );
 }
 
-/** Für Bildschirme, auf denen man etwas einträgt: nach der Testzeit ohne Abo statt des Formulars. */
-export function WriteGate({ children }: { children: React.ReactNode }) {
-  const { canWrite } = usePlus();
-  if (canWrite) return <>{children}</>;
+/** Für Plus-Bereiche (Kosten, Unterhalt, Dokumente): ohne Plus statt des Formulars die Erklärung. */
+export function PlusGate({ children }: { children: React.ReactNode }) {
+  const { hasPlus } = usePlus();
+  if (hasPlus) return <>{children}</>;
   return (
     <View style={{ padding: spacing.lg }}>
-      <SubscriptionBanner />
+      <PlusCard />
     </View>
   );
 }
@@ -75,7 +90,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   trialText: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.primary },
-  locked: { backgroundColor: colors.parentBPale, borderRadius: radius.md, padding: spacing.lg, gap: spacing.sm },
+  locked: { backgroundColor: colors.primaryPale, borderRadius: radius.md, padding: spacing.lg, gap: spacing.sm },
   lockedTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   lockedText: { fontSize: 14, color: colors.text, lineHeight: 20 },
   button: {

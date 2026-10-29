@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DateField } from '@/components/DateField';
-import { WriteGate } from '@/components/SubscriptionBanner';
 import { Chip, Field, Label, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { HandoverStatus } from '@/data/types';
@@ -33,7 +32,7 @@ export default function HandoverNew() {
   };
 
   return (
-    <WriteGate>
+    <>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <DateField label={t.calendar.handoverNew.day} value={day} onChange={setDay} maximumDate={today()} />
@@ -76,7 +75,7 @@ export default function HandoverNew() {
           <Text style={styles.hint}>{t.calendar.handoverNew.hint}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </>
   );
 }
 

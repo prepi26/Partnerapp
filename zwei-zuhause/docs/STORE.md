@@ -13,7 +13,7 @@ Getrennt – und trotzdem gemeinsam Eltern? Zwei Zuhause bringt Ordnung in Umgan
 Streit, mehr Klarheit und ein Kind, das zwischen zwei Zuhause nicht zum Boten werden muss.
 
 **UMGANGSKALENDER**
-• Wechselmodell 7/7, 2-2-5-5, 2-2-3 oder Residenzmodell – einmal einstellen, fertig
+• Wechselmodell 7/7, 2-2-5-5, 2-2-3, 3-4-4-3, zwei Wochen im Wechsel, Residenzmodell – oder euer eigener Rhythmus über bis zu 4 Wochen
 • Tausch oder Ferien vorschlagen, der andere stimmt zu oder lehnt ab
 • Auf einen Blick: Bei wem ist das Kind heute, wann und wo ist die nächste Übergabe?
 • Erinnerung am Vorabend jeder Übergabe
@@ -57,8 +57,10 @@ Konto löschen mit einem Tipp.
 • „Alle Kinder heute“: wer ist gerade wo, auf einen Blick
 • Ausgaben für mehrere Kinder fair auf die Familien aufteilen
 
-**14 TAGE KOSTENLOS TESTEN** – ab dem Tag, an dem ihr beide dabei seid. Danach ein Abo für die ganze Familie: Zwei Zuhause Plus für 7,99 € im Monat oder
-59,99 € im Jahr. Einer zahlt, beide Eltern nutzen alles. Plus Mehrfamilie für bis zu 3 Familien: 11,99 € im Monat oder 89,99 € im Jahr. Ohne Abo bleiben alle Einträge lesbar und exportierbar.
+**KOSTENLOS NUTZEN** – Kalender, Nachrichten, Übergaben, Entscheidungen, Elternvereinbarung und Packliste ohne Abo.
+**ZWEI ZUHAUSE PLUS** für Kosten, Unterhalt, Dokumente und PDF-Berichte – 14 Tage gratis, sobald ihr beide dabei seid,
+danach 7,99 € im Monat oder 59,99 € im Jahr für die ganze Familie. Plus Mehrfamilie für bis zu 3 Familien: 11,99 € im
+Monat oder 89,99 € im Jahr.
 
 Zwei Zuhause ersetzt keine Rechtsberatung. Bei Fragen zu Sorge, Umgang und Unterhalt helfen Jugendamt,
 Beratungsstellen und Fachanwälte für Familienrecht.

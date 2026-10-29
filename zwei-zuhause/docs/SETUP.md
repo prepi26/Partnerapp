@@ -38,10 +38,10 @@ Danach testen: `npx expo start` und mit der Kamera den QR-Code scannen.
 
 **Modell:** Ein Abo für die **ganze Familie** – einer zahlt, beide Eltern nutzen alles. Wer Kinder mit verschiedenen
 Eltern hat, legt mehrere Familien an (streng getrennt); jede Familie braucht ihr Abo – oder der Elternteil nimmt
-„Plus Mehrfamilie“ für bis zu 3 eigene Familien. Welche Familien ein Abo abdeckt, legt `apply_plus()` fest. **14 Tage kostenlos** ab dem
-Beitritt des zweiten Elternteils; wer allein startet, kann die App bis zu 30 Tage kostenlos nutzen. Danach ohne Abo
-**nur noch lesen** (Lesen, Export, eigene Einträge löschen und Konto löschen
-gehen immer – DSGVO). Die Sperre setzt die Datenbank durch (`family_active()` in `schema.sql`), nicht nur die App.
+„Plus Mehrfamilie“ für bis zu 3 eigene Familien. Welche Familien ein Abo abdeckt, legt `apply_plus()` fest. **Kostenlose Grundversion für immer:** Kalender, Tausch, Nachrichten, Übergaben, Entscheidungen, Elternvereinbarung,
+Infos zum Kind, Packliste, Schulferien, Kalender-Abo, Tagebuch, Fachkraft-Zugang. **Plus** braucht man für Kosten,
+Unterhalt, Dokumente und den PDF-Bericht. Plus ist **14 Tage kostenlos** ab dem Beitritt des zweiten Elternteils (allein
+bis zu 30 Tage). Die Grenze setzt die Datenbank durch (`family_active()` in `schema.sql`), nicht nur die App.
 Fachkräfte zahlen nie.
 
 1. **App Store Connect** → App anlegen (Bundle-ID `de.zweizuhause.app`) → *Monetarisierung → Abonnements* →

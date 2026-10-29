@@ -54,11 +54,12 @@ export const pl: Dict = {
       too_many_families: 'Konto może obejmować najwyżej 5 rodzin.',
     },
     subscription: {
-      required: 'Bezpłatny okres próbny się skończył. Z subskrypcją oboje znów możecie wszystko dodawać.',
-      readOnlyTitle: 'Tylko do odczytu',
+      required: 'To należy do Plus. Kalendarz, wiadomości i przekazania pozostają bezpłatne.',
+      readOnlyTitle: 'Funkcja Plus',
       readOnlyText:
-        'Bezpłatny okres próbny się skończył. Z subskrypcją dla całej rodziny ty i {name} znów możecie wszystko dodawać. Odczyt i eksport nadal działają.',
+        'Koszty, alimenty, dokumenty i raport PDF należą do Plus – z jednej subskrypcji korzystacie ty i {name}. Kalendarz, wiadomości, przekazania i cała reszta pozostają bezpłatne.',
       cta: 'Zobacz subskrypcję',
+      freeBanner: 'Wersja bezpłatna · Plus dla kosztów, alimentów i raportów',
       trialBannerOther: 'Bezpłatny okres próbny – pozostałe dni: {n}',
       trialBannerOne: 'Został 1 dzień bezpłatnego okresu próbnego',
       trialBannerLast: 'Ostatni dzień bezpłatnego okresu próbnego',
@@ -76,10 +77,19 @@ export const pl: Dict = {
       wechsel_7_7: { title: 'Opieka naprzemienna 7/7', text: 'Tydzień tu, tydzień tam.' },
       wechsel_2_2_5_5: { title: 'Opieka naprzemienna 2-2-5-5', text: 'Stałe dni tygodnia plus weekendy na zmianę.' },
       wechsel_2_2_3: { title: 'Opieka naprzemienna 2-2-3', text: 'Krótkie odstępy – dobre dla małych dzieci.' },
+      wechsel_3_4_4_3: {
+        title: 'Opieka naprzemienna 3-4-4-3',
+        text: 'Trzy dni tu, cztery tam – w następnym tygodniu odwrotnie.',
+      },
+      wechsel_14_14: {
+        title: 'Dwa tygodnie na zmianę',
+        text: 'Dwa tygodnie tu, dwa tygodnie tam – np. przy dużych odległościach.',
+      },
       residenz_we: {
         title: 'Model rezydencyjny (Residenzmodell)',
         text: 'Dziecko mieszka głównie u jednego z rodziców, co drugi weekend (pt–nd) u drugiego.',
       },
+      custom: { title: 'Własny rytm', text: 'Ustalacie na 1–4 tygodnie, kto ma który dzień – potem to się powtarza.' },
       none: { title: 'Bez stałego planu', text: 'Każdy dzień wpisujecie osobno.' },
     },
     expenseCategories: {
@@ -442,7 +452,7 @@ export const pl: Dict = {
       atYou: 'u ciebie',
       noPlan: 'brak planu',
       open: 'otwarte: {n}',
-      locked: 'tylko odczyt',
+      locked: 'bez Plus',
     },
     invite: {
       shareMessage:
@@ -504,6 +514,10 @@ export const pl: Dict = {
       start: 'Plan zaczyna się',
       firstParent: 'Tego dnia dziecko jest u',
       residenzHint: 'Wybierz poniedziałek jako początek. Weekend tego tygodnia (pt–nd) jest u drugiego rodzica.',
+      customLength: 'Długość rytmu',
+      customWeeksOne: '1 tydzień',
+      customWeeksOther: '{n} tyg.',
+      customHint: 'Dotknij dnia, aby oddać go drugiemu rodzicowi. Rytm zaczyna się w dniu startu i potem się powtarza.',
       preview: 'Podgląd',
       handover: 'Przekazanie – kiedy i gdzie?',
       time: 'Godzina',
@@ -689,8 +703,9 @@ export const pl: Dict = {
       benefits: {
         familyTitle: 'Jedna subskrypcja dla całej rodziny',
         familyText: 'Jedno płaci, oboje rodzice korzystają ze wszystkiego – bez kłótni o to, kto płaci.',
-        allTitle: 'Wszystko w cenie',
-        allText: 'Kalendarz, koszty, wiadomości, decyzje, dokumenty, raporty PDF i zdjęcia paragonów.',
+        allTitle: 'Koszty, alimenty, dokumenty, raporty',
+        allText:
+          'Dzielenie wydatków ze zdjęciem paragonu, alimenty miesiąc po miesiącu, udostępnianie dokumentów i raporty PDF dla poradni i urzędu ds. dzieci i młodzieży.',
         proofTitle: 'Wiarygodne dowody',
         proofText: 'Z datą, godziną i sumą kontrolną przy każdym wpisie.',
         supportTitle: 'Bez reklam',
@@ -716,7 +731,8 @@ export const pl: Dict = {
       introPrice: 'Najpierw {price}',
       nothingFound: 'Nic nie znaleziono',
       heroTitle: 'Zwei Zuhause Plus',
-      heroText: '14 dni za darmo, gdy oboje jesteście w aplikacji – potem jedna subskrypcja dla całej waszej rodziny.',
+      heroText:
+        'Kalendarz, wiadomości i przekazania są bezpłatne. Plus testujecie 14 dni za darmo, gdy oboje jesteście w aplikacji – potem jedna subskrypcja dla całej waszej rodziny.',
       activeTitle: 'Wasza subskrypcja rodzinna jest aktywna ✓',
       activeText: 'Kto wykupił subskrypcję, ten zarządza nią lub ją anuluje w ustawieniach swojego telefonu.',
       trialLeftOther: 'Bezpłatny okres próbny – pozostałe dni: {n}',
@@ -725,7 +741,7 @@ export const pl: Dict = {
       trialSolo:
         '14 dni próbnych zacznie się, gdy dołączy {name}. W pojedynkę aplikacja jest jeszcze darmowa – pozostałe dni: {n}.',
       trialOver:
-        'Bezpłatny okres próbny się skończył. Bez subskrypcji możecie wszystko czytać, ale nie możecie dodawać nic nowego.',
+        'Okres próbny się skończył. Kalendarz, wiadomości i przekazania pozostają bezpłatne – do kosztów, alimentów, dokumentów i raportów potrzebujecie Plus.',
       unavailable: 'Zakupy są możliwe tylko w aplikacji na iOS i Androida.',
       tierSingle: 'Dla 1 rodziny',
       tierMulti: 'Plus Wielorodzinny – do 3 rodzin',
@@ -736,7 +752,7 @@ export const pl: Dict = {
       busy: 'Chwileczkę…',
       unlock: 'Wykup subskrypcję',
       terms:
-        'Subskrypcja obejmuje całą waszą rodzinę – ciebie i drugiego rodzica. Odnawia się automatycznie, dopóki nie anulujesz jej najpóźniej 24 godziny przed upływem okresu w ustawieniach App Store lub Google Play. Bez subskrypcji po okresie próbnym wszystko pozostaje dostępne do odczytu i eksportu.',
+        'Subskrypcja obejmuje całą waszą rodzinę – ciebie i drugiego rodzica. Odnawia się automatycznie, dopóki nie anulujesz jej najpóźniej 24 godziny przed upływem okresu w ustawieniach App Store lub Google Play. Bez subskrypcji podstawowe funkcje pozostają bezpłatne, a wszystko dostępne do odczytu i eksportu.',
       noPurchase: 'Do twojego konta nie jest przypisany żaden aktywny zakup.',
       restore: 'Przywróć zakupy',
       promoTitle: 'Kod promocyjny',

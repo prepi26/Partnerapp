@@ -66,6 +66,11 @@ export const calendar = {
     start: 'Plan beginnt am',
     firstParent: 'An diesem Tag ist das Kind bei',
     residenzHint: 'Wähle als Start einen Montag. Das Wochenende dieser Woche (Fr–So) ist beim anderen Elternteil.',
+    customLength: 'Rhythmus über',
+    /** {n} Anzahl Wochen */
+    customWeeksOne: '1 Woche',
+    customWeeksOther: '{n} Wochen',
+    customHint: 'Tipp auf einen Tag, um ihn dem anderen Elternteil zu geben. Der Rhythmus beginnt am Starttag und wiederholt sich danach.',
     preview: 'Vorschau',
     handover: 'Übergabe – wann und wo?',
     time: 'Uhrzeit',

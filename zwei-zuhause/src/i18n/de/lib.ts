@@ -4,9 +4,15 @@ export const lib = {
     wechsel_7_7: { title: 'Wechselmodell 7/7', text: 'Eine Woche hier, eine Woche dort.' },
     wechsel_2_2_5_5: { title: 'Wechselmodell 2-2-5-5', text: 'Feste Wochentage plus Wochenenden im Wechsel.' },
     wechsel_2_2_3: { title: 'Wechselmodell 2-2-3', text: 'Kurze Abstände – gut für kleine Kinder.' },
+    wechsel_3_4_4_3: { title: 'Wechselmodell 3-4-4-3', text: 'Drei Tage hier, vier dort – in der Woche darauf umgekehrt.' },
+    wechsel_14_14: { title: 'Zwei Wochen im Wechsel', text: 'Zwei Wochen hier, zwei Wochen dort – z. B. bei weiten Wegen.' },
     residenz_we: {
       title: 'Residenzmodell',
       text: 'Das Kind lebt überwiegend bei einem, jedes zweite Wochenende (Fr–So) beim anderen.',
+    },
+    custom: {
+      title: 'Eigener Rhythmus',
+      text: 'Ihr legt für 1 bis 4 Wochen fest, wer an welchem Tag dran ist – danach wiederholt es sich.',
     },
     none: { title: 'Kein fester Plan', text: 'Ihr tragt jeden Tag einzeln ein.' },
   },

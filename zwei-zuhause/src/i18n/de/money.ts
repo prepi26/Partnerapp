@@ -99,8 +99,8 @@ export const money = {
     benefits: {
       familyTitle: 'Ein Abo für die ganze Familie',
       familyText: 'Einer zahlt, beide Eltern nutzen alles – ohne Streit darüber, wer zahlt.',
-      allTitle: 'Alles drin',
-      allText: 'Kalender, Kosten, Nachrichten, Entscheidungen, Dokumente, Berichte als PDF und Belegfotos.',
+      allTitle: 'Kosten, Unterhalt, Dokumente, Berichte',
+      allText: 'Ausgaben teilen mit Belegfoto, Unterhalt Monat für Monat, Dokumente teilen und Berichte als PDF für Beratung und Jugendamt.',
       proofTitle: 'Nachweise, die halten',
       proofText: 'Mit Datum, Uhrzeit und Prüfsumme zu jedem Eintrag.',
       supportTitle: 'Ohne Werbung',
@@ -130,7 +130,7 @@ export const money = {
     introPrice: 'Erst {price}',
     nothingFound: 'Nichts gefunden',
     heroTitle: 'Zwei Zuhause Plus',
-    heroText: '14 Tage kostenlos testen, sobald ihr beide dabei seid – danach ein Abo für eure ganze Familie.',
+    heroText: 'Kalender, Nachrichten und Übergaben sind kostenlos. Plus testet ihr 14 Tage gratis, sobald ihr beide dabei seid – danach gilt ein Abo für eure ganze Familie.',
     activeTitle: 'Euer Familien-Abo ist aktiv ✓',
     activeText: 'Wer das Abo abgeschlossen hat, verwaltet oder kündigt es in den Einstellungen seines Handys.',
     /** Testzeit läuft noch: {n} Tage */
@@ -139,7 +139,7 @@ export const money = {
     trialLastDay: 'Kostenlose Testzeit: heute ist der letzte Tag',
     /** {name} anderer Elternteil, {n} Tage */
     trialSolo: 'Die 14 Testtage starten, wenn {name} beitritt. Allein ist die App noch {n} Tage kostenlos.',
-    trialOver: 'Die kostenlose Testzeit ist vorbei. Ohne Abo könnt ihr alles lesen, aber nichts Neues eintragen.',
+    trialOver: 'Die Testzeit ist vorbei. Kalender, Nachrichten und Übergaben bleiben kostenlos – für Kosten, Unterhalt, Dokumente und Berichte braucht ihr Plus.',
     unavailable: 'Käufe sind nur in der iOS- und Android-App möglich.',
     tierSingle: 'Für 1 Familie',
     tierMulti: 'Plus Mehrfamilie – für bis zu 3 Familien',
@@ -150,7 +150,7 @@ export const money = {
     busy: 'Einen Moment…',
     unlock: 'Abo abschließen',
     terms:
-      'Das Abo gilt für eure ganze Familie – für dich und den anderen Elternteil. Es verlängert sich automatisch, bis du es mindestens 24 Stunden vor Ablauf in den Einstellungen von App Store bzw. Google Play kündigst. Ohne Abo bleibt nach der Testzeit alles lesbar und exportierbar.',
+      'Das Abo gilt für eure ganze Familie – für dich und den anderen Elternteil. Es verlängert sich automatisch, bis du es mindestens 24 Stunden vor Ablauf in den Einstellungen von App Store bzw. Google Play kündigst. Ohne Abo bleiben die Grundfunktionen kostenlos und alles lesbar und exportierbar.',
     noPurchase: 'Zu deinem Konto gibt es keinen aktiven Kauf.',
     restore: 'Käufe wiederherstellen',
     promoTitle: 'Gutscheincode',

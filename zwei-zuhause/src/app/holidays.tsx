@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Chip, Label, SecondaryButton } from '@/components/ui';
-import { usePlus } from '@/data/plus';
 import { attempt, useFamily } from '@/data/store';
 import { fmt, useT } from '@/i18n';
 import { formatShort, parseISO, toISO, today } from '@/lib/dates';
@@ -15,7 +14,6 @@ export default function Holidays() {
   const t = useT();
   const h = t.calendar.holidays;
   const { family, nameOf, schedule_changes, updateFamily } = useFamily();
-  const { canWrite } = usePlus();
   const region = family.school_state;
   const accepted = useMemo(() => acceptedChanges(schedule_changes), [schedule_changes]);
   const list = region ? upcomingHolidays(region, toISO(today())).slice(0, 8) : [];
@@ -47,7 +45,7 @@ export default function Holidays() {
                 {fmt(h.split, { a: nameOf('a'), b: nameOf('b'), na: counts.a, nb: counts.b })}
               </Text>
             ) : null}
-            {canWrite && holiday.start > now ? (
+            {holiday.start > now ? (
               <View style={{ marginTop: spacing.xs }}>
                 <SecondaryButton
                   title={h.propose}
@@ -76,12 +74,12 @@ export default function Holidays() {
           <Text style={styles.country}>{group.title}</Text>
           <View style={styles.chips}>
             {group.regions.map((r) => (
-              <Chip key={r.code} label={r.name} selected={region === r.code} onPress={() => canWrite && choose(r.code)} />
+              <Chip key={r.code} label={r.name} selected={region === r.code} onPress={() => choose(r.code)} />
             ))}
           </View>
         </View>
       ))}
-      {region ? <Chip label={h.none} tint="accent" selected={false} onPress={() => canWrite && choose('')} /> : null}
+      {region ? <Chip label={h.none} tint="accent" selected={false} onPress={() => choose('')} /> : null}
 
     </>
   );

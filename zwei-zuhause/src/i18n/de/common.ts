@@ -58,12 +58,13 @@ export const common = {
   },
   subscription: {
     /** Fehlermeldung, wenn nach der Testzeit ohne Abo geschrieben wird */
-    required: 'Die kostenlose Testzeit ist vorbei. Mit einem Abo könnt ihr beide wieder alles eintragen.',
-    readOnlyTitle: 'Nur noch lesen',
+    required: 'Das gehört zu Plus. Kalender, Nachrichten und Übergaben bleiben kostenlos.',
+    readOnlyTitle: 'Plus-Funktion',
     /** {name} anderer Elternteil */
     readOnlyText:
-      'Die kostenlose Testzeit ist vorbei. Mit einem Abo für die ganze Familie können du und {name} wieder alles eintragen. Lesen und Exportieren geht weiterhin.',
+      'Kosten, Unterhalt, Dokumente und der PDF-Bericht gehören zu Plus – ein Abo gilt für dich und {name}. Kalender, Nachrichten, Übergaben und alles andere bleiben kostenlos.',
     cta: 'Abo ansehen',
+    freeBanner: 'Kostenlose Version · Plus für Kosten, Unterhalt und Berichte',
     trialBannerOther: 'Noch {n} Tage kostenlos testen',
     trialBannerOne: 'Noch 1 Tag kostenlos testen',
     trialBannerLast: 'Letzter Tag der kostenlosen Testzeit',

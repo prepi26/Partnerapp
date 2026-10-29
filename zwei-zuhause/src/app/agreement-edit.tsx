@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text } from 'react-native';
 
-import { WriteGate } from '@/components/SubscriptionBanner';
 import { Field, PrimaryButton } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { AgreementContent } from '@/data/types';
@@ -40,7 +39,7 @@ export default function AgreementEdit() {
   };
 
   return (
-    <WriteGate>
+    <>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Text style={styles.intro}>{fmt(t.family.agreementEdit.intro, { name: otherName })}</Text>
@@ -64,7 +63,7 @@ export default function AgreementEdit() {
           <Text style={styles.hint}>{fmt(t.family.agreementEdit.filled, { n: filled, total: sections.length })}</Text>
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </>
   );
 }
 

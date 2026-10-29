@@ -3,9 +3,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { parentColor } from '@/components/ParentTag';
-import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { Card, Chip, confirmDestructive, SecondaryButton, tap } from '@/components/ui';
-import { usePlus } from '@/data/plus';
 import { attempt, useFamily } from '@/data/store';
 import { PackingItem, ParentKey } from '@/data/types';
 import { fmt, useT } from '@/i18n';
@@ -18,7 +16,6 @@ export default function Packing() {
   const t = useT();
   const p = t.family.packing;
   const { packing_items, addPackingItem, resetPacking } = useFamily();
-  const { canWrite } = usePlus();
   const [label, setLabel] = useState('');
   const [recurring, setRecurring] = useState(false);
 
@@ -35,32 +32,29 @@ export default function Packing() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={styles.intro}>{p.intro}</Text>
-        <SubscriptionBanner />
 
-        <Group title={p.always} hint={p.alwaysHint} items={always} readOnly={!canWrite} />
-        <Group title={p.once} hint={p.onceHint} items={once} readOnly={!canWrite} />
+        <Group title={p.always} hint={p.alwaysHint} items={always} />
+        <Group title={p.once} hint={p.onceHint} items={once} />
 
-        {canWrite ? (
-          <Card style={{ gap: spacing.sm }}>
-            <TextInput
-              value={label}
-              onChangeText={setLabel}
-              placeholder={p.addPlaceholder}
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-              maxLength={100}
-              returnKeyType="done"
-              onSubmitEditing={add}
-            />
-            <View style={styles.addRow}>
-              <Chip label={`↻ ${p.addAlways}`} tint="accent" selected={recurring} onPress={() => setRecurring(!recurring)} />
-              <View style={{ flex: 1 }} />
-              <SecondaryButton title={p.add} icon="add" onPress={add} />
-            </View>
-          </Card>
-        ) : null}
+        <Card style={{ gap: spacing.sm }}>
+          <TextInput
+            value={label}
+            onChangeText={setLabel}
+            placeholder={p.addPlaceholder}
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            maxLength={100}
+            returnKeyType="done"
+            onSubmitEditing={add}
+          />
+          <View style={styles.addRow}>
+            <Chip label={`↻ ${p.addAlways}`} tint="accent" selected={recurring} onPress={() => setRecurring(!recurring)} />
+            <View style={{ flex: 1 }} />
+            <SecondaryButton title={p.add} icon="add" onPress={add} />
+          </View>
+        </Card>
 
-        {canWrite && packing_items.some((i) => i.packed) ? (
+        {packing_items.some((i) => i.packed) ? (
           <SecondaryButton
             title={p.reset}
             icon="refresh"
@@ -72,13 +66,13 @@ export default function Packing() {
   );
 }
 
-function Group({ title, hint, items, readOnly }: { title: string; hint: string; items: PackingItem[]; readOnly: boolean }) {
+function Group({ title, hint, items }: { title: string; hint: string; items: PackingItem[] }) {
   return (
     <View style={{ gap: spacing.xs }}>
       <Text style={styles.section}>{title}</Text>
       <Card style={{ gap: 0, paddingVertical: spacing.xs }}>
         {items.length ? (
-          items.map((item, i) => <Row key={item.id} item={item} first={i === 0} readOnly={readOnly} />)
+          items.map((item, i) => <Row key={item.id} item={item} first={i === 0} />)
         ) : (
           <Text style={styles.empty}>{hint}</Text>
         )}
@@ -88,7 +82,7 @@ function Group({ title, hint, items, readOnly }: { title: string; hint: string; 
   );
 }
 
-function Row({ item, first, readOnly }: { item: PackingItem; first: boolean; readOnly: boolean }) {
+function Row({ item, first }: { item: PackingItem; first: boolean }) {
   const t = useT();
   const p = t.family.packing;
   const { me, nameOf, updatePackingItem, removePackingItem } = useFamily();
@@ -98,9 +92,7 @@ function Row({ item, first, readOnly }: { item: PackingItem; first: boolean; rea
       <Pressable
         role="checkbox"
         aria-checked={item.packed}
-        aria-disabled={readOnly}
         aria-label={item.label}
-        disabled={readOnly}
         hitSlop={8}
         onPress={() => {
           tap();
@@ -117,7 +109,6 @@ function Row({ item, first, readOnly }: { item: PackingItem; first: boolean; rea
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        disabled={readOnly}
         onPress={() => attempt(() => updatePackingItem(item.id, { holder: NEXT_HOLDER[item.holder ?? 'none'] }))}
         style={[styles.holder, { backgroundColor: holder?.pale ?? colors.background }]}
       >
@@ -125,16 +116,14 @@ function Row({ item, first, readOnly }: { item: PackingItem; first: boolean; rea
           {item.holder ? (item.holder === me ? p.atYou : fmt(p.at, { name: nameOf(item.holder) })) : p.atNobody}
         </Text>
       </Pressable>
-      {!readOnly ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={p.remove}
-          hitSlop={8}
-          onPress={() => attempt(() => removePackingItem(item.id))}
-        >
-          <Ionicons name="close" size={20} color={colors.textMuted} />
-        </Pressable>
-      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={p.remove}
+        hitSlop={8}
+        onPress={() => attempt(() => removePackingItem(item.id))}
+      >
+        <Ionicons name="close" size={20} color={colors.textMuted} />
+      </Pressable>
     </View>
   );
 }

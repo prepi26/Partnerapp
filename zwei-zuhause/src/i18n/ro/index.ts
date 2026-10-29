@@ -55,11 +55,12 @@ export const ro: Dict = {
       too_many_families: 'Un cont nu poate avea mai mult de 5 familii.',
     },
     subscription: {
-      required: 'Perioada de testare gratuită s-a încheiat. Cu un abonament puteți din nou adăuga totul amândoi.',
-      readOnlyTitle: 'Doar citire',
+      required: 'Asta face parte din Plus. Calendarul, mesajele și predările rămân gratuite.',
+      readOnlyTitle: 'Funcție Plus',
       readOnlyText:
-        'Perioada de testare gratuită s-a încheiat. Cu un abonament pentru toată familia, tu și {name} puteți adăuga din nou totul. Citirea și exportul funcționează în continuare.',
+        'Costurile, pensia de întreținere, documentele și raportul PDF fac parte din Plus – un abonament e valabil pentru tine și {name}. Calendarul, mesajele, predările și tot restul rămân gratuite.',
       cta: 'Vezi abonamentul',
+      freeBanner: 'Versiune gratuită · Plus pentru costuri, întreținere și rapoarte',
       trialBannerOther: 'Testare gratuită – zile rămase: {n}',
       trialBannerOne: 'Încă 1 zi de testare gratuită',
       trialBannerLast: 'Ultima zi de testare gratuită',
@@ -79,9 +80,21 @@ export const ro: Dict = {
         text: 'Zile fixe în săptămână plus weekenduri prin alternanță.',
       },
       wechsel_2_2_3: { title: 'Custodie alternantă 2-2-3', text: 'Intervale scurte – potrivit pentru copii mici.' },
+      wechsel_3_4_4_3: {
+        title: 'Custodie alternantă 3-4-4-3',
+        text: 'Trei zile aici, patru acolo – în săptămâna următoare invers.',
+      },
+      wechsel_14_14: {
+        title: 'Câte două săptămâni',
+        text: 'Două săptămâni aici, două săptămâni acolo – de ex. la distanțe mari.',
+      },
       residenz_we: {
         title: 'Locuință principală (Residenzmodell)',
         text: 'Copilul locuiește mai ales la un părinte și la fiecare al doilea weekend (vin–dum) la celălalt.',
+      },
+      custom: {
+        title: 'Ritm propriu',
+        text: 'Stabiliți pentru 1–4 săptămâni cine are copilul în ce zi – apoi se repetă.',
       },
       none: { title: 'Fără plan fix', text: 'Introduceți fiecare zi separat.' },
     },
@@ -444,7 +457,7 @@ export const ro: Dict = {
       atYou: 'la tine',
       noPlan: 'fără plan',
       open: 'deschise: {n}',
-      locked: 'doar citire',
+      locked: 'fără Plus',
     },
     invite: {
       shareMessage:
@@ -506,6 +519,10 @@ export const ro: Dict = {
       start: 'Planul începe pe',
       firstParent: 'În această zi copilul este la',
       residenzHint: 'Alege ca început o zi de luni. Weekendul acelei săptămâni (vin–dum) este la celălalt părinte.',
+      customLength: 'Durata ritmului',
+      customWeeksOne: '1 săptămână',
+      customWeeksOther: '{n} săptămâni',
+      customHint: 'Atinge o zi pentru a o da celuilalt părinte. Ritmul începe în ziua de start și apoi se repetă.',
       preview: 'Previzualizare',
       handover: 'Predarea – când și unde?',
       time: 'Ora',
@@ -690,8 +707,9 @@ export const ro: Dict = {
       benefits: {
         familyTitle: 'Un abonament pentru toată familia',
         familyText: 'Plătește unul, ambii părinți folosesc totul – fără certuri despre cine plătește.',
-        allTitle: 'Totul inclus',
-        allText: 'Calendar, costuri, mesaje, decizii, documente, rapoarte PDF și fotografii ale bonurilor.',
+        allTitle: 'Costuri, întreținere, documente, rapoarte',
+        allText:
+          'Împărțirea cheltuielilor cu foto bon, pensia de întreținere lună de lună, documente partajate și rapoarte PDF pentru consiliere și Jugendamt.',
         proofTitle: 'Dovezi solide',
         proofText: 'Cu dată, oră și sumă de control pentru fiecare înregistrare.',
         supportTitle: 'Fără reclame',
@@ -718,7 +736,7 @@ export const ro: Dict = {
       nothingFound: 'Nu s-a găsit nimic',
       heroTitle: 'Zwei Zuhause Plus',
       heroText:
-        'Testează gratuit 14 zile, de îndată ce sunteți amândoi în aplicație – apoi un singur abonament pentru toată familia voastră.',
+        'Calendarul, mesajele și predările sunt gratuite. Plus îl testați gratuit 14 zile, de îndată ce sunteți amândoi în aplicație – apoi un singur abonament pentru toată familia voastră.',
       activeTitle: 'Abonamentul vostru de familie este activ ✓',
       activeText: 'Cine a încheiat abonamentul îl gestionează sau îl anulează din setările telefonului său.',
       trialLeftOther: 'Perioadă de testare gratuită – zile rămase: {n}',
@@ -727,7 +745,7 @@ export const ro: Dict = {
       trialSolo:
         'Cele 14 zile de testare încep când se alătură {name}. Singur(ă), aplicația mai e gratuită – zile rămase: {n}.',
       trialOver:
-        'Perioada de testare gratuită s-a încheiat. Fără abonament puteți citi tot, dar nu puteți adăuga nimic nou.',
+        'Perioada de testare s-a încheiat. Calendarul, mesajele și predările rămân gratuite – pentru costuri, întreținere, documente și rapoarte aveți nevoie de Plus.',
       unavailable: 'Cumpărăturile sunt posibile doar în aplicația pentru iOS și Android.',
       tierSingle: 'Pentru 1 familie',
       tierMulti: 'Plus Multifamilie – pentru până la 3 familii',
@@ -739,7 +757,7 @@ export const ro: Dict = {
       busy: 'Un moment…',
       unlock: 'Abonează-te',
       terms:
-        'Abonamentul este valabil pentru toată familia voastră – pentru tine și pentru celălalt părinte. Se prelungește automat până când îl anulezi cu cel puțin 24 de ore înainte de expirare în setările App Store, respectiv Google Play. Fără abonament, după perioada de testare totul rămâne disponibil pentru citire și export.',
+        'Abonamentul este valabil pentru toată familia voastră – pentru tine și pentru celălalt părinte. Se prelungește automat până când îl anulezi cu cel puțin 24 de ore înainte de expirare în setările App Store, respectiv Google Play. Fără abonament, funcțiile de bază rămân gratuite și totul rămâne disponibil pentru citire și export.',
       noPurchase: 'Nu există nicio achiziție activă pentru contul tău.',
       restore: 'Restaurează achizițiile',
       promoTitle: 'Cod de voucher',

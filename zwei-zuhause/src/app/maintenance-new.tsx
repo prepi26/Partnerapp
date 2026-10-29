@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } fr
 
 import { DateField } from '@/components/DateField';
 import { MonthField } from '@/components/MonthField';
-import { WriteGate } from '@/components/SubscriptionBanner';
+import { PlusGate } from '@/components/SubscriptionBanner';
 import { Chip, Field, Label, PrimaryButton, showError } from '@/components/ui';
 import { attempt, useFamily } from '@/data/store';
 import { ParentKey } from '@/data/types';
@@ -49,7 +49,7 @@ export default function MaintenanceNew() {
   };
 
   return (
-    <WriteGate>
+    <PlusGate>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Label>{m.whoPays}</Label>
@@ -72,7 +72,7 @@ export default function MaintenanceNew() {
           <PrimaryButton title={busy ? t.common.saving : m.save} icon="checkmark" disabled={busy} onPress={save} />
         </ScrollView>
       </KeyboardAvoidingView>
-    </WriteGate>
+    </PlusGate>
   );
 }
 
